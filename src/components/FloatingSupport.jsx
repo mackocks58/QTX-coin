@@ -14,7 +14,7 @@ export const FloatingSupport = () => {
       transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.5 }}
       style={{
         position: 'fixed',
-        bottom: '24px',
+        top: 'calc(50% - 30px)', // Vertically centered (50% minus half of height)
         right: '24px',
         width: '60px',
         height: '60px',
