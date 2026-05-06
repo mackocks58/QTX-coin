@@ -22,6 +22,7 @@ import { Admin } from './pages/Admin';
 import { useCountry } from './components/CountryDetector';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NetworkOverlay } from './components/NetworkOverlay';
+import { FloatingSupport } from './components/FloatingSupport';
 import './index.css'; 
 
 const PrivateRoute = ({ children }) => {
@@ -164,6 +165,7 @@ function App() {
     <Router>
       <AuthProvider>
         <NetworkOverlay />
+        <FloatingSupport />
         <AppContent />
       </AuthProvider>
     </Router>
