@@ -205,15 +205,24 @@ export const Admin = () => {
 
   const sendNotification = async () => {
     if (!followUpModal.notificationMsg) return;
+    if (!followUpModal.transaction?.userId || followUpModal.transaction.userId === 'unknown') {
+      toast.error('Cannot send notification: User ID is unknown');
+      return;
+    }
+    
     try {
       const userRef = doc(db, 'users', followUpModal.transaction.userId);
       const uSnap = await getDoc(userRef);
       if(uSnap.exists()) {
-        const notifs = uSnap.data().notifications || [];
+        let notifs = uSnap.data().notifications;
+        if (!Array.isArray(notifs)) {
+          notifs = [];
+        }
+        
         const newNotif = {
           id: Date.now().toString(),
           type: 'system',
-          title: 'Update on your Deposit',
+          title: 'Update regarding your transaction',
           message: followUpModal.notificationMsg,
           timestamp: new Date().toISOString(),
           read: false
@@ -221,9 +230,12 @@ export const Admin = () => {
         await updateDoc(userRef, { notifications: [newNotif, ...notifs].slice(0, 30) });
         toast.success('Notification sent to user');
         setFollowUpModal(prev => ({ ...prev, notificationMsg: '' }));
+      } else {
+        toast.error('User document not found in database');
       }
     } catch (e) {
-      toast.error('Failed to send notification');
+      console.error("Notification sending error:", e);
+      toast.error(`Error: ${e.message}`);
     }
   };
 
