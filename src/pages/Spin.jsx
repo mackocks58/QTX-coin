@@ -13,6 +13,7 @@ export const Spin = () => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [showReward, setShowReward] = useState(false);
+  const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [rewardAmount, setRewardAmount] = useState(0);
   
   // To avoid rapid clicks
@@ -22,7 +23,7 @@ export const Spin = () => {
 
   const handleSpin = async () => {
     if (chances <= 0) {
-      toast.error('You do not have any spin chances. Deposit $1000 or more to earn a chance!');
+      setShowInsufficientModal(true);
       return;
     }
     if (isSpinning) return;
@@ -160,7 +161,7 @@ export const Spin = () => {
         {/* SPIN BUTTON */}
         <button
           onClick={handleSpin}
-          disabled={isSpinning || chances <= 0}
+          disabled={isSpinning}
           className={`btn ${isSpinning ? '' : 'hover:scale-105'}`}
           style={{
             marginTop: '40px',
@@ -176,7 +177,7 @@ export const Spin = () => {
             border: 'none',
             borderRadius: '50px',
             boxShadow: isSpinning ? 'none' : '0 10px 25px rgba(212,175,55,0.4)',
-            cursor: isSpinning || chances <= 0 ? 'not-allowed' : 'pointer',
+            cursor: isSpinning ? 'not-allowed' : 'pointer',
             transition: 'all 0.3s ease'
           }}
         >
@@ -227,15 +228,69 @@ export const Spin = () => {
           )}
         </AnimatePresence>
 
-        {/* OVERLAY FOR POPUP */}
+        {/* INSUFFICIENT CHANCES POPUP */}
         <AnimatePresence>
-          {showReward && (
+          {showInsufficientModal && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.5, y: 50 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.5, y: 50 }}
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                background: 'var(--bg-panel)',
+                border: '1px solid var(--border)',
+                padding: '32px',
+                borderRadius: '24px',
+                textAlign: 'center',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+                zIndex: 100,
+                width: '85%',
+                maxWidth: '350px'
+              }}
+            >
+              <div style={{ width: '60px', height: '60px', background: 'rgba(239,68,68,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <AlertCircle size={30} color="var(--danger)" />
+              </div>
+              <h2 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: '22px' }}>Oops! No Spins Left</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+                Deposit $1000 or invite a friend! When your friend deposits $1000, you will both get a chance to spin the wheel.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+                <button 
+                  onClick={() => navigate('/wallet')}
+                  style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: 'pointer' }}
+                >
+                  Deposit Now
+                </button>
+                <button 
+                  onClick={() => navigate('/affiliate')}
+                  style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: 'pointer' }}
+                >
+                  Invite Friends
+                </button>
+                <button 
+                  onClick={() => setShowInsufficientModal(false)}
+                  style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', padding: '8px', fontSize: '13px', width: '100%', cursor: 'pointer', marginTop: '4px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* OVERLAY FOR POPUPS */}
+        <AnimatePresence>
+          {(showReward || showInsufficientModal) && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99 }}
-              onClick={() => setShowReward(false)}
+              onClick={() => { setShowReward(false); setShowInsufficientModal(false); }}
             />
           )}
         </AnimatePresence>
