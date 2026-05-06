@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
-import { Home, Pickaxe, History, Users, User, Globe, Bot } from 'lucide-react';
+import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
 import { Wallet } from './pages/Wallet';
 import { Account } from './pages/Account';
@@ -86,7 +86,7 @@ const Sidebar = () => {
 
 const Topbar = () => {
   const { countryCode, error } = useCountry();
-  const { balance } = useAuth();
+  const { balance, isAdmin } = useAuth();
 
   return (
     <header className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -103,6 +103,11 @@ const Topbar = () => {
         )}
       </div>
       <div className="flex items-center gap-4">
+        {isAdmin && (
+          <Link to="/admin" className="btn" style={{ background: 'var(--danger)', color: '#fff', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', border: 'none' }}>
+            <ShieldAlert size={14} /> Admin
+          </Link>
+        )}
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Live Balance</div>
           <div style={{ fontWeight: 600, color: 'var(--success)' }}>${balance.toFixed(2)}</div>

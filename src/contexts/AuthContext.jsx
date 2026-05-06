@@ -133,8 +133,11 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   };
 
+  const isAdmin = currentUser && currentUser.email === 'mackocks588@gmail.com';
+
   const value = {
     currentUser,
+    isAdmin,
     balance,
     miningBalance,
     investmentBalance,
