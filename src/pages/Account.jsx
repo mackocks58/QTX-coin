@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { ShieldCheck, Bell, ChevronLeft, HelpCircle, LogOut } from 'lucide-react';
+import { ShieldCheck, Bell, ChevronLeft, HelpCircle, LogOut, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const COUNTRIES = [
@@ -235,6 +235,22 @@ export const Account = () => {
               )}
             </div>
             <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>Notifications</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
+          </Link>
+
+          <Link to="/event" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', textDecoration: 'none', color: 'var(--text-primary)', borderRadius: '6px', transition: 'var(--transition)' }} className="hover:bg-panel-hover">
+            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Gift size={14} color="#f472b6" />
+            </div>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>Event Center</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
+          </Link>
+
+          <Link to="/spin" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', textDecoration: 'none', color: 'var(--text-primary)', borderRadius: '6px', transition: 'var(--transition)' }} className="hover:bg-panel-hover">
+            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/images/spin_icon.png" alt="spin" style={{ width: '18px', height: '18px' }} />
+            </div>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500, color: 'var(--warning)' }}>Lucky Spin</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
           

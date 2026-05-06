@@ -96,6 +96,12 @@ export const Dashboard = () => {
       </div>
 
       {/* ALERT */}
+      <style>{`
+        @keyframes dashSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
       <div style={{ background: 'linear-gradient(90deg, #ff4d4d, #ff8c00)', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: 'white', fontWeight: 500, boxShadow: '0 2px 8px rgba(255, 140, 0, 0.2)' }}>
         <Bell size={14} style={{ flexShrink: 0 }} />
         <span style={{ lineHeight: 1.1 }}>FINTEX helps you earn long-term AI mining rewards. Certified</span>
@@ -146,7 +152,7 @@ export const Dashboard = () => {
             { icon: <ArrowDownToLine size={18} color="var(--primary)" />, label: 'Recharge', path: '/wallet' },
             { icon: <Send size={18} color="var(--primary)" />, label: 'Withdraw', path: '/withdraw' },
             { icon: <Crown size={18} color="var(--warning)" />, label: 'VIP Bots', path: '/vip' },
-            { icon: <Gift size={18} color="#f472b6" />, label: 'Event', path: '/event' },
+            { icon: <img src="/images/spin_icon.png" alt="spin" style={{ width: '22px', height: '22px', animation: 'dashSpin 4s linear infinite' }} />, label: 'Lucky Spin', path: '/spin' },
             { icon: <ShieldCheck size={18} color="var(--text-muted)" />, label: 'Security', path: '/security' },
             { icon: <UserPlus size={18} color="var(--success)" />, label: 'Invite', path: '/affiliate' },
             { icon: <Building size={18} color="var(--text-muted)" />, label: 'About', path: '/about' },

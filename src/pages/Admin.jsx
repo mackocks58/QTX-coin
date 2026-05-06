@@ -284,6 +284,24 @@ export const Admin = () => {
       await updateDoc(deposit.ref, { status: 'SUCCESS', amount: amount });
       const userRef = doc(db, 'users', deposit.userId);
       await updateDoc(userRef, { balance: increment(amount) });
+      
+      // Lucky Spin Logic: Grant 1 chance if deposit >= 1000
+      if (amount >= 1000) {
+        await updateDoc(userRef, { spinChances: increment(1) });
+        
+        // Grant 1 chance to the referrer as well
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists() && userDoc.data().referredByCode) {
+           const refCode = userDoc.data().referredByCode;
+           const usersColl = collection(db, 'users');
+           const refQuery = query(usersColl, where('referralCode', '==', refCode));
+           const refSnap = await getDocs(refQuery);
+           if (!refSnap.empty) {
+               await updateDoc(doc(db, 'users', refSnap.docs[0].id), { spinChances: increment(1) });
+           }
+        }
+      }
+
       toast.success('Deposit Approved and Credited');
       setDeposits(prev => prev.map(d => d.id === deposit.id ? { ...d, status: 'SUCCESS', amount: amount } : d));
     } catch (error) {
