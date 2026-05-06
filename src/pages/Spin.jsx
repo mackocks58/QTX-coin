@@ -188,14 +188,13 @@ export const Spin = () => {
         <AnimatePresence>
           {showReward && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.5, y: 50 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, y: 50 }}
+              initial={{ opacity: 0, scale: 0.5, x: '-50%', y: '-30%' }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+              exit={{ opacity: 0, scale: 0.5, x: '-50%', y: '-30%' }}
               style={{
                 position: 'fixed',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)',
                 background: 'linear-gradient(135deg, rgba(20,20,20,0.95), rgba(40,40,40,0.95))',
                 border: '1px solid var(--warning)',
                 padding: '32px',
@@ -232,14 +231,13 @@ export const Spin = () => {
         <AnimatePresence>
           {showInsufficientModal && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.5, y: 50 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, y: 50 }}
+              initial={{ opacity: 0, scale: 0.5, x: '-50%', y: '-30%' }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+              exit={{ opacity: 0, scale: 0.5, x: '-50%', y: '-30%' }}
               style={{
                 position: 'fixed',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)',
                 background: 'var(--bg-panel)',
                 border: '1px solid var(--border)',
                 padding: '32px',
