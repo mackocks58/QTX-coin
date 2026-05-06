@@ -17,6 +17,7 @@ export const Dashboard = () => {
   const totalAssets = profitWallet + miningWallet + investmentWallet;
   
   const unreadNotificationsCount = userData?.notifications?.filter(n => !n.read).length || 0;
+  const hasRunningBots = userData?.activatedBots?.some(bot => bot.status === 'running');
 
   return (
     <motion.div 
@@ -30,14 +31,47 @@ export const Dashboard = () => {
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => navigate('/account')} className="cursor-pointer">
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid var(--primary)' }}>
-            {userData?.photoURL ? (
-              <img src={userData.photoURL} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <span style={{ color: '#000', fontWeight: 'bold', fontSize: '18px' }}>
-                {currentUser?.email?.charAt(0).toUpperCase() || 'M'}
-              </span>
+          <div style={{ 
+            position: 'relative', 
+            width: '48px', 
+            height: '48px', 
+            borderRadius: '50%', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: hasRunningBots ? '0 0 15px rgba(16, 185, 129, 0.6)' : 'none'
+          }}>
+            {hasRunningBots && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: '50%',
+                background: 'conic-gradient(from 0deg, transparent 0 160deg, rgba(16,185,129,0.4) 220deg, #10b981 310deg, #059669 360deg)',
+                animation: 'spin 2s linear infinite',
+                zIndex: 0
+              }} />
             )}
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              borderRadius: '50%', 
+              background: 'var(--primary)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              overflow: 'hidden', 
+              border: hasRunningBots ? '2px solid var(--bg-dark)' : '2px solid var(--primary)',
+              zIndex: 1,
+              position: 'relative'
+            }}>
+              {userData?.photoURL ? (
+                <img src={userData.photoURL} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ color: '#000', fontWeight: 'bold', fontSize: '18px' }}>
+                  {currentUser?.email?.charAt(0).toUpperCase() || 'M'}
+                </span>
+              )}
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <img src="/logo.png" alt="Logo" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
@@ -146,6 +180,10 @@ export const Dashboard = () => {
       <footer style={{ textAlign: 'center', fontSize: '9px', margin: '12px 0 0 0', color: 'var(--text-muted)' }}>
         © {new Date().getFullYear()} FINTEX. All rights reserved.
       </footer>
+
+      <style>{`
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+      `}</style>
       
     </motion.div>
   );
