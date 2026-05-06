@@ -69,9 +69,9 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (email, password, country = 'Global', referredByCode = null) => {
+    localStorage.removeItem('fintex_session');
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const sessionToken = Date.now().toString() + Math.random().toString(36).substring(2);
-    localStorage.setItem('fintex_session', sessionToken);
     
     // Create initial user document
     await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -86,13 +86,14 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString(),
       currentSessionToken: sessionToken
     });
+    localStorage.setItem('fintex_session', sessionToken);
     return userCredential;
   };
 
   const login = async (email, password) => {
+    localStorage.removeItem('fintex_session');
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const sessionToken = Date.now().toString() + Math.random().toString(36).substring(2);
-    localStorage.setItem('fintex_session', sessionToken);
     
     // Log login history to the main user doc array to avoid subcollection rule issues
     try {
@@ -144,6 +145,7 @@ export function AuthProvider({ children }) {
       console.error("Error saving login history:", err);
     }
     
+    localStorage.setItem('fintex_session', sessionToken);
     return userCredential;
   };
 
