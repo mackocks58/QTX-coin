@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -26,6 +27,16 @@ export function AuthProvider({ children }) {
         const unsubDoc = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
+            
+            // Concurrent login check
+            const localSession = localStorage.getItem('fintex_session');
+            if (data.currentSessionToken && localSession && data.currentSessionToken !== localSession) {
+              signOut(auth);
+              localStorage.removeItem('fintex_session');
+              toast.error('You have been logged out because your account was accessed from another device or browser.', { duration: 6000 });
+              return;
+            }
+
             setBalance(data.balance || 0);
             setMiningBalance(data.miningBalance || 0);
             setInvestmentBalance(data.investmentBalance || 0);
@@ -59,6 +70,9 @@ export function AuthProvider({ children }) {
 
   const signup = async (email, password, country = 'Global', referredByCode = null) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const sessionToken = Date.now().toString() + Math.random().toString(36).substring(2);
+    localStorage.setItem('fintex_session', sessionToken);
+    
     // Create initial user document
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       email: email,
@@ -69,13 +83,16 @@ export function AuthProvider({ children }) {
       referralCode: generateReferralCode(),
       referredByCode: referredByCode,
       firstDepositRewarded: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      currentSessionToken: sessionToken
     });
     return userCredential;
   };
 
   const login = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const sessionToken = Date.now().toString() + Math.random().toString(36).substring(2);
+    localStorage.setItem('fintex_session', sessionToken);
     
     // Log login history to the main user doc array to avoid subcollection rule issues
     try {
@@ -119,7 +136,8 @@ export function AuthProvider({ children }) {
         
         await updateDoc(userRef, { 
           loginHistory: updatedHistory,
-          notifications: updatedNotifications
+          notifications: updatedNotifications,
+          currentSessionToken: sessionToken
         });
       }
     } catch (err) {
@@ -130,6 +148,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    localStorage.removeItem('fintex_session');
     return signOut(auth);
   };
 
