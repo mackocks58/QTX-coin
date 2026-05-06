@@ -95,17 +95,17 @@ const ActiveBotCard = ({ bot }) => {
       marginBottom: '14px',
       opacity: isExpired ? 0.8 : 1
     }}>
-      <div style={{ position: 'relative', height: '80px', overflow: 'hidden', borderRadius: '13px 13px 0 0', boxShadow: !isExpired ? '0 4px 15px rgba(16, 185, 129, 0.3)' : 'none' }}>
+      <div style={{ position: 'relative', height: '80px', overflow: 'hidden', borderRadius: '13px 13px 0 0', boxShadow: !isExpired ? '0 4px 20px rgba(16, 185, 129, 0.6)' : 'none' }}>
         {!isExpired && (
           <div style={{
             position: 'absolute',
             top: '-50%', left: '-50%', width: '200%', height: '200%',
-            background: 'conic-gradient(from 0deg, transparent 0 260deg, rgba(16,185,129,0.3) 320deg, #10b981 360deg)',
-            animation: 'spin 2.5s linear infinite',
+            background: 'conic-gradient(from 0deg, transparent 0 160deg, rgba(16,185,129,0.4) 220deg, #10b981 310deg, #059669 360deg)',
+            animation: 'spin 2s linear infinite',
             zIndex: 0
           }} />
         )}
-        <div style={{ position: 'absolute', inset: isExpired ? '0' : '2px', background: 'var(--bg-panel)', borderRadius: isExpired ? '0' : '11px 11px 0 0', overflow: 'hidden', zIndex: 1 }}>
+        <div style={{ position: 'absolute', inset: isExpired ? '0' : '4px', background: 'var(--bg-panel)', borderRadius: isExpired ? '0' : '9px 9px 0 0', overflow: 'hidden', zIndex: 1 }}>
           <img src={bot.image} alt={bot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isExpired ? 'grayscale(100%)' : 'none' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-panel) 0%, transparent 70%)' }} />
         </div>
