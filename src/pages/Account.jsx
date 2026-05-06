@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { ShieldCheck, Bell, ChevronLeft, HelpCircle } from 'lucide-react';
+import { ShieldCheck, Bell, ChevronLeft, HelpCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const COUNTRIES = [
@@ -23,7 +23,7 @@ const COUNTRIES = [
 ];
 
 export const Account = () => {
-  const { currentUser, userData } = useAuth();
+  const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -258,6 +258,22 @@ export const Account = () => {
             <span style={{ fontWeight: 500, fontSize: '12px' }}>Deposit</span>
           </Link>
         </div>
+
+        {/* Logout Button */}
+        <button 
+          onClick={async () => {
+            try {
+              await logout();
+              navigate('/login');
+            } catch (err) {
+              toast.error('Failed to log out');
+            }
+          }}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: 'var(--danger)', cursor: 'pointer', marginTop: '8px', transition: 'var(--transition)' }}
+        >
+          <LogOut size={16} />
+          <span style={{ fontWeight: 600, fontSize: '13px' }}>Sign Out</span>
+        </button>
       </div>
     </motion.div>
   );
