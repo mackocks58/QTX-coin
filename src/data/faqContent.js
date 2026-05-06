@@ -173,6 +173,33 @@ If your withdrawal is rejected, check the 'Admin Note' attached to the failed tr
     ]
   },
   {
+    category: "Lucky Spin Wheel & Exclusive Bonuses",
+    icon: "Gift",
+    items: [
+      {
+        question: "What is the Lucky Spin Wheel and how do I earn chances to spin?",
+        answer: `The Lucky Spin Wheel is an exclusive, highly rewarding gamified feature designed to offer massive instant cash bonuses to our top-tier investors and most active network builders. Instead of fixed rewards, the Spin Wheel gives you a thrilling chance to instantly win substantial sums of money directly credited to your profit wallet.
+
+How to Earn Spin Chances:
+There are two primary ways to earn a chance to spin the Lucky Wheel:
+1. Make a Qualifying Deposit: Whenever you recharge your account with a single deposit of $1,000 or more, the system automatically detects the transaction. The moment the deposit is approved by the financial team, you are instantly credited with +1 Spin Chance.
+2. The Affiliate Bonus (Refer & Earn): We highly value our community builders. If you refer a friend using your unique invitation link, and that friend makes a qualifying deposit of $1,000 or more, THEY get a spin chance, but YOU ALSO get +1 Spin Chance automatically! This means if you invite 10 friends who each deposit $1,000, you will earn 10 free spins of the wheel on top of your standard 30% direct referral commissions.
+
+Once you have earned a spin chance, simply navigate to the 'Lucky Spin' page from your dashboard or account menu, click 'SPIN NOW', and watch the wheel rotate to reveal your guaranteed cash prize.`
+      },
+      {
+        question: "How much can I win from the Lucky Spin, and is it guaranteed?",
+        answer: `Yes, every single spin is a guaranteed win! There are no "blank" segments on the FINTEX Lucky Wheel. 
+
+When you spin the wheel, the underlying smart algorithm calculates a guaranteed randomized cash reward that ranges between 1% and 10% of the $1,000 qualifying threshold. This means every time you spin, you will instantly win a random cash prize ranging anywhere from $10 to $100. 
+
+While the visual wheel displays massive jackpot numbers (such as $5,000 or an iPhone) to emulate the exhilarating experience of a high-stakes casino, the backend algorithm is mathematically designed to be sustainable, ensuring that the platform remains highly liquid while still aggressively rewarding you with a realistic, instant cash bonus. 
+
+The moment the wheel stops spinning, your randomized reward (between $10 and $100) is instantly and automatically deposited directly into your main balance, making it immediately available for withdrawal or reinvestment into VIP Trading Bots. There are absolutely no wagering requirements or hidden lock-up periods on your Spin winnings.`
+      }
+    ]
+  },
+  {
     category: "Affiliate Program & Network Building",
     icon: "UserPlus",
     items: [

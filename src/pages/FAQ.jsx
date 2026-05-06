@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Search, ChevronLeft, Globe, Bot, Wallet, CreditCard, UserPlus, HelpCircle } from 'lucide-react';
+import { ChevronDown, Search, ChevronLeft, Globe, Bot, Wallet, CreditCard, UserPlus, HelpCircle, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FAQ_DATA } from '../data/faqContent';
 
 // Map icon strings to actual Lucide components
 const IconMap = {
-  Globe, Bot, Wallet, CreditCard, UserPlus, HelpCircle
+  Globe, Bot, Wallet, CreditCard, UserPlus, HelpCircle, Gift
 };
 
 export const FAQ = () => {
@@ -32,6 +32,7 @@ export const FAQ = () => {
   const images = [
     { src: '/logo.png', alt: 'FINTEX Logo', style: { height: '80px', objectFit: 'contain' } },
     { src: '/images/bot.png', alt: 'AI Trading Bot', style: { width: '100%', borderRadius: '12px', boxShadow: '0 4px 15px rgba(16,185,129,0.3)', border: '1px solid var(--primary)' } },
+    { src: '/images/wheel_base.png', alt: 'Lucky Spin Wheel', style: { width: '100%', borderRadius: '50%', boxShadow: '0 4px 25px rgba(212,175,55,0.4)', border: '2px solid var(--warning)' } },
     { src: '/images/wallet.png', alt: 'Secure Global Wallet', style: { width: '100%', borderRadius: '12px', boxShadow: '0 4px 15px rgba(212,175,55,0.3)', border: '1px solid var(--warning)' } }
   ];
 
@@ -169,13 +170,13 @@ export const FAQ = () => {
       </div>
       
       {/* Final Image if there are more images than categories */}
-      {searchTerm === '' && (
+      {searchTerm === '' && images.length >= filteredData.length && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           style={{ margin: '32px 0 16px 0', display: 'flex', justifyContent: 'center' }}
         >
-          <img src={images[2].src} alt={images[2].alt} style={images[2].style} />
+          <img src={images[images.length - 1].src} alt={images[images.length - 1].alt} style={images[images.length - 1].style} />
         </motion.div>
       )}
 
