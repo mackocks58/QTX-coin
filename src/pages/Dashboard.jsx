@@ -102,27 +102,40 @@ export const Dashboard = () => {
       </div>
 
       {/* CARD */}
-      <div style={{ background: 'linear-gradient(135deg, #1c1c1c, #2a2a2a)', borderRadius: '12px', padding: '12px 14px', border: '2px solid var(--primary)', marginBottom: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <h2 style={{ fontSize: '12px', color: '#ccc', margin: 0, fontWeight: 500 }}>FINTEX AI Total Assets</h2>
-          <div style={{ color: 'var(--primary)', fontSize: '18px', fontWeight: 'bold' }}>
-            ${totalAssets.toFixed(2)}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #d4af37, #f5d98b)', 
+        borderRadius: '14px', 
+        padding: '2px', 
+        marginBottom: '14px', 
+        boxShadow: '0 8px 25px rgba(212,175,55,0.35)' 
+      }}>
+        <div style={{ 
+          background: 'linear-gradient(135deg, #141414, #1f1f1f)', 
+          borderRadius: '12px', 
+          padding: '16px', 
+          height: '100%' 
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h2 style={{ fontSize: '12px', color: '#ccc', margin: 0, fontWeight: 500 }}>FINTEX AI Total Assets</h2>
+            <div style={{ color: '#f5d98b', fontSize: '20px', fontWeight: 'bold', textShadow: '0 2px 10px rgba(212,175,55,0.4)' }}>
+              ${totalAssets.toFixed(2)}
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '4px 0', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>AI Mining Wallet</span>
-          <span style={{ fontWeight: 600 }}>${miningWallet.toFixed(2)}</span>
-        </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0', paddingBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>AI Mining Wallet</span>
+            <span style={{ fontWeight: 600, color: '#fff' }}>${miningWallet.toFixed(2)}</span>
+          </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '4px 0', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>Investment Wallet</span>
-          <span style={{ fontWeight: 600 }}>${investmentWallet.toFixed(2)}</span>
-        </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0', paddingBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>Investment Wallet</span>
+            <span style={{ fontWeight: 600, color: '#fff' }}>${investmentWallet.toFixed(2)}</span>
+          </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '4px 0 0 0', paddingTop: '2px' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>Profit Wallet</span>
-          <span style={{ fontWeight: 600, color: 'var(--success)' }}>${profitWallet.toFixed(2)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0 0 0', paddingTop: '2px' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>Profit Wallet</span>
+            <span style={{ fontWeight: 700, color: 'var(--success)' }}>${profitWallet.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
