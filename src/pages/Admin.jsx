@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase';
 import { collectionGroup, collection, query, where, orderBy, getDocs, doc, updateDoc, increment, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +17,10 @@ export const Admin = () => {
   const [deposits, setDeposits] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Edit user state
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({ balance: 0, miningBalance: 0 });
 
   useEffect(() => {
     if (isAdmin) {
@@ -129,6 +133,32 @@ export const Admin = () => {
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  // User Handlers
+  const handleEditClick = (user) => {
+    setEditingUser(user);
+    setEditForm({ balance: user.balance || 0, miningBalance: user.miningBalance || 0 });
+  };
+
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+    try {
+      const userRef = doc(db, 'users', editingUser.id);
+      await updateDoc(userRef, {
+        balance: parseFloat(editForm.balance) || 0,
+        miningBalance: parseFloat(editForm.miningBalance) || 0
+      });
+      setUsersList(prev => prev.map(u => 
+        u.id === editingUser.id 
+          ? { ...u, balance: parseFloat(editForm.balance) || 0, miningBalance: parseFloat(editForm.miningBalance) || 0 }
+          : u
+      ));
+      toast.success('User updated successfully');
+      setEditingUser(null);
+    } catch (error) {
+      toast.error('Failed to update user');
+    }
   };
 
   // Withdrawal Handlers
@@ -318,18 +348,59 @@ export const Admin = () => {
                             <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 500 }}>Main Bal.</th>
                             <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 500 }}>Mining Bal.</th>
                             <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>Country</th>
+                            <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {usersList.map(u => (
-                            <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: editingUser?.id === u.id ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
                               <td style={{ padding: '12px', fontFamily: 'monospace' }}>
                                 {u.id.substring(0, 8)}... <Copy size={12} style={{cursor: 'pointer', color: 'var(--primary)'}} onClick={() => handleCopy(u.id)} />
                               </td>
                               <td style={{ padding: '12px' }}>{u.email}</td>
-                              <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>${(u.balance || 0).toFixed(2)}</td>
-                              <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#d4af37' }}>${(u.miningBalance || 0).toFixed(2)}</td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}>{u.country || 'N/A'}</td>
+                              
+                              {editingUser?.id === u.id ? (
+                                <>
+                                  <td style={{ padding: '12px', textAlign: 'right' }}>
+                                    <input 
+                                      type="number" 
+                                      value={editForm.balance} 
+                                      onChange={(e) => setEditForm({...editForm, balance: e.target.value})}
+                                      style={{ width: '80px', padding: '4px 8px', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', textAlign: 'right' }}
+                                    />
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'right' }}>
+                                    <input 
+                                      type="number" 
+                                      value={editForm.miningBalance} 
+                                      onChange={(e) => setEditForm({...editForm, miningBalance: e.target.value})}
+                                      style={{ width: '80px', padding: '4px 8px', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', textAlign: 'right' }}
+                                    />
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>{u.country || 'N/A'}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                      <button onClick={handleSaveUser} style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Save size={14} /> Save
+                                      </button>
+                                      <button onClick={() => setEditingUser(null)} style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <X size={14} /> Cancel
+                                      </button>
+                                    </div>
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>${(u.balance || 0).toFixed(2)}</td>
+                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#d4af37' }}>${(u.miningBalance || 0).toFixed(2)}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>{u.country || 'N/A'}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                                    <button onClick={() => handleEditClick(u)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}>
+                                      <Edit2 size={14} /> Edit
+                                    </button>
+                                  </td>
+                                </>
+                              )}
                             </tr>
                           ))}
                         </tbody>
