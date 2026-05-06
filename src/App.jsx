@@ -19,6 +19,7 @@ import { About } from './pages/About';
 import { Event } from './pages/Event';
 import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
+import { FAQ } from './pages/FAQ';
 import { useCountry } from './components/CountryDetector';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NetworkOverlay } from './components/NetworkOverlay';
@@ -158,6 +159,7 @@ function AppContent() {
             <Route path="/event" element={<PrivateRoute><Event /></PrivateRoute>} />
             <Route path="/withdraw" element={<PrivateRoute><Withdraw /></PrivateRoute>} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+            <Route path="/faq" element={<PrivateRoute><FAQ /></PrivateRoute>} />
           </Routes>
         </AnimatePresence>
       </main>
