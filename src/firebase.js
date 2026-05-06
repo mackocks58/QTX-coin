@@ -5,14 +5,14 @@ import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyCTZLN6gdOILNEsji-NMe0-g46EXXI7254",
+  authDomain: "xxxx-connection.firebaseapp.com",
+  databaseURL: "https://xxxx-connection-default-rtdb.firebaseio.com",
+  projectId: "xxxx-connection",
+  storageBucket: "xxxx-connection.firebasestorage.app",
+  messagingSenderId: "728781241137",
+  appId: "1:728781241137:web:dd0614bb806beb7e878e10",
+  measurementId: "G-J8QJ5RQBXX"
 };
 
 // Initialize Firebase
