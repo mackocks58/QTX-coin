@@ -95,11 +95,22 @@ const ActiveBotCard = ({ bot }) => {
       marginBottom: '14px',
       opacity: isExpired ? 0.8 : 1
     }}>
-      <div style={{ position: 'relative', height: '80px' }}>
-        <img src={bot.image} alt={bot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isExpired ? 'grayscale(100%)' : 'none' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-panel) 0%, transparent 70%)' }} />
-        <div style={{ position: 'absolute', top: '10px', left: '12px' }}><VipBadge level={bot.vipLevel || 'VIP 1'} /></div>
-        <div style={{ position: 'absolute', top: '10px', right: '12px', background: isExpired ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${isExpired ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)'}`, borderRadius: '20px', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div style={{ position: 'relative', height: '80px', overflow: 'hidden', borderRadius: '13px 13px 0 0', boxShadow: !isExpired ? '0 4px 15px rgba(16, 185, 129, 0.3)' : 'none' }}>
+        {!isExpired && (
+          <div style={{
+            position: 'absolute',
+            top: '-50%', left: '-50%', width: '200%', height: '200%',
+            background: 'conic-gradient(from 0deg, transparent 0 260deg, rgba(16,185,129,0.3) 320deg, #10b981 360deg)',
+            animation: 'spin 2.5s linear infinite',
+            zIndex: 0
+          }} />
+        )}
+        <div style={{ position: 'absolute', inset: isExpired ? '0' : '2px', background: 'var(--bg-panel)', borderRadius: isExpired ? '0' : '11px 11px 0 0', overflow: 'hidden', zIndex: 1 }}>
+          <img src={bot.image} alt={bot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isExpired ? 'grayscale(100%)' : 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-panel) 0%, transparent 70%)' }} />
+        </div>
+        <div style={{ position: 'absolute', top: '10px', left: '12px', zIndex: 2 }}><VipBadge level={bot.vipLevel || 'VIP 1'} /></div>
+        <div style={{ position: 'absolute', top: '10px', right: '12px', background: isExpired ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${isExpired ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)'}`, borderRadius: '20px', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 2 }}>
           {!isExpired && <Activity size={9} color="var(--success)" className="animate-pulse" />}
           <span style={{ fontSize: '9px', color: isExpired ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>
             {isExpired ? 'EXPIRED' : 'RUNNING'}
@@ -287,6 +298,9 @@ export const MyBots = () => {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
+        }
+        @keyframes spin {
+          100% { transform: rotate(360deg); }
         }
         .animate-pulse {
           animation: pulse 2s infinite;
