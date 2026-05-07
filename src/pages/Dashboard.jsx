@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck } from 'lucide-react';
 import { LiveTransactions } from '../components/LiveTransactions';
 import { DashboardCharts } from '../components/DashboardCharts';
+import { SpinPromoPopup } from '../components/SpinPromoPopup';
 
 export const Dashboard = () => {
   const { currentUser, userData, balance, miningBalance, investmentBalance } = useAuth();
@@ -28,6 +29,8 @@ export const Dashboard = () => {
       transition={{ duration: 0.3 }}
       style={{ padding: '8px 12px' }}
     >
+      {/* Home-page promo popup — fires on every load */}
+      <SpinPromoPopup />
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => navigate('/account')} className="cursor-pointer">
