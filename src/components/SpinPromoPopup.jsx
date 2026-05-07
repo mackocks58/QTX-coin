@@ -124,14 +124,13 @@ export const SpinPromoPopup = () => {
 
           {/* Main popup */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.7, y: 60 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.7, y: 60 }}
+            initial={{ opacity: 0, scale: 0.7, x: '-50%', y: '-30%' }}
+            animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+            exit={{ opacity: 0, scale: 0.7, x: '-50%', y: '-30%' }}
             transition={{ type: 'spring', damping: 14, stiffness: 160 }}
             style={{
               position: 'fixed',
               top: '50%', left: '50%',
-              x: '-50%', y: '-50%',
               zIndex: 201,
               width: 'min(88vw, 360px)',
               background: 'linear-gradient(160deg, #0f1b14 0%, #0a1628 100%)',
