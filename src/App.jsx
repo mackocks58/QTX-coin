@@ -21,7 +21,7 @@ import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
 import { FAQ } from './pages/FAQ';
 import { Spin } from './pages/Spin';
-import { useCountry } from './components/CountryDetector';
+// removed useCountry as Topbar now uses user's registered country
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NetworkOverlay } from './components/NetworkOverlay';
 import { FloatingSupport } from './components/FloatingSupport';
@@ -86,15 +86,30 @@ const Sidebar = () => {
   );
 };
 
+const COUNTRIES = [
+  { code: 'KE', name: 'Kenya' },
+  { code: 'MZ', name: 'Mozambique' },
+  { code: 'TZ', name: 'Tanzania' },
+  { code: 'UG', name: 'Uganda' },
+  { code: 'BW', name: 'Botswana' },
+  { code: 'CD', name: 'Congo (DRC)' },
+  { code: 'ZM', name: 'Zambia' },
+  { code: 'BI', name: 'Burundi' },
+  { code: 'GH', name: 'Ghana' },
+  { code: 'UN', name: 'Global/Other' }
+];
+
 const Topbar = () => {
-  const { countryCode, error } = useCountry();
-  const { balance, isAdmin } = useAuth();
+  const { balance, isAdmin, userData } = useAuth();
+  
+  const userCountryObj = userData?.country ? COUNTRIES.find(c => c.name === userData.country) : null;
+  const countryCode = userCountryObj ? userCountryObj.code : null;
 
   return (
     <header className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <img src="/logo.png" alt="FINTEX Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
-        {countryCode && countryCode !== 'GL' && !error ? (
+        {countryCode && countryCode !== 'UN' ? (
           <img 
             src={`https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`} 
             alt="Country Flag" 

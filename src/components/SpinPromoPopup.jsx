@@ -208,77 +208,214 @@ export const SpinPromoPopup = () => {
                   </motion.p>
                 </motion.div>
               ) : (
-                /* ── OPEN STATE: treasure box burst ── */
+                /* ── OPEN STATE: real box image split & burst ── */
                 <motion.div
                   key="box"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  style={{ position: 'relative', minHeight: '160px' }}
+                  style={{
+                    position: 'relative',
+                    width: '130px',
+                    height: '220px',
+                    margin: '0 auto',
+                  }}
                 >
-                  {/* Box lid flying up */}
+                  {/* ── BOTTOM HALF — anchored, stays put ── */}
                   <motion.div
-                    initial={{ y: 0, rotate: 0, opacity: 1 }}
-                    animate={{ y: -90, rotate: -25, opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'backOut' }}
-                    style={{
-                      width: '80px', height: '30px',
-                      background: 'linear-gradient(135deg, #d4af37, #f0c040)',
-                      borderRadius: '8px 8px 0 0',
-                      margin: '0 auto',
-                      boxShadow: '0 -4px 20px rgba(212,175,55,0.5)',
-                      position: 'relative', zIndex: 5,
-                    }}
-                  />
-                  {/* Box body */}
-                  <motion.div
-                    initial={{ scale: 0.8 }}
+                    initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: 'spring' }}
+                    transition={{ delay: 0.1, type: 'spring', stiffness: 220 }}
                     style={{
-                      width: '80px', height: '60px',
-                      background: 'linear-gradient(180deg, #c49a28, #8b6914)',
-                      borderRadius: '0 0 10px 10px',
-                      margin: '-4px auto 0',
-                      boxShadow: '0 8px 30px rgba(212,175,55,0.4)',
-                      position: 'relative', zIndex: 4,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '28px',
+                      position: 'absolute',
+                      bottom: '10px',
+                      left: 0,
+                      width: '130px',
+                      height: '65px',
+                      overflow: 'hidden',
+                      borderRadius: '0 0 12px 12px',
+                      zIndex: 4,
+                      boxShadow: '0 10px 28px rgba(212,175,55,0.45)',
                     }}
                   >
-                    🎁
+                    <img
+                      src="/images/spin_icon.png"
+                      alt="box base"
+                      style={{
+                        width: '130px',
+                        height: '130px',
+                        objectFit: 'cover',
+                        objectPosition: 'bottom',
+                        display: 'block',
+                        marginTop: '-65px',
+                      }}
+                    />
                   </motion.div>
 
-                  {/* Gold shine burst */}
+                  {/* ── TOP HALF — lifts up, stays visible, hovers & floats ── */}
+                  <motion.div
+                    initial={{ y: 0 }}
+                    animate={{ y: [0, -50, -44] }}        /* lift then settle into hover */
+                    transition={{ duration: 0.7, ease: 'backOut', times: [0, 0.7, 1] }}
+                    style={{
+                      position: 'absolute',
+                      bottom: '75px',               /* right above base initially */
+                      left: 0,
+                      width: '130px',
+                      height: '65px',
+                      overflow: 'hidden',
+                      borderRadius: '12px 12px 0 0',
+                      zIndex: 5,
+                      boxShadow: '0 -6px 20px rgba(212,175,55,0.55)',
+                    }}
+                  >
+                    <img
+                      src="/images/spin_icon.png"
+                      alt="box lid"
+                      style={{
+                        width: '130px',
+                        height: '130px',
+                        objectFit: 'cover',
+                        objectPosition: 'top',
+                        display: 'block',
+                      }}
+                    />
+                  </motion.div>
+
+                  {/* ── INNER GLOW filling the gap between halves ── */}
+                  <motion.div
+                    initial={{ opacity: 0, scaleX: 0.4 }}
+                    animate={{ opacity: [0, 1, 0.7], scaleX: 1 }}
+                    transition={{ duration: 0.9, delay: 0.15 }}
+                    style={{
+                      position: 'absolute',
+                      bottom: '72px',           /* sits right at the gap */
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '110px',
+                      height: '46px',           /* fills the gap */
+                      background: 'radial-gradient(ellipse at center, rgba(255,224,102,0.75) 0%, rgba(255,180,0,0.3) 50%, transparent 80%)',
+                      zIndex: 3,
+                      pointerEvents: 'none',
+                      borderRadius: '50%',
+                    }}
+                  />
+
+                  {/* ── LIGHT RAYS shooting upward from inside the gap ── */}
+                  {[-55, -35, -15, 0, 15, 35, 55].map((angle, i) => (
+                    <motion.div
+                      key={`ray-${i}`}
+                      initial={{ scaleY: 0, opacity: 0.95 }}
+                      animate={{ scaleY: 1, opacity: 0 }}
+                      transition={{ duration: 1.1, delay: 0.12 + i * 0.045, ease: 'easeOut' }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '95px',           /* center of the gap */
+                        left: '50%',
+                        width: angle === 0 ? '4px' : '3px',
+                        height: '95px',
+                        background: 'linear-gradient(to top, rgba(255,220,80,1) 0%, rgba(255,200,50,0.6) 50%, transparent 100%)',
+                        transformOrigin: 'bottom center',
+                        transform: `translateX(-50%) rotate(${angle}deg)`,
+                        borderRadius: '2px',
+                        zIndex: 3,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  ))}
+
+                  {/* ── Gold radial flash at split ── */}
                   {burst && (
                     <motion.div
                       initial={{ scale: 0, opacity: 1 }}
-                      animate={{ scale: 4, opacity: 0 }}
-                      transition={{ duration: 0.6 }}
+                      animate={{ scale: 5, opacity: 0 }}
+                      transition={{ duration: 0.65 }}
                       style={{
-                        position: 'absolute', top: '20px', left: '50%',
-                        transform: 'translate(-50%,-50%)',
-                        width: '60px', height: '60px',
+                        position: 'absolute',
+                        bottom: '95px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '44px', height: '44px',
                         borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(255,224,102,0.8) 0%, transparent 70%)',
+                        background: 'radial-gradient(circle, rgba(255,235,120,0.95) 0%, transparent 70%)',
                         zIndex: 6,
                         pointerEvents: 'none',
                       }}
                     />
                   )}
 
-                  {/* Coin particles */}
+                  {/* ── Coin particles from gap ── */}
                   {burst && COIN_ANGLES.map((angle, i) => (
-                    <CoinParticle
-                      key={i}
-                      angle={angle}
-                      distance={80 + Math.random() * 50}
-                      delay={i * 0.05}
-                    />
+                    <motion.div
+                      key={`coin-${i}`}
+                      initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+                      animate={{
+                        x: Math.cos(angle) * (75 + Math.random() * 50),
+                        y: Math.sin(angle) * (75 + Math.random() * 50) - 50,
+                        opacity: [1, 1, 0],
+                        scale: [0, 1.2, 0.8],
+                        rotate: [0, 360],
+                      }}
+                      transition={{ duration: 1.4, delay: i * 0.05, ease: 'easeOut' }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '95px',
+                        left: '50%',
+                        width: '24px', height: '24px',
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 35% 35%, #ffe066, #d4af37, #b8860b)',
+                        border: '2px solid #ffe066',
+                        boxShadow: '0 0 8px rgba(212,175,55,0.8)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', fontWeight: 900, color: '#7a5a00',
+                        zIndex: 10, pointerEvents: 'none',
+                      }}
+                    >
+                      $
+                    </motion.div>
                   ))}
 
-                  {/* $1000 money bursts */}
+                  {/* ── $1000 labels ── */}
                   {burst && MONEY_BURSTS.map((pos, i) => (
-                    <MoneyBurst key={i} x={pos.x} y={pos.y} delay={0.3 + i * 0.2} />
+                    <motion.div
+                      key={`money-${i}`}
+                      initial={{ x: 0, y: 0, opacity: 0, scale: 0.5 }}
+                      animate={{ x: pos.x, y: pos.y, opacity: [0, 1, 1, 0], scale: [0.5, 1.3, 1, 0.8] }}
+                      transition={{ duration: 1.8, delay: 0.25 + i * 0.18, ease: 'easeOut' }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '95px',
+                        left: '50%',
+                        fontSize: '20px', fontWeight: 900, color: '#ffe066',
+                        textShadow: '0 0 12px rgba(212,175,55,0.9)',
+                        zIndex: 20, pointerEvents: 'none', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      +$1,000
+                    </motion.div>
+                  ))}
+
+                  {/* ── Gift emojis bursting out ── */}
+                  {burst && [
+                    { emoji: '🎁', x: -72, y: -85, delay: 0.1 },
+                    { emoji: '💰', x: 62,  y: -95, delay: 0.2 },
+                    { emoji: '🎊', x: -48, y: -115, delay: 0.3 },
+                    { emoji: '⭐', x: 78,  y: -62, delay: 0.15 },
+                    { emoji: '🎉', x: -18, y: -130, delay: 0.35 },
+                  ].map((item, i) => (
+                    <motion.div
+                      key={`gift-${i}`}
+                      initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+                      animate={{ x: item.x, y: item.y, opacity: [1, 1, 0], scale: [0, 1.5, 0.9] }}
+                      transition={{ duration: 1.5, delay: item.delay, ease: 'easeOut' }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '95px', left: '50%',
+                        fontSize: '22px',
+                        zIndex: 15, pointerEvents: 'none',
+                      }}
+                    >
+                      {item.emoji}
+                    </motion.div>
                   ))}
                 </motion.div>
               )}
