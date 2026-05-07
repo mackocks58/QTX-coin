@@ -284,21 +284,57 @@ export const Admin = () => {
       await updateDoc(deposit.ref, { status: 'SUCCESS', amount: amount });
       const userRef = doc(db, 'users', deposit.userId);
       await updateDoc(userRef, { balance: increment(amount) });
-      
-      // Lucky Spin Logic: Grant 1 chance if deposit >= 1000
+
+      // ── 3-Tier Affiliate Commission ──────────────────────────────────────
+      const TIERS = [
+        { pct: 0.10, label: 'Level 1 (Direct) Commission' },
+        { pct: 0.03, label: 'Level 2 Commission' },
+        { pct: 0.01, label: 'Level 3 Commission' },
+      ];
+      let currentUid = deposit.userId;
+      for (let tier = 0; tier < TIERS.length; tier++) {
+        const currentDoc = await getDoc(doc(db, 'users', currentUid));
+        if (!currentDoc.exists()) break;
+        const referredByCode = currentDoc.data().referredByCode;
+        if (!referredByCode) break;
+
+        const refSnap = await getDocs(query(collection(db, 'users'), where('referralCode', '==', referredByCode)));
+        if (refSnap.empty) break;
+
+        const referrerDoc = refSnap.docs[0];
+        const referrerId = referrerDoc.id;
+        const commission = parseFloat((amount * TIERS[tier].pct).toFixed(2));
+
+        // Credit referrer balance
+        await updateDoc(doc(db, 'users', referrerId), { balance: increment(commission) });
+
+        // Write transaction record
+        const { addDoc } = await import('firebase/firestore');
+        await addDoc(collection(db, 'users', referrerId, 'transactions'), {
+          type: 'affiliate_reward',
+          title: TIERS[tier].label,
+          amount: commission,
+          fromUid: currentUid,
+          status: 'SUCCESS',
+          createdAt: new Date().toISOString(),
+        });
+
+        // Walk up the chain
+        currentUid = referrerId;
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
+      // Lucky Spin: grant 1 chance if deposit >= 1000
       if (amount >= 1000) {
         await updateDoc(userRef, { spinChances: increment(1) });
-        
-        // Grant 1 chance to the referrer as well
+
+        // Also grant the direct (L1) referrer a spin chance
         const userDoc = await getDoc(userRef);
         if (userDoc.exists() && userDoc.data().referredByCode) {
-           const refCode = userDoc.data().referredByCode;
-           const usersColl = collection(db, 'users');
-           const refQuery = query(usersColl, where('referralCode', '==', refCode));
-           const refSnap = await getDocs(refQuery);
-           if (!refSnap.empty) {
-               await updateDoc(doc(db, 'users', refSnap.docs[0].id), { spinChances: increment(1) });
-           }
+          const refSnap = await getDocs(query(collection(db, 'users'), where('referralCode', '==', userDoc.data().referredByCode)));
+          if (!refSnap.empty) {
+            await updateDoc(doc(db, 'users', refSnap.docs[0].id), { spinChances: increment(1) });
+          }
         }
       }
 
