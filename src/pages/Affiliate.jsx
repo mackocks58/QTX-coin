@@ -115,6 +115,11 @@ export const Affiliate = () => {
       </div>
 
       {/* STATS ROW */}
+      <div style={{ margin: '0 0 20px 0', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+        <img src="/images/referral_chain.png" alt="3-Tier Referral Commission Chain" style={{ width: '100%', display: 'block' }} />
+      </div>
+
+      {/* STATS ROW */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
         <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '16px', textAlign: 'center', border: '1px solid var(--border)' }}>
           <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'var(--text-muted)' }}>Total Earned</p>
