@@ -231,32 +231,6 @@ export const Withdraw = () => {
             </div>
           )}
         </div>
-
-        {/* Supported Networks Strip */}
-        <div style={{ marginBottom: '16px', padding: '0 4px' }}>
-          <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px' }}>Supported Networks</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {[
-              { logo: 'https://cryptologos.cc/logos/tron-trx-logo.png',        label: 'TRC20',   color: '#ef0027' },
-              { logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.png',          label: 'BEP20',   color: '#f0b90b' },
-              { logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',     label: 'ERC20',   color: '#627eea' },
-              { logo: 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png', label: 'Binance', color: '#f0b90b' },
-            ].map((chain) => (
-              <div key={chain.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#fff', padding: '3px', border: `2px solid ${chain.color}50`, boxShadow: `0 3px 10px ${chain.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img
-                    src={chain.logo}
-                    alt={chain.label}
-                    style={{ width: '30px', height: '30px', objectFit: 'contain', borderRadius: '50%' }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                </div>
-                <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.5px' }}>{chain.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </motion.div>
 
       {/* Confirmation Modal */}
