@@ -7,6 +7,37 @@ import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+// Map network names to official logo URLs
+const NETWORK_LOGOS = {
+  'TRC20':   'https://cryptologos.cc/logos/tron-trx-logo.png',
+  'TRX':     'https://cryptologos.cc/logos/tron-trx-logo.png',
+  'BNB':     'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+  'BEP20':   'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+  'ERC20':   'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  'ETH':     'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  'BTC':     'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+  'BINANCE': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png',
+};
+
+const getNetworkLogo = (network) => {
+  if (!network) return null;
+  const key = Object.keys(NETWORK_LOGOS).find(k => network.toUpperCase().includes(k));
+  return key ? NETWORK_LOGOS[key] : null;
+};
+
+const NetworkBadge = ({ network, size = 20 }) => {
+  const logo = getNetworkLogo(network);
+  if (!logo) return null;
+  return (
+    <img
+      src={logo}
+      alt={network}
+      style={{ width: size, height: size, objectFit: 'contain', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: '#fff', padding: '1px' }}
+      onError={(e) => { e.target.style.display = 'none'; }}
+    />
+  );
+};
+
 export const Withdraw = () => {
   const { currentUser, balance } = useAuth();
   const navigate = useNavigate();
@@ -144,10 +175,19 @@ export const Withdraw = () => {
                         transition: 'var(--transition)'
                       }}
                     >
-                      <div>
-                        {acc.type === 'binance_id' && <div><div className="text-muted" style={{fontSize: '12px'}}>Binance Pay ID</div><div style={{fontWeight: 600}}>{acc.binanceId}</div></div>}
-                        {acc.type === 'crypto_address' && <div><div className="text-muted" style={{fontSize: '12px'}}>{acc.network} Address</div><div style={{fontWeight: 600, fontSize: '13px'}}>{acc.address.substring(0, 8)}...{acc.address.substring(acc.address.length - 8)}</div></div>}
-                        {acc.type === 'mobile' && <div><div className="text-muted" style={{fontSize: '12px'}}>{acc.network}</div><div style={{fontWeight: 600}}>{acc.accountName} - {acc.accountNumber}</div></div>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {/* Network Logo */}
+                        {acc.type === 'binance_id' && <NetworkBadge network="BINANCE" size={28} />}
+                        {acc.type === 'crypto_address' && <NetworkBadge network={acc.network} size={28} />}
+                        {acc.type === 'mobile' && (
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📱</div>
+                        )}
+
+                        <div>
+                          {acc.type === 'binance_id' && <div><div className="text-muted" style={{fontSize: '12px'}}>Binance Pay ID</div><div style={{fontWeight: 600}}>{acc.binanceId}</div></div>}
+                          {acc.type === 'crypto_address' && <div><div className="text-muted" style={{fontSize: '12px'}}>{acc.network} Address</div><div style={{fontWeight: 600, fontSize: '13px'}}>{acc.address.substring(0, 8)}...{acc.address.substring(acc.address.length - 8)}</div></div>}
+                          {acc.type === 'mobile' && <div><div className="text-muted" style={{fontSize: '12px'}}>{acc.network}</div><div style={{fontWeight: 600}}>{acc.accountName} - {acc.accountNumber}</div></div>}
+                        </div>
                       </div>
                       {selectedAccount === acc && <CheckCircle2 size={20} color="var(--primary)" />}
                     </div>
@@ -230,6 +270,13 @@ export const Withdraw = () => {
                   
                   {selectedAccount.type === 'binance_id' && (
                     <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <NetworkBadge network="BINANCE" size={32} />
+                          <span style={{ fontWeight: 600, fontSize: '15px' }}>Binance Pay</span>
+                        </div>
+                        <span style={{ fontSize: '11px', background: 'rgba(240,185,11,0.15)', color: '#f0b90b', padding: '3px 8px', borderRadius: '20px', fontWeight: 600 }}>BNB Chain</span>
+                      </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Method</span>
                         <span style={{ fontWeight: 500, fontSize: '14px' }}>Binance Pay</span>
@@ -243,6 +290,13 @@ export const Withdraw = () => {
 
                   {selectedAccount.type === 'crypto_address' && (
                     <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <NetworkBadge network={selectedAccount.network} size={32} />
+                          <span style={{ fontWeight: 600, fontSize: '15px' }}>{selectedAccount.network}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', padding: '3px 8px', borderRadius: '20px', fontWeight: 600 }}>Crypto</span>
+                      </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Network</span>
                         <span style={{ fontWeight: 500, fontSize: '14px' }}>{selectedAccount.network}</span>
