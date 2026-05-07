@@ -231,6 +231,32 @@ export const Withdraw = () => {
             </div>
           )}
         </div>
+
+        {/* Supported Networks Row */}
+        <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '14px 16px', border: '1px solid var(--border)', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', flexShrink: 0 }}>Supported Networks</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {[
+              { logo: 'https://cryptologos.cc/logos/tron-trx-logo.png',          label: 'TRC20',   color: '#ef0027' },
+              { logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.png',            label: 'BEP20',   color: '#f0b90b' },
+              { logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',       label: 'ERC20',   color: '#627eea' },
+              { logo: 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png',   label: 'Binance', color: '#f0b90b' },
+            ].map((chain) => (
+              <div key={chain.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#fff', padding: '3px', border: `2px solid ${chain.color}40`, boxShadow: `0 2px 8px ${chain.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img
+                    src={chain.logo}
+                    alt={chain.label}
+                    style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '50%' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>{chain.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </motion.div>
 
       {/* Confirmation Modal */}
