@@ -186,7 +186,8 @@ export const SpinPromoPopup = () => {
                     transition={{ repeat: Infinity, duration: 6, ease: 'linear' }}
                     style={{
                       width: '110px', height: '110px',
-                      objectFit: 'contain',
+                      objectFit: 'cover',
+                      borderRadius: '50%',
                       filter: 'drop-shadow(0 0 18px rgba(212,175,55,0.7))',
                       display: 'block', margin: '0 auto',
                     }}
