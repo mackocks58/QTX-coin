@@ -101,18 +101,20 @@ export const Dashboard = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <img src="/logo.png" alt="Logo" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
             <h3 style={{ margin: 0, letterSpacing: '1px', fontSize: '18px', color: 'var(--text-primary)' }}>FINTEX</h3>
+            {/* Bell notification — placed next to company name */}
+            <div onClick={() => navigate('/notifications')} style={{ position: 'relative', cursor: 'pointer', padding: '4px', marginLeft: '4px' }}>
+              <Bell size={18} color="var(--primary)" />
+              {unreadNotificationsCount > 0 && (
+                <span style={{ position: 'absolute', top: 0, right: 0, background: 'red', color: 'white', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div onClick={() => navigate('/notifications')} style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}>
-            <Bell size={20} color="var(--primary)" />
-            {unreadNotificationsCount > 0 && (
-              <span style={{ position: 'absolute', top: 0, right: 0, background: 'red', color: 'white', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                {unreadNotificationsCount}
-              </span>
-            )}
-          </div>
+          {/* LANGUAGE SWITCHER only — Bell moved to left side next to logo */}
 
           {/* LANGUAGE SWITCHER */}
           <div ref={langRef} style={{ position: 'relative' }}>
