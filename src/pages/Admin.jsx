@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '../firebase';
+import { db, functions } from '../firebase';
 import { collectionGroup, collection, query, where, orderBy, getDocs, doc, updateDoc, increment, deleteDoc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -28,6 +31,52 @@ export const Admin = () => {
 
   // Follow-up state
   const [followUpModal, setFollowUpModal] = useState({ isOpen: false, transaction: null, history: [], note: '', notificationMsg: '', loading: false });
+
+  // Push Notification state
+  const [pushForm, setPushForm] = useState({ userId: 'all', title: '', body: '', loading: false });
+  const [pushImageFile, setPushImageFile] = useState(null);
+
+  const handleAdminPush = async () => {
+    if (!pushForm.title || !pushForm.body) {
+      toast.error('Title and body are required');
+      return;
+    }
+    setPushForm(prev => ({ ...prev, loading: true }));
+    try {
+      let imageUrl = null;
+      if (pushImageFile) {
+        const toastId = toast.loading('Uploading image...');
+        const imageRef = ref(storage, `push_images/${Date.now()}_${pushImageFile.name}`);
+        const snapshot = await uploadBytes(imageRef, pushImageFile);
+        imageUrl = await getDownloadURL(snapshot.ref);
+        toast.dismiss(toastId);
+      }
+
+      const sendPush = httpsCallable(functions, 'adminSendPushNotification');
+      const result = await sendPush({ 
+        userId: pushForm.userId, 
+        title: pushForm.title, 
+        body: pushForm.body,
+        imageUrl: imageUrl 
+      });
+      
+      if (result.data.success) {
+        toast.success(`Push sent to ${result.data.sentCount} device(s)`);
+        setPushForm({ userId: 'all', title: '', body: '', loading: false });
+        setPushImageFile(null);
+        // Reset file input element if needed
+        const fileInput = document.getElementById('pushImageInput');
+        if (fileInput) fileInput.value = '';
+      } else {
+        toast.error('Push dispatch returned false');
+        setPushForm(prev => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to send push notification');
+      setPushForm(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   useEffect(() => {
     if (isAdmin) {
@@ -433,6 +482,7 @@ export const Admin = () => {
           <TabButton id="users" icon={Users} label="Users Management" />
           <TabButton id="deposits" icon={ArrowDownToLine} label="Deposits" />
           <TabButton id="withdrawals" icon={ArrowUpFromLine} label="Withdrawals" />
+          <TabButton id="push" icon={Bell} label="Push Notifications" />
         </div>
       </div>
 
@@ -777,6 +827,67 @@ export const Admin = () => {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {/* PUSH NOTIFICATIONS TAB */}
+            {activeTab === 'push' && (
+              <div>
+                <h2 style={{ fontSize: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Bell size={20} color="var(--primary)" /> Broadcast Push Notifications
+                </h2>
+                <div className="panel" style={{ padding: '24px', maxWidth: '600px' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Target Audience</label>
+                    <select 
+                      value={pushForm.userId} 
+                      onChange={e => setPushForm(prev => ({...prev, userId: e.target.value}))}
+                      style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: '#fff' }}
+                    >
+                      <option value="all">All Users (Broadcast)</option>
+                      {usersList.map(u => (
+                        <option key={u.id} value={u.id}>{u.email} ({u.id.substring(0,8)})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Notification Title</label>
+                    <input 
+                      type="text" 
+                      value={pushForm.title} 
+                      onChange={e => setPushForm(prev => ({...prev, title: e.target.value}))}
+                      placeholder="e.g. Special Bonus Event!"
+                      style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: '#fff' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Notification Body</label>
+                    <textarea 
+                      value={pushForm.body} 
+                      onChange={e => setPushForm(prev => ({...prev, body: e.target.value}))}
+                      placeholder="Type your message here..."
+                      style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: '#fff', height: '100px', resize: 'none' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Image Attachment (Optional)</label>
+                    <input 
+                      id="pushImageInput"
+                      type="file" 
+                      accept="image/*"
+                      onChange={e => setPushImageFile(e.target.files[0] || null)}
+                      style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: '#fff' }}
+                    />
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>The image will be securely uploaded to your storage and attached to the push notification.</p>
+                  </div>
+                  <button 
+                    onClick={handleAdminPush} 
+                    disabled={pushForm.loading}
+                    className="btn btn-primary" 
+                    style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', opacity: pushForm.loading ? 0.7 : 1 }}
+                  >
+                    <Send size={16} /> {pushForm.loading ? 'Sending...' : 'Send Push Notification'}
+                  </button>
+                </div>
               </div>
             )}
           </motion.div>

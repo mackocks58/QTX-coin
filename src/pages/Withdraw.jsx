@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -50,6 +50,15 @@ export const Withdraw = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const controls = useAnimation();
+
+  const triggerShake = () => {
+    controls.start({
+      x: [0, -10, 10, -10, 10, 0],
+      transition: { duration: 0.4 }
+    });
+  };
+
   useEffect(() => {
     if (!currentUser) return;
     const fetchAccounts = async () => {
@@ -75,14 +84,12 @@ export const Withdraw = () => {
 
   const handlePreWithdraw = () => {
     const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount < 10) {
-      return toast.error('Minimum withdrawal amount is $10 USD');
-    }
-    if (numAmount > balance) {
-      return toast.error('Insufficient balance');
-    }
-    if (!selectedAccount) {
-      return toast.error('Please select a withdrawal account');
+    if (!amount || isNaN(numAmount) || numAmount < 10 || numAmount > balance || !selectedAccount) {
+      triggerShake();
+      if (!amount) return toast.error('Please enter an amount');
+      if (isNaN(numAmount) || numAmount < 10) return toast.error('Minimum withdrawal amount is $10 USD');
+      if (numAmount > balance) return toast.error('Insufficient balance');
+      if (!selectedAccount) return toast.error('Please select a withdrawal account');
     }
     setShowConfirm(true);
   };
@@ -121,7 +128,8 @@ export const Withdraw = () => {
       <motion.div 
         className="page-content"
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={controls}
+        onViewportEnter={() => controls.start({ opacity: 1, y: 0 })}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3 }}
         style={{ padding: '16px', position: 'relative', zIndex: 1 }}

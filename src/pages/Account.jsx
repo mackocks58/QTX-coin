@@ -1,13 +1,16 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { CreditCard, Wallet, Copy, Camera, CalendarDays, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { ShieldCheck, Bell, ChevronLeft, HelpCircle, LogOut, Gift } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { ShieldCheck, Bell, ChevronLeft, HelpCircle, LogOut, Gift, Fingerprint, Smartphone, X, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 const COUNTRIES = [
   { code: 'KE', name: 'Kenya' },
@@ -27,6 +30,93 @@ export const Account = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [biometricPassword, setBiometricPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const checkSettings = async () => {
+      try {
+        const bioRes = await NativeBiometric.isCredentialsSaved({ server: 'fintex_auth' });
+        setBiometricEnabled(bioRes.isSaved);
+      } catch (e) {
+        console.log('Biometric check failed', e);
+      }
+      
+      try {
+        const pushRes = await PushNotifications.checkPermissions();
+        setPushEnabled(pushRes.receive === 'granted');
+      } catch (e) {
+        console.log('Push check failed', e);
+      }
+    };
+    checkSettings();
+  }, []);
+
+  const handlePushToggle = async () => {
+    try {
+      if (pushEnabled) {
+        toast('To disable notifications, please go to your device Settings.', { icon: 'ℹ️' });
+        return;
+      }
+      
+      const res = await PushNotifications.requestPermissions();
+      if (res.receive === 'granted') {
+        await PushNotifications.register();
+        setPushEnabled(true);
+        toast.success('Push notifications enabled!');
+      } else {
+        toast.error('Permission denied');
+      }
+    } catch (e) {
+      console.log('Push toggle error', e);
+      toast.error('Could not change push settings');
+    }
+  };
+
+  const handleBiometricToggle = async () => {
+    if (biometricEnabled) {
+      try {
+        await NativeBiometric.deleteCredentials({ server: 'fintex_auth' });
+        setBiometricEnabled(false);
+        toast.success('Biometric login disabled');
+      } catch (e) {
+        toast.error('Failed to disable biometrics');
+      }
+    } else {
+      setBiometricPassword('');
+      setShowPassword(false);
+      setShowBiometricModal(true);
+    }
+  };
+
+  const confirmEnableBiometric = async () => {
+    if (!biometricPassword) return toast.error('Please enter your password');
+    
+    const loadingToast = toast.loading('Verifying password...');
+    try {
+      await signInWithEmailAndPassword(auth, currentUser?.email, biometricPassword);
+      toast.dismiss(loadingToast);
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      return toast.error('Incorrect password. Please try again.');
+    }
+
+    try {
+      await NativeBiometric.setCredentials({
+        username: currentUser?.email || 'user',
+        password: biometricPassword,
+        server: 'fintex_auth'
+      });
+      setBiometricEnabled(true);
+      setShowBiometricModal(false);
+      toast.success('Biometric login enabled!');
+    } catch (e) {
+      toast.error('Failed to enable biometrics');
+    }
+  };
 
   const handleCopyUid = () => {
     if (currentUser?.uid) {
@@ -181,11 +271,11 @@ export const Account = () => {
 
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {currentUser?.email}
+              {currentUser?.email || 'Loading...'}
             </h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px', width: 'fit-content' }}>
               <span className="text-muted" style={{ fontSize: '11px', fontFamily: 'monospace' }}>
-                UID: {currentUser?.uid.slice(0, 10)}...
+                UID: {currentUser?.uid ? currentUser.uid.slice(0, 10) : '...'}...
               </span>
               <button onClick={handleCopyUid} style={{ display: 'flex', alignItems: 'center', color: 'var(--primary)', padding: '2px' }}>
                 <Copy size={12} />
@@ -262,6 +352,41 @@ export const Account = () => {
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
         </div>
+
+        {/* Device Settings */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-dark)', padding: '12px', borderRadius: '8px' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Device Settings</h4>
+          
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Fingerprint size={14} color="var(--primary)" />
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Biometric Login</span>
+            </div>
+            <div 
+              onClick={handleBiometricToggle}
+              style={{ width: '40px', height: '22px', background: biometricEnabled ? 'var(--primary)' : 'var(--border)', borderRadius: '11px', position: 'relative', cursor: 'pointer', transition: 'var(--transition)' }}
+            >
+              <div style={{ position: 'absolute', top: '2px', left: biometricEnabled ? '20px' : '2px', width: '18px', height: '18px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Smartphone size={14} color="var(--primary)" />
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Push Notifications</span>
+            </div>
+            <div 
+              onClick={handlePushToggle}
+              style={{ width: '40px', height: '22px', background: pushEnabled ? 'var(--primary)' : 'var(--border)', borderRadius: '11px', position: 'relative', cursor: 'pointer', transition: 'var(--transition)' }}
+            >
+              <div style={{ position: 'absolute', top: '2px', left: pushEnabled ? '20px' : '2px', width: '18px', height: '18px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+            </div>
+          </div>
+        </div>
         
         {/* Top Action Bar */}
         <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
@@ -291,6 +416,58 @@ export const Account = () => {
           <span style={{ fontWeight: 600, fontSize: '13px' }}>Sign Out</span>
         </button>
       </div>
+
+      {/* Biometric Password Modal */}
+      {showBiometricModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{ background: 'var(--bg-panel)', width: '100%', maxWidth: '340px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)' }}
+          >
+            <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Enable Biometrics</h3>
+              <button onClick={() => setShowBiometricModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                To enable Biometric Login, we need to securely store your password on this device. Please enter your password below.
+              </p>
+              
+              <div className="input-group" style={{ marginBottom: '20px' }}>
+                <label className="input-label">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    className="input-field"
+                    value={biometricPassword} 
+                    onChange={e => setBiometricPassword(e.target.value)} 
+                    placeholder="Enter your password"
+                    style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              
+              <button 
+                onClick={confirmEnableBiometric}
+                className="btn btn-primary" 
+                style={{ width: '100%', padding: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <Fingerprint size={18} /> Enable
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };

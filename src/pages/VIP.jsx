@@ -10,6 +10,7 @@ import { VIP_BOTS } from '../data/bots';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
+import { scheduleBotNotifications } from '../services/botNotifications';
 
 /* ─── Tier colour palette ─── */
 const TIER_COLORS = {
@@ -484,6 +485,9 @@ export const VIP = () => {
         investmentBalance: currentInvestment + userAmount,
         activatedBots: [record, ...currentBots],
       });
+
+      // Schedule local notifications for this specific bot's lifecycle
+      scheduleBotNotifications(record);
 
       toast.success(`${bot.name} activated! 🤖`, { id: toastId });
       setSelectedBot(null);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { db, auth } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -44,6 +44,15 @@ export const BindAccount = () => {
   const [network, setNetwork] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
+
+  const controls = useAnimation();
+
+  const triggerShake = () => {
+    controls.start({
+      x: [0, -10, 10, -10, 10, 0],
+      transition: { duration: 0.4 }
+    });
+  };
 
   useEffect(() => {
     if (activeTab === 'binance' && binanceMethod === 'id' && savedAccounts['binance_id']) {
@@ -90,21 +99,31 @@ export const BindAccount = () => {
   }, [currentUser]);
 
   const handleSave = async () => {
+    let isValid = true;
     if (activeTab === 'binance') {
       if (binanceMethod === 'id' && (!binanceId || String(binanceId).length < 5)) {
-        return toast.error('Please enter a valid Binance ID');
+        toast.error('Please enter a valid Binance ID');
+        isValid = false;
       }
       if (binanceMethod === 'address' && (!cryptoAddress || String(cryptoAddress).length < 10)) {
-        return toast.error('Please enter a valid wallet address');
+        toast.error('Please enter a valid wallet address');
+        isValid = false;
       }
     }
     
     if (activeTab === 'mobile' && (!network || !accountName || !accountNumber)) {
-      return toast.error('Please fill in all mobile account details');
+      toast.error('Please fill in all mobile account details');
+      isValid = false;
     }
 
     if (!authPassword) {
-      return toast.error('Please enter your login password to securely save changes.');
+      toast.error('Please enter your login password to securely save changes.');
+      isValid = false;
+    }
+
+    if (!isValid) {
+      triggerShake();
+      return;
     }
 
     setSaving(true);
@@ -114,6 +133,7 @@ export const BindAccount = () => {
       await reauthenticateWithCredential(auth.currentUser, credential);
     } catch (error) {
       setSaving(false);
+      triggerShake();
       return toast.error('Incorrect password. Please try again.');
     }
 
@@ -156,7 +176,8 @@ export const BindAccount = () => {
     <motion.div 
       className="page-content"
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={controls}
+      onViewportEnter={() => controls.start({ opacity: 1, y: 0 })}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
     >

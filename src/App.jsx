@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
@@ -21,8 +21,9 @@ import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
 import { FAQ } from './pages/FAQ';
 import { Spin } from './pages/Spin';
-// removed useCountry as Topbar now uses user's registered country
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { App as CapApp } from '@capacitor/app';
+import { setupPushNotifications } from './services/pushNotifications';
 import { NetworkOverlay } from './components/NetworkOverlay';
 import { FloatingSupport } from './components/FloatingSupport';
 import './index.css'; 
@@ -30,6 +31,30 @@ import './index.css';
 const PrivateRoute = ({ children }) => {
   const { currentUser } = useAuth();
   return currentUser ? children : <Navigate to="/login" />;
+};
+
+const HardwareBackButton = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleBackButton = ({ canGoBack }) => {
+      // If we are at the root or login page, let the app close natively
+      if (location.pathname === '/' || location.pathname === '/login') {
+        CapApp.exitApp();
+      } else {
+        // Otherwise, navigate back in the React Router history
+        window.history.back();
+      }
+    };
+
+    CapApp.addListener('backButton', handleBackButton);
+
+    return () => {
+      CapApp.removeAllListeners();
+    };
+  }, [location]);
+
+  return null;
 };
 
 const Sidebar = () => {
@@ -143,6 +168,12 @@ function AppContent() {
     return <Navigate to="/login" />;
   }
 
+  useEffect(() => {
+    if (currentUser) {
+      setupPushNotifications(currentUser.uid);
+    }
+  }, [currentUser]);
+
   return (
     <div className="app-container">
       <Toaster position="top-center" toastOptions={{
@@ -187,6 +218,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <HardwareBackButton />
       <AuthProvider>
         <NetworkOverlay />
         <FloatingSupport />

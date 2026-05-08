@@ -54,6 +54,26 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  
+  /* Disable text selection globally for native app feel */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  
+  /* Disable tap highlights and overscroll bounce */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Re-enable selection for form inputs */
+input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Prevent image dragging */
+img {
+  -webkit-user-drag: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -329,4 +349,20 @@ button {
   .panel {
     max-width: 100% !important;
   }
+}
+
+/* Shake Animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.input-error {
+  border-color: var(--danger) !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
 }

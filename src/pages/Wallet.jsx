@@ -21,8 +21,8 @@ export const Wallet = () => {
   const [showInstructions, setShowInstructions] = useState(false);
 
   // Use environment variables for the wallet addresses
-  const trc20Address = import.meta.env.VITE_USDT_ADDRESS || 'TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-  const bscAddress = import.meta.env.VITE_BSC_ADDRESS || '0xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+  const trc20Address = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
+  const bscAddress = import.meta.env.VITE_BSC_ADDRESS || '0x66922e6229f9501319aa4425f4cd53773fc66a91';
   const depositAddress = activeTab === 'TRC20' ? trc20Address : bscAddress;
 
   useEffect(() => {

@@ -23,6 +23,24 @@ function getBinanceSignature(queryString) {
     .digest("hex");
 }
 
+async function sendPushNotification(uid, title, body) {
+  try {
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      const fcmToken = userDoc.data().fcmToken;
+      if (fcmToken) {
+        await admin.messaging().send({
+          token: fcmToken,
+          notification: { title, body }
+        });
+        console.log(`Push notification sent to ${uid}`);
+      }
+    }
+  } catch (error) {
+    console.error(`Failed to send push notification to ${uid}:`, error);
+  }
+}
+
 exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule('every 5 minutes').onRun(async (context) => {
   if (!BINANCE_API_KEY || !BINANCE_SECRET_KEY) {
     console.error("Binance API keys missing");
@@ -138,6 +156,7 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
               transaction.set(userRef, userUpdates, { merge: true });
             });
             console.log(`Verified deposit ${pendingTx.txid} for ${amount} ${matchedDeposit.coin}`);
+            await sendPushNotification(pendingTx.ref.parent.parent.id, "Deposit Successful", `Your deposit of ${amount} ${matchedDeposit.coin} has been verified and credited!`);
           }
         } else {
           console.log(`Deposit ${pendingTx.txid} found but status is ${matchedDeposit.status} (not 1)`);
@@ -216,6 +235,7 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
               createdAt: admin.firestore.FieldValue.serverTimestamp()
             });
             console.log(`Credited ${totalProfit} to user ${userDoc.id} for bot mining.`);
+            sendPushNotification(userDoc.id, "Mining Profit", `Your bots generated $${totalProfit.toFixed(2)} in profit today!`);
           }
         }
       });
@@ -226,3 +246,61 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
   return null;
 });
 
+exports.onTransactionUpdated = functions.region('europe-west1').firestore
+  .document('users/{userId}/transactions/{transactionId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const userId = context.params.userId;
+
+    if (oldData.status === 'pending' && newData.status !== 'pending') {
+      if (newData.type === 'withdrawal') {
+        if (newData.status === 'SUCCESS' || newData.status === 'success') {
+          await sendPushNotification(userId, "Withdrawal Approved", `Your withdrawal of $${newData.amount} has been approved and processed.`);
+        } else if (newData.status === 'failed' || newData.status === 'rejected') {
+          await sendPushNotification(userId, "Withdrawal Failed", `Your withdrawal of $${newData.amount} was rejected. Reason: ${newData.failureReason || 'Admin action'}`);
+        }
+      }
+    }
+});
+
+exports.adminSendPushNotification = functions.region('europe-west1').https.onCall(async (data, context) => {
+  // Verify admin logic (basic check, could be expanded to check custom claims)
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+  
+  const { userId, title, body } = data;
+  if (!title || !body) {
+    throw new functions.https.HttpsError('invalid-argument', 'Title and body are required');
+  }
+
+  try {
+    if (userId === 'all') {
+      // Broadcast to all users with tokens
+      const usersSnap = await db.collection('users').get();
+      const tokens = [];
+      usersSnap.forEach(doc => {
+        if (doc.data().fcmToken) tokens.push(doc.data().fcmToken);
+      });
+      
+      if (tokens.length > 0) {
+        // Send in batches of 500
+        const messages = {
+          notification: { title, body },
+          tokens: tokens
+        };
+        const response = await admin.messaging().sendEachForMulticast(messages);
+        return { success: true, sentCount: response.successCount, failureCount: response.failureCount };
+      }
+      return { success: true, sentCount: 0 };
+    } else {
+      // Single user
+      await sendPushNotification(userId, title, body);
+      return { success: true, sentCount: 1 };
+    }
+  } catch (error) {
+    console.error("Admin push error:", error);
+    throw new functions.https.HttpsError('internal', 'Failed to send notifications');
+  }
+});

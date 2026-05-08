@@ -21,9 +21,7 @@ export const Affiliate = () => {
   const [copied, setCopied] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [earningsByTier, setEarningsByTier] = useState({ 1: 0, 2: 0, 3: 0 });
-
-  const referralLink = `${window.location.origin}/login?ref=${referralCode}`;
-
+  const referralLink = `https://fintex-company.vercel.app/login?ref=${referralCode}`;
   useEffect(() => {
     if (!currentUser) return;
 

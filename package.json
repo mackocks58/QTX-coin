@@ -11,6 +11,13 @@
     "start": "serve -s dist -l 10000"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.2",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.3.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/local-notifications": "^8.1.0",
+    "@capacitor/push-notifications": "^8.0.4",
+    "@capgo/capacitor-native-biometric": "^8.4.2",
     "chart.js": "^4.5.1",
     "firebase": "^12.12.1",
     "framer-motion": "^12.38.0",
@@ -28,6 +35,8 @@
     "serve": "^14.2.4"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.3.2",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

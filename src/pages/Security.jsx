@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { Shield, Key, History, MapPin, MonitorSmartphone, Clock, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,15 @@ export const Security = () => {
   const [loading, setLoading] = useState(false);
   const [loginHistory, setLoginHistory] = useState([]);
 
+  const controls = useAnimation();
+
+  const triggerShake = () => {
+    controls.start({
+      x: [0, -10, 10, -10, 10, 0],
+      transition: { duration: 0.4 }
+    });
+  };
+
   useEffect(() => {
     if (userData?.loginHistory) {
       setLoginHistory(userData.loginHistory);
@@ -24,13 +33,16 @@ export const Security = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!currentPassword) {
-      return toast.error("Please enter your current password");
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      triggerShake();
+      return toast.error("Please fill in all password fields");
     }
     if (newPassword !== confirmPassword) {
+      triggerShake();
       return toast.error("New passwords do not match");
     }
     if (newPassword.length < 6) {
+      triggerShake();
       return toast.error("New password must be at least 6 characters");
     }
 
@@ -45,6 +57,7 @@ export const Security = () => {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
+      triggerShake();
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
         toast.error("Incorrect current password.");
       } else {
@@ -68,7 +81,8 @@ export const Security = () => {
     <motion.div 
       className="page-content"
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={controls}
+      onViewportEnter={() => controls.start({ opacity: 1, y: 0 })}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
       style={{ padding: '16px' }}

@@ -5,6 +5,7 @@ import { Bot, Crown, Clock, TrendingUp, AlertTriangle, Activity, CheckCircle2, B
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { scheduleBotNotifications } from '../services/botNotifications';
 
 /* ─── Tier colour palette ─── */
 const TIER_COLORS = {
@@ -220,6 +221,19 @@ export const MyBots = () => {
     };
     fetchHistory();
   }, [currentUser]);
+
+  // Sync background notifications for all active bots
+  useEffect(() => {
+    if (activatedBots.length > 0) {
+      activatedBots.forEach(bot => {
+        // Only schedule if it's currently running (not expired)
+        const daysActive = Math.floor((Date.now() - new Date(bot.activatedAt).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysActive < 365) {
+          scheduleBotNotifications(bot);
+        }
+      });
+    }
+  }, [activatedBots]);
 
   return (
     <motion.div 

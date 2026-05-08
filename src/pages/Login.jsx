@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Bot, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Fingerprint } from 'lucide-react';
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 const COUNTRIES = [
   { code: 'KE', name: 'Kenya' },
@@ -15,7 +16,7 @@ const COUNTRIES = [
   { code: 'ZM', name: 'Zambia' },
   { code: 'BI', name: 'Burundi' },
   { code: 'GH', name: 'Ghana' },
-  { code: 'UN', name: 'Global/Other' } // Using UN flag for global
+  { code: 'UN', name: 'Global/Other' }
 ];
 
 const CustomCountrySelect = ({ value, onChange }) => {
@@ -72,20 +73,101 @@ export const Login = () => {
   const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [hasBiometric, setHasBiometric] = useState(false);
+
+  useEffect(() => {
+    const checkBiometric = async () => {
+      try {
+        const available = await NativeBiometric.isAvailable();
+        if (available.isAvailable) {
+          const res = await NativeBiometric.isCredentialsSaved({ server: 'fintex_auth' });
+          if (res.isSaved) setHasBiometric(true);
+        }
+      } catch (e) {
+        console.log('Biometric check failed', e);
+      }
+    };
+    checkBiometric();
+  }, []);
+
   const { login, signup } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refId = searchParams.get('ref');
 
+  const playErrorSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.2);
+      
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {
+      console.error('Audio error:', e);
+    }
+  };
+
+  const triggerShake = async () => {
+    setIsShaking(true);
+    
+    try {
+      const { Haptics, NotificationType } = await import('@capacitor/haptics');
+      await Haptics.notification({ type: NotificationType.Error });
+      await Haptics.vibrate();
+    } catch (e) {
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    }
+    
+    // Remove class after animation ends (400ms)
+    setTimeout(() => setIsShaking(false), 400);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) return toast.error('Please fill in all fields');
-    if (!isLogin && !country) return toast.error('Please select your country');
+    if (!email || !password || (!isLogin && !country)) {
+      playErrorSound();
+      triggerShake();
+      return toast.error('Please fill in all fields');
+    }
     
     setLoading(true);
     try {
       if (isLogin) {
         await login(email, password);
+        
+        try {
+          const available = await NativeBiometric.isAvailable();
+          if (available.isAvailable) {
+            const saved = await NativeBiometric.isCredentialsSaved({ server: 'fintex_auth' });
+            if (!saved.isSaved) {
+              await NativeBiometric.setCredentials({
+                username: email,
+                password: password,
+                server: 'fintex_auth',
+              });
+              toast.success('Biometric login enabled!');
+            }
+          }
+        } catch (e) {
+          console.log('Biometric save error', e);
+        }
+
         toast.success('Logged in successfully');
       } else {
         await signup(email, password, country, refId);
@@ -93,6 +175,8 @@ export const Login = () => {
       }
       navigate('/');
     } catch (error) {
+      playErrorSound();
+      triggerShake();
       let friendlyMessage = 'Authentication failed. Please try again.';
       
       if (error.code === 'auth/email-already-in-use') {
@@ -114,15 +198,41 @@ export const Login = () => {
     setLoading(false);
   };
 
+  const handleBiometricLogin = async () => {
+    try {
+      await NativeBiometric.verifyIdentity({
+        reason: "Authenticate to log in",
+        title: "Biometric Login",
+        subtitle: "Verify your identity to continue",
+      });
+
+      const credentials = await NativeBiometric.getCredentials({
+        server: 'fintex_auth',
+      });
+      setLoading(true);
+      await login(credentials.username, credentials.password);
+      toast.success('Logged in successfully');
+      navigate('/');
+    } catch (error) {
+      console.log('Biometric login error', error);
+      // Avoid showing error if user just canceled the prompt
+      if (error && error.code !== '16' && error.code !== '15') {
+        toast.error('Biometric authentication failed');
+      }
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', width: '100%' }}>
       <motion.div 
-        className="panel" 
         style={{ width: '100%', maxWidth: '400px', margin: '20px' }}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
       >
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '32px' }}>
+        <div className={`panel ${isShaking ? 'animate-shake' : ''}`}>
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '32px' }}>
           <img src="/logo.png" alt="Fintex Logo" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
           <h2 style={{ color: 'var(--text-primary)', letterSpacing: '2px', margin: 0, fontSize: '28px' }}>FINTEX</h2>
         </div>
@@ -131,14 +241,19 @@ export const Login = () => {
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label className="input-label">Email</label>
-            <input type="email" className="input-field" value={email} onChange={e => setEmail(e.target.value)} />
+            <input
+              type="email"
+              className={`input-field ${isShaking && !email ? 'input-error' : ''}`}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
           </div>
           <div className="input-group">
             <label className="input-label">Password</label>
             <div style={{ position: 'relative' }}>
               <input 
                 type={showPassword ? "text" : "password"} 
-                className="input-field" 
+                className={`input-field ${isShaking && !password ? 'input-error' : ''}`}
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
@@ -163,16 +278,28 @@ export const Login = () => {
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Register')}
           </button>
+          
+          {isLogin && hasBiometric && (
+            <button 
+              type="button" 
+              onClick={handleBiometricLogin}
+              className="btn btn-outline" 
+              style={{ width: '100%', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--primary-glow)', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}
+            >
+              <Fingerprint size={20} /> Login with Biometrics
+            </button>
+          )}
         </form>
         
         <div className="text-center mt-4">
-          <button onClick={() => setIsLogin(!isLogin)} className="text-muted" style={{ fontSize: '0.85rem' }}>
+          <button onClick={() => setIsLogin(!isLogin)} style={{ fontSize: '0.85rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit' }}>
             {isLogin ? (
               <>Don't have an account? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign up</span></>
             ) : (
               <>Already have an account? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign in</span></>
             )}
           </button>
+        </div>
         </div>
       </motion.div>
     </div>
