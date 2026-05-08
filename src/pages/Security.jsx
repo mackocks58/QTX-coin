@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Shield, Key, History, MapPin, MonitorSmartphone, Clock, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 
 export const Security = () => {
   const { currentUser, userData } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -35,15 +37,15 @@ export const Security = () => {
     e.preventDefault();
     if (!currentPassword || !newPassword || !confirmPassword) {
       triggerShake();
-      return toast.error("Please fill in all password fields");
+      return toast.error(t('errFillAllPasswords'));
     }
     if (newPassword !== confirmPassword) {
       triggerShake();
-      return toast.error("New passwords do not match");
+      return toast.error(t('errPasswordsMismatch'));
     }
     if (newPassword.length < 6) {
       triggerShake();
-      return toast.error("New password must be at least 6 characters");
+      return toast.error(t('errPasswordTooShort'));
     }
 
     setLoading(true);
@@ -52,16 +54,16 @@ export const Security = () => {
       await reauthenticateWithCredential(auth.currentUser, credential);
       
       await updatePassword(auth.currentUser, newPassword);
-      toast.success("Password updated successfully!");
+      toast.success(t('successPasswordUpdated'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
       triggerShake();
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-        toast.error("Incorrect current password.");
+        toast.error(t('errIncorrectPassword'));
       } else {
-        toast.error("Failed to update password: " + error.message);
+        toast.error(t('errPasswordTooShort').replace('6 characters', error.message));
       }
     } finally {
       setLoading(false);
@@ -96,7 +98,7 @@ export const Security = () => {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Shield size={20} color="var(--primary)" />
-          <h2 style={{ fontSize: '18px', margin: 0 }}>Security Settings</h2>
+          <h2 style={{ fontSize: '18px', margin: 0 }}>{t('securitySettings')}</h2>
         </div>
       </div>
       
@@ -104,12 +106,12 @@ export const Security = () => {
       <div className="panel mb-4" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
           <Key size={16} color="var(--text-secondary)" />
-          <h3 style={{ fontSize: '14px', margin: 0 }}>Change Password</h3>
+          <h3 style={{ fontSize: '14px', margin: 0 }}>{t('changePassword')}</h3>
         </div>
         
         <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div className="input-group">
-            <label className="input-label" style={{ fontSize: '12px' }}>Current Password</label>
+            <label className="input-label" style={{ fontSize: '12px' }}>{t('currentPassword')}</label>
             <input 
               type="password" 
               className="input-field" 
@@ -119,7 +121,7 @@ export const Security = () => {
             />
           </div>
           <div className="input-group">
-            <label className="input-label" style={{ fontSize: '12px' }}>New Password</label>
+            <label className="input-label" style={{ fontSize: '12px' }}>{t('newPassword')}</label>
             <input 
               type="password" 
               className="input-field" 
@@ -129,7 +131,7 @@ export const Security = () => {
             />
           </div>
           <div className="input-group">
-            <label className="input-label" style={{ fontSize: '12px' }}>Confirm New Password</label>
+            <label className="input-label" style={{ fontSize: '12px' }}>{t('confirmPassword')}</label>
             <input 
               type="password" 
               className="input-field" 
@@ -139,7 +141,7 @@ export const Security = () => {
             />
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '12px', padding: '10px', marginTop: '8px' }} disabled={loading}>
-            {loading ? 'Updating...' : 'Update Password'}
+            {loading ? t('updating') : t('updatePassword')}
           </button>
         </form>
       </div>
@@ -148,11 +150,11 @@ export const Security = () => {
       <div className="panel" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
           <History size={16} color="var(--text-secondary)" />
-          <h3 style={{ fontSize: '14px', margin: 0 }}>Recent Login Activity</h3>
+          <h3 style={{ fontSize: '14px', margin: 0 }}>{t('recentLoginActivity')}</h3>
         </div>
         
         {loginHistory.length === 0 ? (
-          <p className="text-center text-muted" style={{ fontSize: '12px' }}>No recent login activity found.</p>
+          <p className="text-center text-muted" style={{ fontSize: '12px' }}>{t('noRecentLogin')}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {loginHistory.map((log) => (

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
@@ -60,6 +61,7 @@ const HardwareBackButton = () => {
 const Sidebar = () => {
   const location = useLocation();
   const { logout } = useAuth();
+  const { t } = useLanguage();
   
   const navItemStyle = (path) => {
     const isActive = location.pathname === path;
@@ -87,23 +89,23 @@ const Sidebar = () => {
       <nav style={{ display: 'flex', flexDirection: 'column', padding: '16px 0', flex: 1 }}>
         <Link to="/" className={isActive('/')} style={navItemStyle('/')}>
           <Home size={20} />
-          <span>Home</span>
+          <span>{t('home')}</span>
         </Link>
         <Link to="/trading" className={isActive('/trading')} style={navItemStyle('/trading')}>
           <Pickaxe size={20} />
-          <span>Mining</span>
+          <span>{t('mining')}</span>
         </Link>
         <Link to="/transactions" className={isActive('/transactions')} style={navItemStyle('/transactions')}>
           <History size={20} />
-          <span>History</span>
+          <span>{t('history')}</span>
         </Link>
         <Link to="/affiliate" className={isActive('/affiliate')} style={navItemStyle('/affiliate')}>
           <Users size={20} />
-          <span>Team</span>
+          <span>{t('team')}</span>
         </Link>
         <Link to="/account" className={isActive('/account')} style={navItemStyle('/account')}>
           <User size={20} />
-          <span>Me</span>
+          <span>{t('me')}</span>
         </Link>
       </nav>
 
@@ -126,6 +128,7 @@ const COUNTRIES = [
 
 const Topbar = () => {
   const { balance, isAdmin, userData } = useAuth();
+  const { t } = useLanguage();
   
   const userCountryObj = userData?.country ? COUNTRIES.find(c => c.name === userData.country) : null;
   const countryCode = userCountryObj ? userCountryObj.code : null;
@@ -151,10 +154,10 @@ const Topbar = () => {
           </Link>
         )}
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Live Balance</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('liveBalance')}</div>
           <div style={{ fontWeight: 600, color: 'var(--success)' }}>${balance.toFixed(2)}</div>
         </div>
-        <Link to="/wallet" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Deposit</Link>
+        <Link to="/wallet" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>{t('deposit')}</Link>
       </div>
     </header>
   );
@@ -220,9 +223,11 @@ function App() {
     <Router>
       <HardwareBackButton />
       <AuthProvider>
-        <NetworkOverlay />
-        <FloatingSupport />
-        <AppContent />
+        <LanguageProvider>
+          <NetworkOverlay />
+          <FloatingSupport />
+          <AppContent />
+        </LanguageProvider>
       </AuthProvider>
     </Router>
   );

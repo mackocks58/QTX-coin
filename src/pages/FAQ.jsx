@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Search, ChevronLeft, Globe, Bot, Wallet, CreditCard, UserPlus, HelpCircle, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import { FAQ_DATA } from '../data/faqContent';
 
 // Map icon strings to actual Lucide components
@@ -11,6 +12,7 @@ const IconMap = {
 
 export const FAQ = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [openItems, setOpenItems] = useState({});
 
@@ -53,14 +55,14 @@ export const FAQ = () => {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 style={{ fontSize: '18px', margin: 0, fontWeight: 600 }}>Comprehensive FAQ</h2>
+        <h2 style={{ fontSize: '18px', margin: 0, fontWeight: 600 }}>{t('comprehensiveFaq')}</h2>
       </div>
 
       {/* SEARCH BAR */}
       <div style={{ position: 'relative', marginBottom: '24px' }}>
         <input 
           type="text" 
-          placeholder="Search for answers..."
+          placeholder={t('faqSearch')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
@@ -83,7 +85,7 @@ export const FAQ = () => {
         {filteredData.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
             <HelpCircle size={48} style={{ opacity: 0.2, margin: '0 auto 16px' }} />
-            <p>No answers found for "{searchTerm}". Please try a different keyword.</p>
+            <p>{t('faqNoResults').replace('{term}', searchTerm)}</p>
           </div>
         ) : (
           filteredData.map((category, catIdx) => {

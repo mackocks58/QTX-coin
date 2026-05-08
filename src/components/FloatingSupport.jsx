@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 export const FloatingSupport = () => {
   return (
     <motion.a
-      href="https://t.me/fintex_support" // Replace with your actual support link
+      href="https://wa.me/447853173546"
       target="_blank"
       rel="noopener noreferrer"
       initial={{ scale: 0, opacity: 0 }}

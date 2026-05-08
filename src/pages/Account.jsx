@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { CreditCard, Wallet, Copy, Camera, CalendarDays, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -27,6 +28,7 @@ const COUNTRIES = [
 
 export const Account = () => {
   const { currentUser, userData, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -66,13 +68,13 @@ export const Account = () => {
       if (res.receive === 'granted') {
         await PushNotifications.register();
         setPushEnabled(true);
-        toast.success('Push notifications enabled!');
+        toast.success(t('successPushEnabled'));
       } else {
-        toast.error('Permission denied');
+        toast.error(t('errPermissionDenied'));
       }
     } catch (e) {
       console.log('Push toggle error', e);
-      toast.error('Could not change push settings');
+      toast.error(t('errCouldNotChangePush'));
     }
   };
 
@@ -81,9 +83,9 @@ export const Account = () => {
       try {
         await NativeBiometric.deleteCredentials({ server: 'fintex_auth' });
         setBiometricEnabled(false);
-        toast.success('Biometric login disabled');
+        toast.success(t('successBiometricDisabled'));
       } catch (e) {
-        toast.error('Failed to disable biometrics');
+        toast.error(t('errFailedDisableBiometrics'));
       }
     } else {
       setBiometricPassword('');
@@ -93,7 +95,7 @@ export const Account = () => {
   };
 
   const confirmEnableBiometric = async () => {
-    if (!biometricPassword) return toast.error('Please enter your password');
+    if (!biometricPassword) return toast.error(t('errEnterPassword'));
     
     const loadingToast = toast.loading('Verifying password...');
     try {
@@ -101,7 +103,7 @@ export const Account = () => {
       toast.dismiss(loadingToast);
     } catch (err) {
       toast.dismiss(loadingToast);
-      return toast.error('Incorrect password. Please try again.');
+      return toast.error(t('errIncorrectPassword'));
     }
 
     try {
@@ -112,16 +114,16 @@ export const Account = () => {
       });
       setBiometricEnabled(true);
       setShowBiometricModal(false);
-      toast.success('Biometric login enabled!');
+      toast.success(t('successBiometricEnabled'));
     } catch (e) {
-      toast.error('Failed to enable biometrics');
+      toast.error(t('errFailedEnableBiometrics'));
     }
   };
 
   const handleCopyUid = () => {
     if (currentUser?.uid) {
       navigator.clipboard.writeText(currentUser.uid);
-      toast.success('UID copied to clipboard');
+      toast.success(t('uidCopied'));
     }
   };
 
@@ -136,7 +138,7 @@ export const Account = () => {
       
       if (now - lastUpdate < thirtyDaysMs) {
         const daysLeft = Math.ceil((thirtyDaysMs - (now - lastUpdate)) / (24 * 60 * 60 * 1000));
-        return toast.error(`You can change your photo again in ${daysLeft} days.`);
+        return toast.error(t('errPhotoCooldown').replace('{n}', daysLeft));
       }
     }
     
@@ -149,12 +151,12 @@ export const Account = () => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      return toast.error('Please select an image file');
+      return toast.error(t('errSelectImageFile'));
     }
 
     // Validate size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      return toast.error('Image size must be less than 5MB');
+      return toast.error(t('errImageTooLarge'));
     }
 
     setUploading(true);
@@ -197,7 +199,7 @@ export const Account = () => {
               photoURL: base64DataUrl,
               lastPhotoUpdate: new Date().toISOString()
             });
-            toast.success('Profile picture updated successfully!', { id: toastId });
+            toast.success(t('successProfileUpdated'), { id: toastId });
           } catch (err) {
             toast.error('Error saving image: ' + err.message, { id: toastId });
           } finally {
@@ -229,7 +231,7 @@ export const Account = () => {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="mb-0" style={{ fontSize: '18px', margin: 0 }}>My Account</h2>
+        <h2 className="mb-0" style={{ fontSize: '18px', margin: 0 }}>{t('myAccount')}</h2>
       </div>
       
       <div className="panel mb-4" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -289,7 +291,7 @@ export const Account = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Globe size={14} color="var(--text-secondary)" />
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              Region: 
+              {t('region')} 
               {userData?.country && (() => {
                 const countryObj = COUNTRIES.find(c => c.name === userData.country);
                 return countryObj ? (
@@ -303,7 +305,7 @@ export const Account = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <CalendarDays size={14} color="var(--text-secondary)" />
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Joined: <strong style={{ color: 'var(--text-primary)' }}>{userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}</strong></span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t('joined')} <strong style={{ color: 'var(--text-primary)' }}>{userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}</strong></span>
           </div>
         </div>
 
@@ -313,7 +315,7 @@ export const Account = () => {
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ShieldCheck size={14} color="var(--primary)" />
             </div>
-            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>Security Center</span>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>{t('securityCenter')}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
           
@@ -324,7 +326,7 @@ export const Account = () => {
                 <div style={{ position: 'absolute', top: '6px', right: '6px', width: '6px', height: '6px', background: 'red', borderRadius: '50%' }} />
               )}
             </div>
-            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>Notifications</span>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>{t('notifications')}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
 
@@ -332,7 +334,7 @@ export const Account = () => {
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Gift size={14} color="#f472b6" />
             </div>
-            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>Event Center</span>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>{t('eventCenter')}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
 
@@ -340,7 +342,7 @@ export const Account = () => {
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/images/spin_icon.png" alt="spin" style={{ width: '18px', height: '18px' }} />
             </div>
-            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500, color: 'var(--warning)' }}>Lucky Spin</span>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500, color: 'var(--warning)' }}>{t('luckySpin')}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
           
@@ -348,21 +350,21 @@ export const Account = () => {
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <HelpCircle size={14} color="var(--primary)" />
             </div>
-            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>FAQ & Support</span>
+            <span style={{ fontSize: '13px', flex: 1, fontWeight: 500 }}>{t('faqSupport')}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>›</span>
           </Link>
         </div>
 
         {/* Device Settings */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-dark)', padding: '12px', borderRadius: '8px' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Device Settings</h4>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>{t('deviceSettings')}</h4>
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Fingerprint size={14} color="var(--primary)" />
               </div>
-              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Biometric Login</span>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{t('biometricLogin')}</span>
             </div>
             <div 
               onClick={handleBiometricToggle}
@@ -377,7 +379,7 @@ export const Account = () => {
               <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Smartphone size={14} color="var(--primary)" />
               </div>
-              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Push Notifications</span>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{t('pushNotifications')}</span>
             </div>
             <div 
               onClick={handlePushToggle}
@@ -392,11 +394,11 @@ export const Account = () => {
         <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
           <Link to="/bind-account" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: 'var(--bg-dark)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', textDecoration: 'none', border: '1px solid var(--border)' }} className="hover:border-primary">
             <CreditCard size={16} color="var(--primary)" />
-            <span style={{ fontWeight: 500, fontSize: '12px' }}>Bind Account</span>
+            <span style={{ fontWeight: 500, fontSize: '12px' }}>{t('bindAccount')}</span>
           </Link>
           <Link to="/wallet" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: 'var(--bg-dark)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', textDecoration: 'none', border: '1px solid var(--border)' }} className="hover:border-primary">
             <Wallet size={16} color="var(--primary)" />
-            <span style={{ fontWeight: 500, fontSize: '12px' }}>Deposit</span>
+            <span style={{ fontWeight: 500, fontSize: '12px' }}>{t('deposit')}</span>
           </Link>
         </div>
 
@@ -407,13 +409,13 @@ export const Account = () => {
               await logout();
               navigate('/login');
             } catch (err) {
-              toast.error('Failed to log out');
+              toast.error(t('errFailedLogout'));
             }
           }}
           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: 'var(--danger)', cursor: 'pointer', marginTop: '8px', transition: 'var(--transition)' }}
         >
           <LogOut size={16} />
-          <span style={{ fontWeight: 600, fontSize: '13px' }}>Sign Out</span>
+          <span style={{ fontWeight: 600, fontSize: '13px' }}>{t('signOut')}</span>
         </button>
       </div>
 
@@ -426,18 +428,18 @@ export const Account = () => {
             style={{ background: 'var(--bg-panel)', width: '100%', maxWidth: '340px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)' }}
           >
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>Enable Biometrics</h3>
+              <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>{t('enableBiometrics')}</h3>
               <button onClick={() => setShowBiometricModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
             <div style={{ padding: '20px' }}>
               <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                To enable Biometric Login, we need to securely store your password on this device. Please enter your password below.
+                {t('biometricDesc')}
               </p>
               
               <div className="input-group" style={{ marginBottom: '20px' }}>
-                <label className="input-label">Password</label>
+                <label className="input-label">{t('password')}</label>
                 <div style={{ position: 'relative' }}>
                   <input 
                     type={showPassword ? "text" : "password"} 
@@ -462,7 +464,7 @@ export const Account = () => {
                 className="btn btn-primary" 
                 style={{ width: '100%', padding: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                <Fingerprint size={18} /> Enable
+                <Fingerprint size={18} /> {t('enable')}
               </button>
             </div>
           </motion.div>

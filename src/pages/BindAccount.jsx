@@ -7,6 +7,7 @@ import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { CheckCircle2, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const NETWORK_MAP = {
   'Kenya': ['M-Pesa', 'Airtel Money'],
@@ -24,6 +25,7 @@ const NETWORK_MAP = {
 export const BindAccount = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // UI State
   const [activeTab, setActiveTab] = useState('binance');
@@ -102,22 +104,22 @@ export const BindAccount = () => {
     let isValid = true;
     if (activeTab === 'binance') {
       if (binanceMethod === 'id' && (!binanceId || String(binanceId).length < 5)) {
-        toast.error('Please enter a valid Binance ID');
+        toast.error(t('errInvalidBinanceId'));
         isValid = false;
       }
       if (binanceMethod === 'address' && (!cryptoAddress || String(cryptoAddress).length < 10)) {
-        toast.error('Please enter a valid wallet address');
+        toast.error(t('errInvalidWalletAddress'));
         isValid = false;
       }
     }
     
     if (activeTab === 'mobile' && (!network || !accountName || !accountNumber)) {
-      toast.error('Please fill in all mobile account details');
+      toast.error(t('errFillMobileDetails'));
       isValid = false;
     }
 
     if (!authPassword) {
-      toast.error('Please enter your login password to securely save changes.');
+      toast.error(t('errEnterPasswordToSave'));
       isValid = false;
     }
 
@@ -134,7 +136,7 @@ export const BindAccount = () => {
     } catch (error) {
       setSaving(false);
       triggerShake();
-      return toast.error('Incorrect password. Please try again.');
+      return toast.error(t('errIncorrectPassword'));
     }
 
     try {
@@ -159,9 +161,9 @@ export const BindAccount = () => {
       setSavedAccounts(updatedAccounts);
       setIsEditing(false); 
       setAuthPassword(''); 
-      toast.success('Withdrawal method saved successfully!');
+      toast.success(t('successAccountSaved'));
     } catch (error) {
-      toast.error('Failed to save account details.');
+      toast.error(t('errFailedSaveAccount'));
     }
     
     setSaving(false);

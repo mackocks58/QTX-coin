@@ -2,9 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Building, Shield, Globe, Cpu, Users, Target, BookOpen, Award, Zap, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const About = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <motion.div 
@@ -25,7 +27,7 @@ export const About = () => {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Building size={22} color="var(--primary)" />
-          <h2 style={{ fontSize: '20px', margin: 0 }}>About FINTEX AI</h2>
+          <h2 style={{ fontSize: '20px', margin: 0 }}>{t('aboutTitle')} AI</h2>
         </div>
       </div>
 
@@ -34,8 +36,8 @@ export const About = () => {
         <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80" alt="Corporate Building" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-panel) 0%, transparent 100%)' }} />
         <div style={{ position: 'absolute', bottom: '16px', left: '16px' }}>
-          <h1 style={{ margin: 0, fontSize: '24px', color: '#fff', fontWeight: 800 }}>Pioneering the Future of Automated Trading</h1>
-          <p style={{ margin: '4px 0 0 0', color: 'var(--primary)', fontWeight: 600 }}>Empowering Investors Worldwide</p>
+          <h1 style={{ margin: 0, fontSize: '24px', color: '#fff', fontWeight: 800 }}>{t('aboutHero')}</h1>
+          <p style={{ margin: '4px 0 0 0', color: 'var(--primary)', fontWeight: 600 }}>{t('aboutHeroSub')}</p>
         </div>
       </div>
 
@@ -45,7 +47,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Target size={18} color="var(--primary)" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>Our Mission & Vision</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec1')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -64,7 +66,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Cpu size={18} color="var(--warning)" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>The Technology Behind FINTEX</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec2')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -86,7 +88,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Globe size={18} color="var(--success)" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>Global Presence & Compliance</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec3')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -105,7 +107,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Shield size={18} color="#f43f5e" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>Uncompromising Security</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec4')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -127,7 +129,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Award size={18} color="#a855f7" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>The VIP Bot Ecosystem</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec5')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -146,7 +148,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Users size={18} color="var(--warning)" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>3-Tier Affiliate Commission System</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec6')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -158,12 +160,12 @@ export const About = () => {
               <img src="/images/referral_chain.png" alt="3-Tier Referral Commission Chain" style={{ width: '100%', display: 'block' }} />
             </div>
 
-            <p><strong>The 3 Tiers Explained:</strong></p>
+            <p>{t('aboutTiersExplained')}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', margin: '12px 0' }}>
               {[
-                { level: 'Level 1 – Direct Referral', pct: '10%', color: '#d4af37', example: 'Your friend deposits $500 → You earn $50 instantly.' },
-                { level: 'Level 2 – Friend\'s Network', pct: '3%', color: 'var(--primary)', example: 'Your friend\'s contact deposits $1,000 → You earn $30.' },
-                { level: 'Level 3 – Extended Network', pct: '1%', color: '#a855f7', example: 'Level 2 recruit\'s contact deposits $2,000 → You earn $20.' },
+                { level: t('aboutLevel1'), pct: '10%', color: '#d4af37', example: t('aboutL1Example') },
+                { level: t('aboutLevel2'), pct: '3%', color: 'var(--primary)', example: t('aboutL2Example') },
+                { level: t('aboutLevel3'), pct: '1%', color: '#a855f7', example: t('aboutL3Example') },
               ].map((t, i) => (
                 <div key={i} style={{ background: 'var(--bg-dark)', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', border: `1px solid ${t.color}30` }}>
                   <div>
@@ -174,9 +176,7 @@ export const About = () => {
                 </div>
               ))}
             </div>
-            <p>
-              All commissions are processed automatically the moment a deposit is approved. There are no caps, no limits, and no delays. Build your network and watch your passive income multiply across all 3 levels.
-            </p>
+            <p>{t('aboutAffiliateInfo')}</p>
           </div>
         </section>
 
@@ -184,7 +184,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Zap size={18} color="var(--warning)" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>Gamified Rewards: The Lucky Spin</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec7')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -203,7 +203,7 @@ export const About = () => {
         <section style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Users size={18} color="#0ea5e9" />
-            <h3 style={{ margin: 0, fontSize: '16px' }}>Our Community & The Road Ahead</h3>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>{t('aboutSec8')}</h3>
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
@@ -224,8 +224,8 @@ export const About = () => {
         {/* Footer info */}
         <div style={{ textAlign: 'center', padding: '20px 0', borderTop: '1px solid var(--border)', marginTop: '10px' }}>
           <Building size={24} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
-          <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-primary)' }}>FINTEX AI Global Headquarters</h4>
-          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>Established 2020 • All Rights Reserved</p>
+          <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-primary)' }}>{t('aboutFooterTitle')}</h4>
+          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>{t('aboutFooterSub')}</p>
         </div>
 
       </div>

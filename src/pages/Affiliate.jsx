@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Copy, Users, CheckCircle2, ChevronLeft, Trophy, TrendingUp, Gift } from 'lucide-react';
@@ -15,6 +16,7 @@ const TIERS = [
 
 export const Affiliate = () => {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [totalEarned, setTotalEarned] = useState(0);
   const [referralsCount, setReferralsCount] = useState(0);
@@ -65,7 +67,7 @@ export const Affiliate = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
-    toast.success('Referral link copied!');
+    toast.success(t('successLinkCopied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -86,21 +88,21 @@ export const Affiliate = () => {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Affiliate Program</h2>
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>{t('affiliateTitle')}</h2>
       </div>
 
       {/* HERO CARD */}
       <div style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(16,185,129,0.08))', borderRadius: '20px', padding: '24px 20px', border: '1px solid rgba(212,175,55,0.3)', marginBottom: '20px', textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.3)' }}>
         <Users size={48} color="var(--warning)" style={{ margin: '0 auto 12px', display: 'block' }} />
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: 800, color: 'var(--warning)' }}>Invite & Earn Up To 10%</h3>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: 800, color: 'var(--warning)' }}>{t('inviteEarn')}</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 20px 0', lineHeight: 1.6 }}>
-          Earn commissions across <strong style={{ color: '#fff' }}>3 levels</strong> of your network. The more people you invite, the deeper your earnings go!
+          {t('affiliateDesc')}
         </p>
 
         {/* Referral Link */}
         <div style={{ background: 'var(--bg-dark)', padding: '12px 14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border)', gap: '8px' }}>
           <span style={{ fontSize: '11px', wordBreak: 'break-all', fontFamily: 'monospace', color: 'var(--text-secondary)', textAlign: 'left', flex: 1 }}>
-            {referralCode ? referralLink : 'Generating link...'}
+            {referralCode ? referralLink : t('generatingLink')}
           </span>
           <button
             onClick={handleCopy}
@@ -116,17 +118,17 @@ export const Affiliate = () => {
       {/* STATS ROW */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
         <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '16px', textAlign: 'center', border: '1px solid var(--border)' }}>
-          <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'var(--text-muted)' }}>Total Earned</p>
+          <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'var(--text-muted)' }}>{t('totalEarned')}</p>
           <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: 'var(--success)' }}>${totalEarned.toFixed(2)}</p>
         </div>
         <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '16px', textAlign: 'center', border: '1px solid var(--border)' }}>
-          <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'var(--text-muted)' }}>Commissions</p>
+          <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'var(--text-muted)' }}>{t('commissions')}</p>
           <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{referralsCount}</p>
         </div>
       </div>
 
       {/* 3-TIER BREAKDOWN */}
-      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Commission Structure</h4>
+      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>{t('commissionStructure')}</h4>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
         {TIERS.map((tier) => {
           const Icon = tier.icon;
@@ -147,8 +149,8 @@ export const Affiliate = () => {
                   <span style={{ fontSize: '18px', fontWeight: 900, color: tier.color }}>{tier.pct}%</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Per deposit approved</span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--success)' }}>${earningsByTier[tier.level].toFixed(2)} earned</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('perDepositApproved')}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--success)' }}>${earningsByTier[tier.level].toFixed(2)} {t('earned')}</span>
                 </div>
 
                 {/* progress bar */}
@@ -163,13 +165,13 @@ export const Affiliate = () => {
 
       {/* HOW IT WORKS */}
       <div style={{ background: 'var(--bg-panel)', borderRadius: '16px', padding: '20px', border: '1px solid var(--border)' }}>
-        <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>How It Works</h4>
+        <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>{t('howItWorks')}</h4>
         {[
-          { step: '1', text: 'Share your unique referral link with friends.' },
-          { step: '2', text: 'Your friend registers and deposits any amount.' },
-          { step: '3', text: 'You instantly earn 10% of their deposit.' },
-          { step: '4', text: 'When your friend invites others, you earn 3% of their deposits.' },
-          { step: '5', text: 'Go deeper — earn 1% from Level 3 deposits too!' },
+          { step: '1', text: t('affiliateStep1') },
+          { step: '2', text: t('affiliateStep2') },
+          { step: '3', text: t('affiliateStep3') },
+          { step: '4', text: t('affiliateStep4') },
+          { step: '5', text: t('affiliateStep5') },
         ].map((item) => (
           <div key={item.step} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '12px' }}>
             <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: 'var(--warning)' }}>

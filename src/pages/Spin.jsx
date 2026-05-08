@@ -6,10 +6,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, updateDoc, collection, addDoc, increment } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const Spin = () => {
   const navigate = useNavigate();
   const { currentUser, userData } = useAuth();
+  const { t } = useLanguage();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [showReward, setShowReward] = useState(false);
@@ -62,12 +64,12 @@ export const Spin = () => {
 
         setIsSpinning(false);
         setShowReward(true);
-        toast.success(`Congratulations! You won $${actualReward}`);
+        toast.success(t('successSpinWon').replace('${amount}', actualReward));
       }, 5000); // 5s matches CSS transition
 
     } catch (error) {
       console.error(error);
-      toast.error('An error occurred. Please try again.');
+      toast.error(t('errSpinFailed'));
       setIsSpinning(false);
     }
   };
@@ -105,7 +107,7 @@ export const Spin = () => {
         {/* INFO CARD */}
         <div style={{ background: 'var(--bg-panel)', width: '100%', maxWidth: '400px', borderRadius: '16px', padding: '16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           <div>
-            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Available Spins</p>
+            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>{t('availableSpins')}</p>
             <h3 style={{ margin: 0, fontSize: '24px', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Gift size={24} /> {chances}
             </h3>
@@ -181,7 +183,7 @@ export const Spin = () => {
             transition: 'all 0.3s ease'
           }}
         >
-          {isSpinning ? 'Spinning...' : 'SPIN NOW'}
+          {isSpinning ? t('spinning') : t('spinNow')}
         </button>
 
         {/* REWARD POPUP */}
@@ -210,18 +212,18 @@ export const Spin = () => {
               <div style={{ width: '80px', height: '80px', background: 'rgba(212,175,55,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '2px solid var(--warning)' }}>
                 <Coins size={40} color="var(--warning)" />
               </div>
-              <h2 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '28px' }}>You Won!</h2>
+              <h2 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '28px' }}>{t('youWon')}</h2>
               <p style={{ fontSize: '42px', fontWeight: 900, color: 'var(--success)', margin: '0 0 24px 0', textShadow: '0 2px 10px rgba(16,185,129,0.3)' }}>
                 ${rewardAmount}
               </p>
               <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '24px' }}>
-                The bonus has been credited to your total balance immediately.
+                {t('bonusCredited')}
               </p>
               <button 
                 onClick={() => setShowReward(false)}
                 style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: '50px', fontSize: '16px', fontWeight: 600, width: '100%', cursor: 'pointer' }}
               >
-                Awesome!
+                {t('awesome')}
               </button>
             </motion.div>
           )}
@@ -252,28 +254,28 @@ export const Spin = () => {
               <div style={{ width: '60px', height: '60px', background: 'rgba(239,68,68,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <AlertCircle size={30} color="var(--danger)" />
               </div>
-              <h2 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: '22px' }}>Oops! No Spins Left</h2>
+              <h2 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: '22px' }}>{t('noSpinsLeft')}</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
-                Deposit $1000 or invite a friend! When your friend deposits $1000, you will both get a chance to spin the wheel.
+                {t('noSpinsDesc')}
               </p>
               <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
                 <button 
                   onClick={() => navigate('/wallet')}
                   style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: 'pointer' }}
                 >
-                  Deposit Now
+                  {t('depositNow')}
                 </button>
                 <button 
                   onClick={() => navigate('/affiliate')}
                   style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, width: '100%', cursor: 'pointer' }}
                 >
-                  Invite Friends
+                  {t('inviteFriends')}
                 </button>
                 <button 
                   onClick={() => setShowInsufficientModal(false)}
                   style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', padding: '8px', fontSize: '13px', width: '100%', cursor: 'pointer', marginTop: '4px' }}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
               </div>
             </motion.div>

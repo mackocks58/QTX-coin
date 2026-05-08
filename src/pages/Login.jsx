@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, Fingerprint } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Fingerprint, Globe, Check } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 const COUNTRIES = [
@@ -36,7 +37,7 @@ const CustomCountrySelect = ({ value, onChange }) => {
             <span style={{ color: 'var(--text-primary)' }}>{selected.name}</span>
           </>
         ) : (
-          <span>Select your country</span>
+          <span>{t('selectCountry')}</span>
         )}
         <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>▼</span>
       </div>
@@ -68,6 +69,16 @@ const CustomCountrySelect = ({ value, onChange }) => {
 
 export const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const { t, language, changeLanguage } = useLanguage();
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => { if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [country, setCountry] = useState('');
@@ -143,7 +154,7 @@ export const Login = () => {
     if (!email || !password || (!isLogin && !country)) {
       playErrorSound();
       triggerShake();
-      return toast.error('Please fill in all fields');
+      return toast.error(t('errFillAllFields'));
     }
     
     setLoading(true);
@@ -161,36 +172,35 @@ export const Login = () => {
                 password: password,
                 server: 'fintex_auth',
               });
-              toast.success('Biometric login enabled!');
+              toast.success(t('successBiometricEnabled'));
             }
           }
         } catch (e) {
           console.log('Biometric save error', e);
         }
 
-        toast.success('Logged in successfully');
+        toast.success(t('successLoggedIn'));
       } else {
         await signup(email, password, country, refId);
-        toast.success('Account created successfully');
+        toast.success(t('successAccountCreated'));
       }
       navigate('/');
     } catch (error) {
       playErrorSound();
       triggerShake();
-      let friendlyMessage = 'Authentication failed. Please try again.';
-      
+      let friendlyMessage = t('errAuthFailed');
       if (error.code === 'auth/email-already-in-use') {
-        friendlyMessage = 'An account with this email already exists.';
+        friendlyMessage = t('errEmailInUse');
       } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        friendlyMessage = 'Invalid email or password. Please try again.';
+        friendlyMessage = t('errInvalidCredential');
       } else if (error.code === 'auth/weak-password') {
-        friendlyMessage = 'Your password is too weak. Please use at least 6 characters.';
+        friendlyMessage = t('errWeakPassword');
       } else if (error.code === 'auth/network-request-failed') {
-        friendlyMessage = 'Network error. Please check your internet connection.';
+        friendlyMessage = t('errNetworkFailed');
       } else if (error.code === 'auth/too-many-requests') {
-        friendlyMessage = 'Too many failed attempts. Please try again later.';
+        friendlyMessage = t('errTooManyRequests');
       } else if (error.code === 'auth/invalid-email') {
-        friendlyMessage = 'Please enter a valid email address.';
+        friendlyMessage = t('errInvalidEmail');
       }
 
       toast.error(friendlyMessage);
@@ -211,13 +221,13 @@ export const Login = () => {
       });
       setLoading(true);
       await login(credentials.username, credentials.password);
-      toast.success('Logged in successfully');
+      toast.success(t('successBiometricLogin'));
       navigate('/');
     } catch (error) {
       console.log('Biometric login error', error);
       // Avoid showing error if user just canceled the prompt
       if (error && error.code !== '16' && error.code !== '15') {
-        toast.error('Biometric authentication failed');
+        toast.error(t('errBiometricFailed'));
       }
       setLoading(false);
     }
@@ -231,16 +241,76 @@ export const Login = () => {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className={`panel ${isShaking ? 'animate-shake' : ''}`}>
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '32px' }}>
+        <div className={`panel ${isShaking ? 'animate-shake' : ''}`} style={{ position: 'relative' }}>
+
+          {/* ── Language switcher ── */}
+          <div ref={langRef} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10 }}>
+            <button
+              onClick={() => setLangOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'var(--bg-dark)', border: '1px solid var(--border)',
+                borderRadius: '20px', padding: '5px 10px', cursor: 'pointer',
+                color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600,
+                transition: 'border-color 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            >
+              <Globe size={14} color="var(--primary)" />
+              <span>{language === 'en' ? '🇬🇧' : '🇧🇷'}</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>▾</span>
+            </button>
+
+            <AnimatePresence>
+              {langOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                    background: 'var(--bg-panel)', border: '1px solid var(--border)',
+                    borderRadius: '12px', minWidth: '150px', overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 100,
+                  }}
+                >
+                  {[{ code: 'en', flag: '🇬🇧', label: t('langEnglish') }, { code: 'pt', flag: '🇧🇷', label: t('langPortuguese') }].map(lang => (
+                    <button
+                      key={lang.code}
+                      onClick={() => { changeLanguage(lang.code); setLangOpen(false); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 14px', background: language === lang.code ? 'rgba(16,185,129,0.08)' : 'transparent',
+                        border: 'none', cursor: 'pointer', color: language === lang.code ? 'var(--primary)' : 'var(--text-secondary)',
+                        fontSize: '13px', fontWeight: language === lang.code ? 700 : 400,
+                        borderBottom: lang.code === 'en' ? '1px solid var(--border)' : 'none',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => { if (language !== lang.code) e.currentTarget.style.background = 'var(--bg-dark)'; }}
+                      onMouseLeave={e => { if (language !== lang.code) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ fontSize: '18px' }}>{lang.flag}</span>
+                      <span style={{ flex: 1, textAlign: 'left' }}>{lang.label}</span>
+                      {language === lang.code && <Check size={14} />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Logo & Title ── */}
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '32px', paddingTop: '16px' }}>
           <img src="/logo.png" alt="Fintex Logo" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
           <h2 style={{ color: 'var(--text-primary)', letterSpacing: '2px', margin: 0, fontSize: '28px' }}>FINTEX</h2>
         </div>
-        <h3 className="mb-4 text-center" style={{ color: 'var(--text-secondary)' }}>{isLogin ? 'Sign In' : 'Create Account'}</h3>
+        <h3 className="mb-4 text-center" style={{ color: 'var(--text-secondary)' }}>{isLogin ? t('signInBtn') : t('registerLabel')}</h3>
         
         <form onSubmit={handleSubmit}>
           <div className="input-group">
-            <label className="input-label">Email</label>
+            <label className="input-label">{t('email')}</label>
             <input
               type="email"
               className={`input-field ${isShaking && !email ? 'input-error' : ''}`}
@@ -249,7 +319,7 @@ export const Login = () => {
             />
           </div>
           <div className="input-group">
-            <label className="input-label">Password</label>
+            <label className="input-label">{t('password')}</label>
             <div style={{ position: 'relative' }}>
               <input 
                 type={showPassword ? "text" : "password"} 
@@ -270,13 +340,13 @@ export const Login = () => {
           
           {!isLogin && (
             <div className="input-group">
-              <label className="input-label">Country</label>
+              <label className="input-label">{t('country')}</label>
               <CustomCountrySelect value={country} onChange={setCountry} />
             </div>
           )}
           
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
-            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Register')}
+            {loading ? t('processing') : (isLogin ? t('signInBtn') : t('registerLabel'))}
           </button>
           
           {isLogin && hasBiometric && (
@@ -286,7 +356,7 @@ export const Login = () => {
               className="btn btn-outline" 
               style={{ width: '100%', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--primary-glow)', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}
             >
-              <Fingerprint size={20} /> Login with Biometrics
+              <Fingerprint size={20} /> {t('loginWithBiometrics')}
             </button>
           )}
         </form>
@@ -294,9 +364,9 @@ export const Login = () => {
         <div className="text-center mt-4">
           <button onClick={() => setIsLogin(!isLogin)} style={{ fontSize: '0.85rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit' }}>
             {isLogin ? (
-              <>Don't have an account? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign up</span></>
+              <>{t('dontHaveAccount')} <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{t('signUpLink')}</span></>
             ) : (
-              <>Already have an account? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign in</span></>
+              <>{t('alreadyHaveAccountLink')} <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{t('signInLink')}</span></>
             )}
           </button>
         </div>

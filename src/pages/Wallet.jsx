@@ -6,10 +6,12 @@ import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Copy, CheckCircle2, Info, X, ChevronLeft } from 'lucide-react';
 
 export const Wallet = () => {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('TRC20');
   const [expectedAmount, setExpectedAmount] = useState('');
@@ -53,7 +55,7 @@ export const Wallet = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(depositAddress);
     setCopied(true);
-    toast.success('Address copied to clipboard!');
+    toast.success(t('successAddressCopied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -96,7 +98,7 @@ export const Wallet = () => {
         createdAt: serverTimestamp()
       });
 
-      toast.success('Transaction submitted! It will be verified automatically within 5 minutes.', { id: loadingToast, duration: 6000 });
+      toast.success(t('successTxSubmitted'), { id: loadingToast, duration: 6000 });
       setTxid('');
       setExpectedAmount('');
     } catch (error) {
@@ -121,7 +123,7 @@ export const Wallet = () => {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="mb-0">Wallet</h2>
+        <h2 className="mb-0">{t('walletTitle')}</h2>
       </div>
       
       {/* Network Switcher */}
@@ -159,7 +161,7 @@ export const Wallet = () => {
 
                 <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <h3 className="mb-0" style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    Deposit USDT ({activeTab})
+                    {t('depositUsdt')} ({activeTab})
                     <button onClick={() => setShowInstructions(true)} style={{ color: 'var(--primary)', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(var(--primary-rgb), 0.1)', borderRadius: '50%' }}>
                       <Info size={16} />
                     </button>
@@ -169,7 +171,7 @@ export const Wallet = () => {
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                   >
-                    Send only USDT ({activeTab === 'TRC20' ? 'TRC20' : 'BEP20'}) to this address.
+                    {t('sendOnlyUsdt').replace('{network}', activeTab === 'TRC20' ? 'TRC20' : 'BEP20')}
                   </motion.p>
 
                   <div style={{ width: '100%', background: 'var(--bg-dark)', padding: '6px 8px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -190,9 +192,9 @@ export const Wallet = () => {
               {/* Bottom Section: Verification */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 className="mb-0" style={{ fontSize: '1rem' }}>Verify Deposit</h4>
+                  <h4 className="mb-0" style={{ fontSize: '1rem' }}>{t('verifyDeposit')}</h4>
                   <div style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span>Expires in:</span>
+                    <span>{t('expiresIn')}</span>
                     <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatTime(timeLeft)}</span>
                   </div>
                 </div>
@@ -205,7 +207,7 @@ export const Wallet = () => {
                       style={{ padding: '10px', fontSize: '0.85rem' }}
                       value={expectedAmount} 
                       onChange={(e) => setExpectedAmount(e.target.value)} 
-                      placeholder="Amount (USDT)"
+                      placeholder={t('amountPlaceholder')}
                       disabled={isVerifying || hasPending}
                     />
                   </div>
@@ -217,7 +219,7 @@ export const Wallet = () => {
                       style={{ padding: '10px', fontSize: '0.85rem' }}
                       value={txid} 
                       onChange={(e) => setTxid(e.target.value)} 
-                      placeholder="Transaction Hash (TXID)"
+                      placeholder={t('txidPlaceholder')}
                       disabled={isVerifying || hasPending}
                     />
                   </div>
@@ -226,7 +228,7 @@ export const Wallet = () => {
                 {hasPending && (
                   <div style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-md)', color: 'var(--warning)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 2s infinite', flexShrink: 0 }}></div>
-                    Pending verification...
+                    {t('pendingVerification')}
                   </div>
                 )}
 
@@ -236,7 +238,7 @@ export const Wallet = () => {
                   onClick={handleVerify}
                   disabled={isVerifying || hasPending}
                 >
-                  {isVerifying ? 'Submitting...' : hasPending ? 'Verification in Progress' : 'Submit TXID'}
+                  {isVerifying ? t('submitting') : hasPending ? t('verificationInProgress') : t('submitTxid')}
                 </button>
               </div>
 
@@ -272,7 +274,7 @@ export const Wallet = () => {
               
               <h3 className="mb-3 text-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
                 <Info size={20} />
-                How to Deposit
+                {t('howToDeposit')}
               </h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', margin: '10px 0 16px 0' }}>
@@ -305,7 +307,7 @@ export const Wallet = () => {
               </div>
               
               <button className="btn btn-primary mt-3 w-100" onClick={() => setShowInstructions(false)} style={{ padding: '8px', fontSize: '0.85rem' }}>
-                I Understand
+                {t('iUnderstand')}
               </button>
             </motion.div>
           </motion.div>

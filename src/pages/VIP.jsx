@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import {
   Bot, Crown, Zap, Clock, TrendingUp, X, AlertTriangle,
   ShieldCheck, Activity, CheckCircle2, BadgeCheck, Info, ChevronLeft
@@ -52,6 +53,7 @@ const VipBadge = ({ level }) => {
 
 /* ─── Active bot card ─── */
 const ActiveBotCard = ({ bot }) => {
+  const { t } = useLanguage();
   const activatedTime = new Date(bot.activatedAt).getTime();
   const now = Date.now();
   const msInDay = 1000 * 60 * 60 * 24;
@@ -94,7 +96,7 @@ const ActiveBotCard = ({ bot }) => {
         <div style={{ position: 'absolute', top: '10px', right: '12px', background: isExpired ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${isExpired ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)'}`, borderRadius: '20px', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 2 }}>
           {!isExpired && <Activity size={9} color="var(--success)" style={{ animation: 'pulse 2s infinite' }} />}
           <span style={{ fontSize: '9px', color: isExpired ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>
-            {isExpired ? 'EXPIRED' : 'RUNNING'}
+            {isExpired ? 'EXPIRED' : t('running').toUpperCase()}
           </span>
         </div>
       </div>
@@ -108,10 +110,10 @@ const ActiveBotCard = ({ bot }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
           {[
-            { label: 'Invested', value: `$${parseFloat(bot.userAmount || 0).toLocaleString()}`, color: '#fff' },
-            { label: 'Daily Income', value: `${bot.dailyPercent}%`, color: 'var(--success)' },
-            { label: 'Est. Daily Profit', value: `$${((parseFloat(bot.userAmount || 0) * bot.dailyPercent) / 100).toFixed(2)}`, color: 'var(--success)' },
-            { label: 'Operation Time', value: '24 Hours', color: 'var(--text-primary)' },
+            { label: t('invested'), value: `$${parseFloat(bot.userAmount || 0).toLocaleString()}`, color: '#fff' },
+            { label: t('dailyIncome'), value: `${bot.dailyPercent}%`, color: 'var(--success)' },
+            { label: t('estDailyProfit'), value: `$${((parseFloat(bot.userAmount || 0) * bot.dailyPercent) / 100).toFixed(2)}`, color: 'var(--success)' },
+            { label: t('operationTime'), value: t('hours24'), color: 'var(--text-primary)' },
           ].map((item, i) => (
             <div key={i} style={{ background: 'var(--bg-dark)', padding: '8px 10px', borderRadius: '8px' }}>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginBottom: '2px' }}>{item.label}</div>
@@ -125,10 +127,10 @@ const ActiveBotCard = ({ bot }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Clock size={10} color="var(--primary)" />
-              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>Bot Lifecycle (365 Days)</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{t('botLifecycle')}</span>
             </div>
             <span style={{ fontSize: '10px', color: isExpired ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>
-              {daysLeft} Days Left
+              {daysLeft} {t('daysLeft')}
             </span>
           </div>
           
@@ -143,7 +145,7 @@ const ActiveBotCard = ({ bot }) => {
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-            <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Day {daysActive}</span>
+            <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{t('day')} {daysActive}</span>
             <span style={{ fontSize: '9px', color: 'var(--text-primary)', fontWeight: 600 }}>{progressPercent.toFixed(1)}%</span>
           </div>
         </div>
@@ -152,16 +154,16 @@ const ActiveBotCard = ({ bot }) => {
           {isExpired ? <AlertTriangle size={14} color="var(--danger)" /> : <CheckCircle2 size={14} color="var(--primary)" />}
           <div>
             <p style={{ margin: 0, fontSize: '11px', color: isExpired ? 'var(--danger)' : 'var(--primary)', fontWeight: 600 }}>
-              {isExpired ? 'Bot Contract Expired' : 'Trading Automatically…'}
+              {isExpired ? t('botExpired') : t('tradingAutomatically')}
             </p>
             <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)' }}>
-              {isExpired ? 'This bot has completed its 365-day cycle.' : 'Profits credited to your wallet'}
+              {isExpired ? t('botExpiredDesc') : t('profitsCredited')}
             </p>
           </div>
         </div>
 
         <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
-          Activated: {new Date(bot.activatedAt).toLocaleString()}
+          {t('activated')} {new Date(bot.activatedAt).toLocaleString()}
         </div>
       </div>
     </div>
@@ -170,6 +172,7 @@ const ActiveBotCard = ({ bot }) => {
 
 /* ─── Bot marketplace card ─── */
 const BotCard = ({ bot, onSelect }) => {
+  const { t } = useLanguage();
   const c = TIER_COLORS[bot.vipLevel] || { from: '#d4af37', to: '#f5d98b' };
   return (
     <div style={{
@@ -215,7 +218,7 @@ const BotCard = ({ bot, onSelect }) => {
           <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
               <Zap size={11} color="var(--text-muted)" />
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Investment Range</span>
+              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('investmentRange')}</span>
             </div>
             <strong style={{ fontSize: '12px', color: '#fff' }}>
               ${bot.minAmount.toLocaleString()} – ${bot.maxAmount.toLocaleString()}
@@ -225,7 +228,7 @@ const BotCard = ({ bot, onSelect }) => {
           <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
               <TrendingUp size={11} color="var(--success)" />
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Daily Income</span>
+              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('dailyIncome')}</span>
             </div>
             <strong style={{ fontSize: '14px', color: 'var(--success)' }}>{bot.dailyPercent}%</strong>
           </div>
@@ -235,11 +238,11 @@ const BotCard = ({ bot, onSelect }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Clock size={11} color="var(--text-muted)" />
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Contract: <strong style={{ color: 'var(--text-primary)' }}>365 Days</strong></span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('contract')}: <strong style={{ color: 'var(--text-primary)' }}>{t('days365')}</strong></span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Activity size={11} color="var(--text-muted)" />
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Payouts: <strong style={{ color: 'var(--text-primary)' }}>Every 24h</strong></span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('payouts')}: <strong style={{ color: 'var(--text-primary)' }}>{t('every24h')}</strong></span>
             </div>
           </div>
           <button
@@ -257,7 +260,7 @@ const BotCard = ({ bot, onSelect }) => {
               boxShadow: '0 4px 12px rgba(212,175,55,0.4)',
             }}
           >
-            Activate
+            {t('activate')}
           </button>
         </div>
       </div>
@@ -267,14 +270,15 @@ const BotCard = ({ bot, onSelect }) => {
 
 /* ─── Confirmation modal ─── */
 const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
+  const { t } = useLanguage();
   const [amount, setAmount] = useState('');
   const parsed = parseFloat(amount) || 0;
   const dailyProfit = ((parsed * bot.dailyPercent) / 100).toFixed(2);
   const isValid = parsed >= bot.minAmount && parsed <= bot.maxAmount;
 
   const handleConfirm = () => {
-    if (!isValid) return toast.error(`Enter an amount between $${bot.minAmount.toLocaleString()} and $${bot.maxAmount.toLocaleString()}`);
-    if (parsed > balance) return toast.error(`Insufficient balance. You have $${balance.toFixed(2)}`);
+    if (!isValid) return toast.error(t('errInvalidAmount').replace('${min}', bot.minAmount.toLocaleString()).replace('${max}', bot.maxAmount.toLocaleString()));
+    if (parsed > balance) return toast.error(t('errInsufficientBalance').replace('${bal}', balance.toFixed(2)));
     onConfirm(bot, parsed);
   };
 
@@ -310,7 +314,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
           {/* Amount input */}
           <div style={{ marginBottom: '14px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-              INVESTMENT AMOUNT (USD)
+              {t('investmentAmount')}
             </label>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', fontWeight: 700, fontSize: '14px' }}>$</span>
@@ -334,11 +338,11 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
           {/* Summary */}
           <div style={{ background: 'var(--bg-dark)', borderRadius: '10px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {[
-              { label: 'Bot', value: bot.name },
-              { label: 'Daily Return Rate', value: `${bot.dailyPercent}%`, color: 'var(--success)' },
-              { label: 'Est. Daily Profit', value: parsed > 0 ? `$${dailyProfit}` : '—', color: 'var(--success)' },
-              { label: 'Contract Lifecycle', value: '365 Days' },
-              { label: 'Payout Cycle', value: 'Every 24 Hours' },
+              { label: t('botMarketplace').replace('🤖 ',''), value: bot.name },
+              { label: t('dailyReturnRate'), value: `${bot.dailyPercent}%`, color: 'var(--success)' },
+              { label: t('estDailyProfit'), value: parsed > 0 ? `$${dailyProfit}` : '—', color: 'var(--success)' },
+              { label: t('contractLifecycle'), value: t('days365') },
+              { label: t('payoutCycle'), value: t('every24h') },
             ].map((row, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
@@ -347,7 +351,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
             ))}
             <div style={{ height: '1px', background: 'var(--border)' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Total Deducted</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('totalDeducted')}</span>
               <strong style={{ fontSize: '18px', color: '#fff' }}>{parsed > 0 ? `$${parsed.toLocaleString()}` : '—'}</strong>
             </div>
           </div>
@@ -356,13 +360,12 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
           <div style={{ display: 'flex', gap: '8px', padding: '10px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '10px', marginBottom: '18px' }}>
             <AlertTriangle size={15} color="var(--warning)" style={{ flexShrink: 0, marginTop: '1px' }} />
             <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Confirming will immediately deduct your entered amount from your primary wallet to activate this bot.
-            </p>
+              {t('botExpiredDesc').replace('365-day','')}</p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-              Cancel
+              {t('cancelBtn')}
             </button>
             <button
               onClick={handleConfirm}
@@ -375,7 +378,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
                 boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
               }}
             >
-              {loading ? 'Activating…' : 'Confirm & Pay'}
+              {loading ? t('activating') : t('confirmAndPay')}
             </button>
           </div>
         </div>
@@ -385,7 +388,9 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
 };
 
 /* ─── Info modal ─── */
-const InfoModal = ({ onClose }) => (
+const InfoModal = ({ onClose }) => {
+  const { t } = useLanguage();
+  return (
   <div
     style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(6px)' }}
     onClick={onClose}
@@ -403,7 +408,7 @@ const InfoModal = ({ onClose }) => (
             <div style={{ background: 'rgba(212,175,55,0.15)', padding: '8px', borderRadius: '12px' }}>
               <Info size={24} color="var(--primary)" />
             </div>
-            <h3 style={{ margin: 0, fontSize: '18px' }}>How VIP Bots Work</h3>
+            <h3 style={{ margin: 0, fontSize: '18px' }}>{t('howVipBotsWork')}</h3>
           </div>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '50%', padding: '6px', cursor: 'pointer' }}>
             <X size={16} />
@@ -414,24 +419,24 @@ const InfoModal = ({ onClose }) => (
           <div style={{ display: 'flex', gap: '12px' }}>
             <Crown size={18} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <strong style={{ color: '#fff', display: 'block', marginBottom: '4px' }}>Bot Activation</strong>
-              You can activate a bot by investing an amount within its specified tier range. The invested amount is deducted securely from your primary wallet balance.
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '4px' }}>{t('botActivation')}</strong>
+              {t('botActivationDesc')}
             </div>
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
             <Activity size={18} color="var(--success)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <strong style={{ color: '#fff', display: 'block', marginBottom: '4px' }}>24-Hour Payouts</strong>
-              Once activated, the bot begins trading automatically. Profits are generated and credited directly to your profit wallet every 24 hours based on the bot's guaranteed daily percentage.
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '4px' }}>{t('payouts24h')}</strong>
+              {t('payouts24hDesc')}
             </div>
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
             <Clock size={18} color="var(--warning)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <strong style={{ color: '#fff', display: 'block', marginBottom: '4px' }}>365-Day Lifecycle</strong>
-              Every bot contract lasts for exactly 365 days. After 365 days, the bot expires and stops generating daily returns. You can track your bot's progress bar in the "My Active Bots" tab.
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '4px' }}>{t('lifecycle365')}</strong>
+              {t('lifecycle365Desc')}
             </div>
           </div>
         </div>
@@ -440,16 +445,18 @@ const InfoModal = ({ onClose }) => (
           onClick={onClose}
           style={{ width: '100%', marginTop: '24px', padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #d4af37, #f5d98b)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 15px rgba(212,175,55,0.4)' }}
         >
-          Understood
+          {t('understood')}
         </button>
       </div>
-    </motion.div>
-  </div>
-);
+      </motion.div>
+    </div>
+  );
+};
 
 /* ═══════════════ Main Page ═══════════════ */
 export const VIP = () => {
   const { currentUser, balance, userData } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('bots');   // 'bots' | 'mybots'
   const [selectedBot, setSelectedBot] = useState(null);
@@ -489,11 +496,11 @@ export const VIP = () => {
       // Schedule local notifications for this specific bot's lifecycle
       scheduleBotNotifications(record);
 
-      toast.success(`${bot.name} activated! 🤖`, { id: toastId });
+      toast.success(`${bot.name} ${t('botActivated')} 🤖`, { id: toastId });
       setSelectedBot(null);
       setActiveTab('mybots');
     } catch (err) {
-      toast.error(err.message || 'Activation failed', { id: toastId });
+      toast.error(err.message || t('activationFailed'), { id: toastId });
     } finally {
       setActivating(false);
     }
@@ -535,17 +542,17 @@ export const VIP = () => {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Crown size={22} color="var(--warning)" />
-          <h2 style={{ fontSize: '18px', margin: 0 }}>VIP Trading Bots</h2>
+          <h2 style={{ fontSize: '18px', margin: 0 }}>{t('vipTitle')}</h2>
         </div>
       </div>
 
       {/* ── Golden tab switcher ── */}
       <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '4px', borderRadius: '14px', marginBottom: '20px', border: '1px solid rgba(212,175,55,0.25)', gap: '4px' }}>
         <button style={tabStyle('bots')}   onClick={() => setActiveTab('bots')}>
-          🤖 Bot Marketplace
+          {t('botMarketplace')}
         </button>
         <button style={tabStyle('mybots')} onClick={() => setActiveTab('mybots')}>
-          ⚡ My Active Bots {activatedBots.length > 0 && `(${activatedBots.length})`}
+          {t('myActiveBots')} {activatedBots.length > 0 && `(${activatedBots.length})`}
         </button>
       </div>
 
@@ -555,13 +562,13 @@ export const VIP = () => {
           <motion.div key="bots" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, flex: 1 }}>
-                Choose a VIP bot, enter your investment amount, and start earning guaranteed daily income automatically.
+                {t('chooseBot')}
               </p>
               <button 
                 onClick={() => setShowInfo(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: 'var(--primary)', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, marginLeft: '12px' }}
               >
-                <Info size={14} /> How it works
+                <Info size={14} /> {t('howItWorksBtn')}
               </button>
             </div>
             {VIP_BOTS.map(bot => (
@@ -576,9 +583,9 @@ export const VIP = () => {
             {activatedBots.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: 'var(--text-muted)' }}>
                 <Bot size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                <p style={{ fontSize: '14px', marginBottom: '8px' }}>No bots activated yet</p>
+                <p style={{ fontSize: '14px', marginBottom: '8px' }}>{t('noBotsYet')}</p>
                 <button onClick={() => setActiveTab('bots')} style={{ background: 'linear-gradient(135deg, #d4af37, #f5d98b)', color: '#000', border: 'none', padding: '10px 24px', borderRadius: '20px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
-                  Browse Bots →
+                  {t('browseBots')}
                 </button>
               </div>
             ) : (

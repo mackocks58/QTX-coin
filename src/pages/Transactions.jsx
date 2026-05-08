@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { CheckCircle2, Clock, XCircle, ArrowDownLeft, ArrowUpRight, ChevronLeft } from 'lucide-react';
@@ -11,6 +12,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 export const Transactions = () => {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [selectedTx, setSelectedTx] = useState(null);
@@ -106,7 +108,7 @@ export const Transactions = () => {
             onClick={() => setSelectedTx(null)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}
           >
-            ← Back
+            {t('back')}
           </button>
 
           <div ref={receiptRef} style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px' }}>
@@ -119,8 +121,8 @@ export const Transactions = () => {
             </div>
             <p style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>
               {selectedTx.type === 'deposit' 
-                ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? 'Received Successfully' : selectedTx.status === 'pending' ? 'Deposit Pending' : 'Deposit Failed')
-                : (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? 'Received Successfully' : selectedTx.status === 'pending' ? 'Withdrawal Pending' : 'Withdrawal Failed')
+                ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('depositPending') : t('depositFailed'))
+                : (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('withdrawalPending') : t('withdrawalFailed'))
               }
             </p>
             <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0', color: selectedTx.type === 'deposit' ? 'var(--success)' : 'var(--danger)' }}>
@@ -131,13 +133,13 @@ export const Transactions = () => {
           {/* First Card */}
           <div style={{ background: 'var(--bg-panel-hover)', padding: '10px 12px', borderRadius: '10px', marginTop: '12px', fontSize: '13px' }}>
             <div style={{ marginBottom: '8px' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>From</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('from')}</div>
               <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
                 {selectedTx.type === 'withdrawal' ? 'FINTEX System Wallet' : (selectedTx.from || 'Wallet Address (External)')}
               </div>
             </div>
             <div style={{ marginBottom: '8px' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>To</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('to')}</div>
               <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
                 {selectedTx.type === 'withdrawal' 
                   ? (selectedTx.accountDetails?.type === 'binance_id' 
@@ -151,7 +153,7 @@ export const Transactions = () => {
               </div>
             </div>
             <div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>Network Fee</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('networkFee')}</div>
               <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                 {selectedTx.type === 'withdrawal' ? '0.00 USDT (Covered by platform)' : (selectedTx.fee || '0.00000000 BNB')}
               </div>
@@ -163,20 +165,20 @@ export const Transactions = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ marginBottom: '8px' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>
-                  {selectedTx.type === 'withdrawal' ? 'Tracking ID' : 'TX Hash'}
+                  {selectedTx.type === 'withdrawal' ? t('trackingId') : t('txHash')}
                 </div>
                 <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: '11px' }}>
                   {selectedTx.txid || selectedTx.id}
                 </div>
               </div>
               <div style={{ marginBottom: '8px' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>Status</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('status')}</div>
                 <div style={{ color: 'var(--text-primary)', fontWeight: 500, textTransform: 'capitalize' }}>
-                  {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? 'Confirmed' : selectedTx.status}
+                  {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('confirmed') : selectedTx.status}
                 </div>
               </div>
               <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>Time</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('time')}</div>
                 <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                   {selectedTx.createdAt?.toDate ? new Date(selectedTx.createdAt.toDate()).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : 'Just now'}
                 </div>
@@ -200,7 +202,7 @@ export const Transactions = () => {
             className="btn btn-primary"
             style={{ width: '100%', marginTop: '20px', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
           >
-            {downloading ? 'Generating PDF...' : 'Download PDF Receipt'}
+            {downloading ? t('generatingPdf') : t('downloadPdf')}
           </button>
 
           <div style={{ textAlign: 'center', fontSize: '11px', padding: '16px 0 0 0', color: '#888' }}>
@@ -223,13 +225,13 @@ export const Transactions = () => {
             >
               <ChevronLeft size={20} />
             </button>
-            <h2 className="mb-0">Transactions</h2>
+            <h2 className="mb-0">{t('transactionsTitle')}</h2>
           </div>
           
           <div className="panel" style={{ marginBottom: '80px' }}>
             {transactions.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                No transactions found.
+                {t('noTransactionsFound')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -262,16 +264,16 @@ export const Transactions = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
                             {tx.status === 'verified' || tx.status === 'SUCCESS' ? (
-                              <><CheckCircle2 size={14} color="var(--success)" /><span className="text-success">Verified</span></>
+                              <><CheckCircle2 size={14} color="var(--success)" /><span className="text-success">{t('verified')}</span></>
                             ) : tx.status === 'pending' ? (
-                              <><Clock size={14} color="var(--warning)" /><span style={{ color: 'var(--warning)' }}>Pending</span></>
+                              <><Clock size={14} color="var(--warning)" /><span style={{ color: 'var(--warning)' }}>{t('pending')}</span></>
                             ) : (
-                              <><XCircle size={14} color="var(--danger)" /><span className="text-danger">Failed</span></>
+                              <><XCircle size={14} color="var(--danger)" /><span className="text-danger">{t('failed')}</span></>
                             )}
                           </div>
                           {tx.status === 'pending' && remainingMs !== null && remainingMs > 0 && (
                             <div style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
-                              Expires: {formatTime(remainingMs)}
+                              {t('expiresLabel')} {formatTime(remainingMs)}
                             </div>
                           )}
                         </div>

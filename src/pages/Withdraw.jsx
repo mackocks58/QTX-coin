@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X } from 'lucide-react';
@@ -40,6 +41,7 @@ const NetworkBadge = ({ network, size = 20 }) => {
 
 export const Withdraw = () => {
   const { currentUser, balance } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   const [accounts, setAccounts] = useState([]);
@@ -121,7 +123,7 @@ export const Withdraw = () => {
     setWithdrawing(false);
   };
 
-  if (loading) return <div className="page-content text-center py-5">Loading...</div>;
+  if (loading) return <div className="page-content text-center py-5">{t('loading')}</div>;
 
   return (
     <>
@@ -143,29 +145,29 @@ export const Withdraw = () => {
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Send size={22} color="var(--primary)" />
-            <h2 style={{ fontSize: '20px', margin: 0 }}>Withdraw Funds</h2>
+            <h2 style={{ fontSize: '20px', margin: 0 }}>{t('withdrawTitle')}</h2>
           </div>
         </div>
 
         <div className="panel mb-4">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span className="text-muted">Available Balance</span>
+            <span className="text-muted">{t('availableBalance')}</span>
             <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>${balance.toFixed(2)}</span>
           </div>
 
           {accounts.length === 0 ? (
             <div style={{ padding: '20px', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(244, 63, 94, 0.2)', textAlign: 'center' }}>
               <AlertTriangle size={32} color="var(--danger)" style={{ marginBottom: '12px' }} />
-              <h3 style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>No Withdrawal Account</h3>
-              <p className="text-muted" style={{ fontSize: '14px', marginBottom: '16px' }}>You need to bind a withdrawal method before you can request a withdrawal.</p>
+              <h3 style={{ fontSize: '16px', color: '#fff', marginBottom: '8px' }}>{t('noWithdrawAccount')}</h3>
+              <p className="text-muted" style={{ fontSize: '14px', marginBottom: '16px' }}>{t('noWithdrawAccountDesc')}</p>
               <button className="btn btn-primary w-100" onClick={() => navigate('/bind-account')}>
-                Bind Account Now
+                {t('bindAccountNow')}
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="input-group">
-                <label className="input-label">Select Withdrawal Method</label>
+                <label className="input-label">{t('selectWithdrawMethod')}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {accounts.map((acc, idx) => (
                     <div 
@@ -204,7 +206,7 @@ export const Withdraw = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Amount (USD)</label>
+                <label className="input-label">{t('amountUsd')}</label>
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>$</span>
                   <input 
@@ -223,8 +225,8 @@ export const Withdraw = () => {
                   </button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '12px' }}>
-                  <span className="text-muted">Minimum: $10.00</span>
-                  <span className="text-muted">Fee: 0%</span>
+                  <span className="text-muted">{t('minimumAmount')}</span>
+                  <span className="text-muted">{t('fee')}</span>
                 </div>
               </div>
 
@@ -234,7 +236,7 @@ export const Withdraw = () => {
                 onClick={handlePreWithdraw}
                 disabled={withdrawing}
               >
-                {withdrawing ? 'Processing...' : 'Submit Withdrawal'}
+                {withdrawing ? t('processing') : t('submitWithdrawal')}
               </button>
             </div>
           )}
@@ -260,7 +262,7 @@ export const Withdraw = () => {
               style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '16px', width: '100%', maxWidth: '400px', position: 'relative', zIndex: 101, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
             >
               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontSize: '18px' }}>Confirm Withdrawal</h3>
+                <h3 style={{ margin: 0, fontSize: '18px' }}>{t('confirmWithdrawal')}</h3>
                 <button onClick={() => !withdrawing && setShowConfirm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} disabled={withdrawing}>
                   <X size={20} />
                 </button>
@@ -268,13 +270,13 @@ export const Withdraw = () => {
               
               <div style={{ padding: '20px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>Withdrawal Amount</div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('withdrawalAmount')}</div>
                   <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--primary)' }}>${Number(amount).toFixed(2)}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '4px' }}>No fees applied (0%)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '4px' }}>{t('noFeesApplied')}</div>
                 </div>
 
                 <div style={{ background: 'var(--bg-dark)', borderRadius: '12px', padding: '16px', marginBottom: '24px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Transfer Details</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('transferDetails')}</div>
                   
                   {selectedAccount.type === 'binance_id' && (
                     <>
@@ -343,7 +345,7 @@ export const Withdraw = () => {
                     onClick={() => setShowConfirm(false)}
                     disabled={withdrawing}
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button 
                     className="btn btn-primary" 
@@ -351,7 +353,7 @@ export const Withdraw = () => {
                     onClick={executeWithdraw}
                     disabled={withdrawing}
                   >
-                    {withdrawing ? 'Processing...' : 'Confirm'}
+                    {withdrawing ? t('processing') : t('confirm')}
                   </button>
                 </div>
               </div>
@@ -420,7 +422,7 @@ export const Withdraw = () => {
                 transition={{ delay: 0.5 }}
                 style={{ fontSize: '26px', margin: '0 0 12px 0', color: 'var(--text-primary)', textAlign: 'center', fontWeight: 700 }}
               >
-                Successfully Submitted!
+                {t('successfullySubmitted')}
               </motion.h3>
               
               <motion.p
@@ -429,7 +431,7 @@ export const Withdraw = () => {
                 transition={{ delay: 0.6 }}
                 style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '15px', marginBottom: '32px', lineHeight: 1.5 }}
               >
-                Your withdrawal has been queued for processing. You can track the status in your transactions history.
+                {t('withdrawalQueued')}
               </motion.p>
 
               <motion.button
@@ -443,7 +445,7 @@ export const Withdraw = () => {
                   navigate('/transactions');
                 }}
               >
-                View Transactions
+                {t('viewTransactions')}
               </motion.button>
             </motion.div>
           </div>

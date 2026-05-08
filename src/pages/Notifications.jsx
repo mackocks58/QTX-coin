@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Bell, ShieldAlert, Info, Clock, CheckCircle2, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -8,6 +9,7 @@ import { db } from '../firebase';
 
 export const Notifications = () => {
   const { currentUser, userData } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const notifications = userData?.notifications || [];
 
@@ -58,7 +60,7 @@ export const Notifications = () => {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Bell size={20} color="var(--primary)" />
-          <h2 style={{ fontSize: '18px', margin: 0 }}>Notifications</h2>
+          <h2 style={{ fontSize: '18px', margin: 0 }}>{t('notificationsTitle')}</h2>
         </div>
       </div>
 
@@ -66,7 +68,7 @@ export const Notifications = () => {
         {notifications.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', color: 'var(--text-muted)' }}>
             <Bell size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
-            <p>No notifications yet</p>
+            <p>{t('noNotificationsYet')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
