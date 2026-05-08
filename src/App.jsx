@@ -143,84 +143,87 @@ const Topbar = () => {
 
   return (
     <header className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* LEFT — Logo + Country flag */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <img src="/logo.png" alt="FINTEX Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
         {countryCode && countryCode !== 'UN' ? (
-          <img 
-            src={`https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`} 
-            alt="Country Flag" 
-            style={{ width: '28px', height: '20px', borderRadius: '4px', objectFit: 'cover', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }} 
+          <img
+            src={`https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`}
+            alt="Country Flag"
+            style={{ width: '28px', height: '20px', borderRadius: '4px', objectFit: 'cover', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}
           />
         ) : (
-          <Globe size={24} color="var(--primary)" />
+          <Globe size={22} color="var(--primary)" />
         )}
       </div>
+
+      {/* CENTER — Language Globe Switcher */}
+      <div ref={langRef} style={{ position: 'relative' }}>
+        <button
+          onClick={() => setLangOpen(o => !o)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '5px',
+            background: langOpen ? 'var(--primary-glow)' : 'var(--bg-dark)',
+            border: `1px solid ${langOpen ? 'var(--primary)' : 'var(--border)'}`,
+            borderRadius: '20px', padding: '5px 10px', cursor: 'pointer',
+            color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+        >
+          <Globe size={13} color="var(--primary)" />
+          <span>{language === 'en' ? '🇬🇧' : '🇧🇷'}</span>
+          <span style={{ fontSize: '9px', color: 'var(--text-muted)', transform: langOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▾</span>
+        </button>
+
+        <AnimatePresence>
+          {langOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)',
+                background: 'var(--bg-panel)', border: '1px solid var(--border)',
+                borderRadius: '12px', minWidth: '150px', overflow: 'hidden',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000,
+              }}
+            >
+              {[{ code: 'en', flag: '🇬🇧', label: t('langEnglish') }, { code: 'pt', flag: '🇧🇷', label: t('langPortuguese') }].map(lang => (
+                <button
+                  key={lang.code}
+                  onClick={() => { changeLanguage(lang.code); setLangOpen(false); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '10px 14px',
+                    background: language === lang.code ? 'rgba(16,185,129,0.08)' : 'transparent',
+                    border: 'none', cursor: 'pointer',
+                    color: language === lang.code ? 'var(--primary)' : 'var(--text-secondary)',
+                    fontSize: '13px', fontWeight: language === lang.code ? 700 : 400,
+                    borderBottom: lang.code === 'en' ? '1px solid var(--border)' : 'none',
+                  }}
+                >
+                  <span style={{ fontSize: '18px' }}>{lang.flag}</span>
+                  <span style={{ flex: 1, textAlign: 'left' }}>{lang.label}</span>
+                  {language === lang.code && <Check size={13} />}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* RIGHT — Admin + Live Balance + Deposit */}
       <div className="flex items-center gap-4">
         {isAdmin && (
           <Link to="/admin" className="btn" style={{ background: 'var(--danger)', color: '#fff', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', border: 'none' }}>
             <ShieldAlert size={14} /> Admin
           </Link>
         )}
-        {/* Language Switcher */}
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('liveBalance')}</div>
           <div style={{ fontWeight: 600, color: 'var(--success)' }}>${balance.toFixed(2)}</div>
         </div>
-        <div ref={langRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setLangOpen(o => !o)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              background: langOpen ? 'var(--primary-glow)' : 'var(--bg-dark)',
-              border: `1px solid ${langOpen ? 'var(--primary)' : 'var(--border)'}`,
-              borderRadius: '20px', padding: '5px 10px', cursor: 'pointer',
-              color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600,
-              transition: 'all 0.2s',
-            }}
-          >
-            <Globe size={13} color="var(--primary)" />
-            <span>{language === 'en' ? '🇬🇧' : '🇧🇷'}</span>
-            <span style={{ fontSize: '9px', color: 'var(--text-muted)', transform: langOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▾</span>
-          </button>
-
-          <AnimatePresence>
-            {langOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -6, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                style={{
-                  position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-                  background: 'var(--bg-panel)', border: '1px solid var(--border)',
-                  borderRadius: '12px', minWidth: '150px', overflow: 'hidden',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000,
-                }}
-              >
-                {[{ code: 'en', flag: '🇬🇧', label: t('langEnglish') }, { code: 'pt', flag: '🇧🇷', label: t('langPortuguese') }].map(lang => (
-                  <button
-                    key={lang.code}
-                    onClick={() => { changeLanguage(lang.code); setLangOpen(false); }}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 14px',
-                      background: language === lang.code ? 'rgba(16,185,129,0.08)' : 'transparent',
-                      border: 'none', cursor: 'pointer',
-                      color: language === lang.code ? 'var(--primary)' : 'var(--text-secondary)',
-                      fontSize: '13px', fontWeight: language === lang.code ? 700 : 400,
-                      borderBottom: lang.code === 'en' ? '1px solid var(--border)' : 'none',
-                    }}
-                  >
-                    <span style={{ fontSize: '18px' }}>{lang.flag}</span>
-                    <span style={{ flex: 1, textAlign: 'left' }}>{lang.label}</span>
-                    {language === lang.code && <Check size={13} />}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
         <Link to="/wallet" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>{t('deposit')}</Link>
       </div>
     </header>
