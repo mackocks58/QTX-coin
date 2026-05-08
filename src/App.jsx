@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AnimatePresence } from 'framer-motion';
-import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert, Check } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
 import { Wallet } from './pages/Wallet';
 import { Account } from './pages/Account';
@@ -128,7 +128,15 @@ const COUNTRIES = [
 
 const Topbar = () => {
   const { balance, isAdmin, userData } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, changeLanguage } = useLanguage();
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   
   const userCountryObj = userData?.country ? COUNTRIES.find(c => c.name === userData.country) : null;
   const countryCode = userCountryObj ? userCountryObj.code : null;
@@ -153,10 +161,66 @@ const Topbar = () => {
             <ShieldAlert size={14} /> Admin
           </Link>
         )}
+        {/* Language Switcher */}
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('liveBalance')}</div>
           <div style={{ fontWeight: 600, color: 'var(--success)' }}>${balance.toFixed(2)}</div>
         </div>
+        <div ref={langRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setLangOpen(o => !o)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              background: langOpen ? 'var(--primary-glow)' : 'var(--bg-dark)',
+              border: `1px solid ${langOpen ? 'var(--primary)' : 'var(--border)'}`,
+              borderRadius: '20px', padding: '5px 10px', cursor: 'pointer',
+              color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600,
+              transition: 'all 0.2s',
+            }}
+          >
+            <Globe size={13} color="var(--primary)" />
+            <span>{language === 'en' ? '🇬🇧' : '🇧🇷'}</span>
+            <span style={{ fontSize: '9px', color: 'var(--text-muted)', transform: langOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▾</span>
+          </button>
+
+          <AnimatePresence>
+            {langOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                  background: 'var(--bg-panel)', border: '1px solid var(--border)',
+                  borderRadius: '12px', minWidth: '150px', overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000,
+                }}
+              >
+                {[{ code: 'en', flag: '🇬🇧', label: t('langEnglish') }, { code: 'pt', flag: '🇧🇷', label: t('langPortuguese') }].map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { changeLanguage(lang.code); setLangOpen(false); }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 14px',
+                      background: language === lang.code ? 'rgba(16,185,129,0.08)' : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      color: language === lang.code ? 'var(--primary)' : 'var(--text-secondary)',
+                      fontSize: '13px', fontWeight: language === lang.code ? 700 : 400,
+                      borderBottom: lang.code === 'en' ? '1px solid var(--border)' : 'none',
+                    }}
+                  >
+                    <span style={{ fontSize: '18px' }}>{lang.flag}</span>
+                    <span style={{ flex: 1, textAlign: 'left' }}>{lang.label}</span>
+                    {language === lang.code && <Check size={13} />}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         <Link to="/wallet" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>{t('deposit')}</Link>
       </div>
     </header>
