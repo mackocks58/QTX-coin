@@ -17,11 +17,12 @@ service cloud.firestore {
       allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
     }
 
-    // ── collectionGroup("transactions") — required for Admin queries ─────
-    // This wildcard rule is what allows getDocs(collectionGroup(db, 'transactions'))
-    // to succeed. Without it, cross-user collectionGroup reads are always denied.
+    // ── collectionGroup("transactions") — required for Admin and Duplicate Checks ──
+    // This allows getDocs(collectionGroup(db, 'transactions')) to succeed.
+    // Necessary for users to check if a TXID is already used before submitting.
     match /{path=**}/transactions/{txId} {
-      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // ── Support Chats ──────────────────────────────────────────────────

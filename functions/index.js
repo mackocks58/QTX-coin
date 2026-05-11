@@ -48,8 +48,6 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
   }
 
   try {
-    // 1. Get all pending deposits from ALL users
-    // Using a CollectionGroup query allows us to search 'transactions' subcollections across all users
     const pendingDepositsSnapshot = await db.collectionGroup("transactions")
       .where("type", "==", "deposit")
       .where("status", "==", "pending")
@@ -65,7 +63,6 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
       pendingDocs.push({ id: doc.id, ref: doc.ref, ...doc.data() });
     });
 
-    // 2. Fetch recent deposits from Binance Spot API
     const timestamp = Date.now();
     const queryString = `timestamp=${timestamp}&recvWindow=60000`;
     const signature = getBinanceSignature(queryString);
@@ -79,44 +76,28 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
       }
     );
 
-    const binanceDeposits = binanceResponse.data; // Array of deposits
+    const binanceDeposits = binanceResponse.data;
 
-    // 3. Match pending TXIDs with Binance deposits
     for (const pendingTx of pendingDocs) {
-      // Find matching TXID in Binance history
       const matchedDeposit = binanceDeposits.find(dep => dep.txId === pendingTx.txid);
 
       if (matchedDeposit) {
-        // Binance status 1 means successful/completed
         if (matchedDeposit.status === 1) {
           const amount = parseFloat(matchedDeposit.amount);
           
           if (amount > 0) {
-            // Transaction to safely update and prevent duplicates
+            const userRef = pendingTx.ref.parent.parent;
+            const userId = userRef.id;
+
             await db.runTransaction(async (transaction) => {
               const txDoc = await transaction.get(pendingTx.ref);
-              if (txDoc.data().status !== "pending") return; // Already processed
+              if (txDoc.data().status !== "pending") return;
 
-              // Get parent user document
-              const userRef = pendingTx.ref.parent.parent;
               const userDoc = await transaction.get(userRef);
               const userData = userDoc.data() || {};
               const currentBalance = userData.balance || 0;
 
-              // Find referrer document if needed
-              let referrerRef = null;
-              let referrerDoc = null;
-              if (userData.referredByCode && !userData.firstDepositRewarded) {
-                const referrerSnapshot = await db.collection("users").where("referralCode", "==", userData.referredByCode).limit(1).get();
-                if (!referrerSnapshot.empty) {
-                  referrerRef = referrerSnapshot.docs[0].ref;
-                  referrerDoc = await transaction.get(referrerRef);
-                }
-              }
-
-              // ---- ALL READS COMPLETE. START WRITES ----
-              
-              // Update transaction
+              // 1. Verify and Credit User
               transaction.update(pendingTx.ref, {
                 status: "verified",
                 amount: amount,
@@ -124,42 +105,69 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
                 network: matchedDeposit.network
               });
 
-              // Set the balance of the depositor
-              let userUpdates = { balance: currentBalance + amount };
+              transaction.set(userRef, { 
+                balance: currentBalance + amount,
+                firstDepositRewarded: true 
+              }, { merge: true });
+            });
 
-              // --- Affiliate Reward Logic ---
-              if (referrerDoc && referrerDoc.exists) {
-                const rewardAmount = amount * 0.30;
-                const referrerBalance = referrerDoc.data().balance || 0;
+            // 2. Process 3-Tier Affiliates (outside transaction to avoid complex lookups, or inside if you prefer)
+            // For USDT deposits, we implement the same 3-tier logic as Palmpesa
+            try {
+              const TIERS = [
+                { pct: 0.10, label: 'Level 1 (Direct) Commission' },
+                { pct: 0.03, label: 'Level 2 Commission' },
+                { pct: 0.01, label: 'Level 3 Commission' },
+              ];
+              let currentUid = userId;
+              
+              for (let tier = 0; tier < TIERS.length; tier++) {
+                const uDoc = await db.collection("users").doc(currentUid).get();
+                if (!uDoc.exists) break;
+                const referredByCode = uDoc.data().referredByCode;
+                if (!referredByCode) break;
+
+                const refSnap = await db.collection("users").where("referralCode", "==", referredByCode).limit(1).get();
+                if (refSnap.empty) break;
+
+                const referrerDoc = refSnap.docs[0];
+                const referrerId = referrerDoc.id;
+                const referrerData = referrerDoc.data();
                 
-                // Credit 30% to Referrer
-                transaction.set(referrerRef, { balance: referrerBalance + rewardAmount }, { merge: true });
-                
-                // Create affiliate_reward transaction
-                const rewardTxRef = referrerRef.collection("transactions").doc();
-                transaction.set(rewardTxRef, {
-                  type: "affiliate_reward",
-                  amount: rewardAmount,
-                  currency: "USDT",
-                  status: "verified",
-                  fromUser: userDoc.id,
+                let commission = amount * TIERS[tier].pct;
+                let currency = "USDT";
+
+                // Currency Conversion logic
+                if (referrerData.country === 'Tanzania') {
+                  commission = parseFloat((commission * 2600).toFixed(2));
+                  currency = "TZS";
+                } else {
+                  commission = parseFloat(commission.toFixed(4));
+                }
+
+                await db.collection("users").doc(referrerId).update({
+                  balance: admin.firestore.FieldValue.increment(commission)
+                });
+
+                await db.collection("users").doc(referrerId).collection("transactions").add({
+                  type: 'affiliate_reward',
+                  title: TIERS[tier].label,
+                  amount: commission,
+                  currency: currency,
+                  fromUid: userId, // Always from the original depositor
+                  status: 'SUCCESS',
                   createdAt: admin.firestore.FieldValue.serverTimestamp()
                 });
 
-                // Prevent future rewards for this user
-                userUpdates.firstDepositRewarded = true;
-                
-                console.log(`Affiliate reward of ${rewardAmount} given to code ${userData.referredByCode}`);
+                currentUid = referrerId;
               }
+            } catch (e) {
+              console.error("USDT Affiliate reward error:", e);
+            }
 
-              // Finally update user
-              transaction.set(userRef, userUpdates, { merge: true });
-            });
             console.log(`Verified deposit ${pendingTx.txid} for ${amount} ${matchedDeposit.coin}`);
-            await sendPushNotification(pendingTx.ref.parent.parent.id, "Deposit Successful", `Your deposit of ${amount} ${matchedDeposit.coin} has been verified and credited!`);
+            await sendPushNotification(userId, "Deposit Successful", `Your deposit of ${amount} ${matchedDeposit.coin} has been verified and credited!`);
           }
-        } else {
-          console.log(`Deposit ${pendingTx.txid} found but status is ${matchedDeposit.status} (not 1)`);
         }
       }
     }
@@ -188,20 +196,12 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
         let updated = false;
         let totalProfit = 0;
 
-        // Process VIP Bots
         const newBots = activatedBots.map(bot => {
           if (bot.status !== 'running') return bot;
           const activatedTime = new Date(bot.activatedAt).getTime();
           const lastPayout = bot.lastPayoutAt ? new Date(bot.lastPayoutAt).getTime() : activatedTime;
           
           if (now >= lastPayout + msInDay) {
-            const daysActive = Math.floor((now - activatedTime) / msInDay);
-            if (daysActive >= 365) {
-              bot.status = 'expired';
-              updated = true;
-              return bot;
-            }
-
             const invested = parseFloat(bot.userAmount || bot.price || 0);
             const percent = parseFloat(bot.dailyPercent || parseInt(bot.returnRange) || 0);
             const profit = (invested * percent) / 100;
@@ -213,24 +213,15 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
           return bot;
         });
 
-        // Process Crypto Investments
         const newCrypto = activatedCrypto.map(crypto => {
           if (crypto.status !== 'running') return crypto;
           const activatedTime = new Date(crypto.activatedAt).getTime();
           const lastPayout = crypto.lastPayoutAt ? new Date(crypto.lastPayoutAt).getTime() : activatedTime;
           
           if (now >= lastPayout + msInDay) {
-            const daysActive = Math.floor((now - activatedTime) / msInDay);
-            if (daysActive >= 365) {
-              crypto.status = 'expired';
-              updated = true;
-              return crypto;
-            }
-
             const invested = parseFloat(crypto.price || 0);
-            // Use live rate; fall back to DB value if coin not in map
-        const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
-        const percent = CRYPTO_RATES[crypto.id] || parseFloat(crypto.dailyPercent || 0);
+            const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
+            const percent = CRYPTO_RATES[crypto.id] || parseFloat(crypto.dailyPercent || 0);
             const profit = (invested * percent) / 100;
             
             totalProfit += profit;
@@ -262,7 +253,6 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
               status: 'verified',
               createdAt: admin.firestore.FieldValue.serverTimestamp()
             });
-            console.log(`Credited ${totalProfit} to user ${userDoc.id} for bot mining.`);
             sendPushNotification(userDoc.id, "Mining Profit", `Your bots generated $${totalProfit.toFixed(2)} in profit today!`);
           }
         }
@@ -293,19 +283,13 @@ exports.onTransactionUpdated = functions.region('europe-west1').firestore
 });
 
 exports.adminSendPushNotification = functions.region('europe-west1').https.onCall(async (data, context) => {
-  // Verify admin logic (basic check, could be expanded to check custom claims)
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-  }
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   
   const { userId, title, body } = data;
-  if (!title || !body) {
-    throw new functions.https.HttpsError('invalid-argument', 'Title and body are required');
-  }
+  if (!title || !body) throw new functions.https.HttpsError('invalid-argument', 'Title and body are required');
 
   try {
     if (userId === 'all') {
-      // Broadcast to all users with tokens
       const usersSnap = await db.collection('users').get();
       const tokens = [];
       usersSnap.forEach(doc => {
@@ -313,17 +297,12 @@ exports.adminSendPushNotification = functions.region('europe-west1').https.onCal
       });
       
       if (tokens.length > 0) {
-        // Send in batches of 500
-        const messages = {
-          notification: { title, body },
-          tokens: tokens
-        };
+        const messages = { notification: { title, body }, tokens: tokens };
         const response = await admin.messaging().sendEachForMulticast(messages);
-        return { success: true, sentCount: response.successCount, failureCount: response.failureCount };
+        return { success: true, sentCount: response.successCount };
       }
       return { success: true, sentCount: 0 };
     } else {
-      // Single user
       await sendPushNotification(userId, title, body);
       return { success: true, sentCount: 1 };
     }
@@ -335,136 +314,68 @@ exports.adminSendPushNotification = functions.region('europe-west1').https.onCal
 
 Object.assign(exports, require('./palmpesa'));
 
-// ─── Binance Deposit History (Admin only) ────────────────────────────────────
 exports.getBinanceDeposits = functions.region('europe-west1').https.onCall(async (data, context) => {
-  if (!BINANCE_API_KEY || !BINANCE_SECRET_KEY) {
-    throw new functions.https.HttpsError('failed-precondition', 'Binance API keys not configured');
-  }
+  if (!BINANCE_API_KEY || !BINANCE_SECRET_KEY) throw new functions.https.HttpsError('failed-precondition', 'Binance API keys not configured');
 
-  // Fetch last 90 days
   const endTime = Date.now();
   const startTime = endTime - 90 * 24 * 60 * 60 * 1000;
-
   const allDeposits = [];
-
-  // Binance supports max 90 days per request, fetch USDT deposits
-  const coins = ['USDT'];
-  for (const coin of coins) {
-    const qs = `coin=${coin}&startTime=${startTime}&endTime=${endTime}&timestamp=${Date.now()}`;
-    const sig = getBinanceSignature(qs);
-    try {
-      const res = await axios.get(
-        `https://api.binance.com/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`,
-        { headers: { 'X-MBX-APIKEY': BINANCE_API_KEY } }
-      );
-      const deposits = res.data || [];
-      deposits.forEach(d => allDeposits.push({
-        txid: d.txId || d.id || '',
-        coin: d.coin,
-        network: d.network,
-        amount: d.amount,
-        status: d.status === 1 ? 'Success' : d.status === 0 ? 'Pending' : 'Failed',
-        address: d.address,
-        addressTag: d.addressTag || '',
-        insertTime: d.insertTime,
-        date: new Date(d.insertTime).toLocaleString(),
-        confirmTimes: d.confirmTimes || '',
-        unlockConfirm: d.unlockConfirm || ''
-      }));
-    } catch (e) {
-      console.error(`Binance deposit fetch error for ${coin}:`, e.response?.data || e.message);
-    }
+  const qs = `coin=USDT&startTime=${startTime}&endTime=${endTime}&timestamp=${Date.now()}`;
+  const sig = getBinanceSignature(qs);
+  try {
+    const res = await axios.get(`https://api.binance.com/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`, { headers: { 'X-MBX-APIKEY': BINANCE_API_KEY } });
+    const deposits = res.data || [];
+    deposits.forEach(d => allDeposits.push({
+      txid: d.txId || d.id || '',
+      coin: d.coin,
+      amount: d.amount,
+      status: d.status === 1 ? 'Success' : 'Pending',
+      date: new Date(d.insertTime).toLocaleString(),
+      insertTime: d.insertTime
+    }));
+  } catch (e) {
+    console.error(`Binance fetch error:`, e.message);
   }
 
-  // Sort newest first
   allDeposits.sort((a, b) => b.insertTime - a.insertTime);
   return { deposits: allDeposits };
 });
 
-// ─── Watch-to-Earn Video Rewards ─────────────────────────────────────────────
 exports.claimVideoReward = functions.region('europe-west1').https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be logged in to claim rewards');
-  }
-
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
   const { videoId } = data;
-  if (!videoId) {
-    throw new functions.https.HttpsError('invalid-argument', 'Video ID is required');
-  }
-
   const uid = context.auth.uid;
   const userRef = db.collection('users').doc(uid);
 
   try {
     return await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) {
-        throw new functions.https.HttpsError('not-found', 'User not found');
-      }
-
       const userData = userDoc.data();
       const claimedVideos = userData.claimedVideos || {};
-      const lastClaimedRaw = claimedVideos[videoId];
-      if (lastClaimedRaw) {
-        // Handle both Firestore Timestamp objects and ISO strings
-        const lastClaimed = lastClaimedRaw?.toDate ? lastClaimedRaw.toDate().getTime() : new Date(lastClaimedRaw).getTime();
-        const now = Date.now();
-        if (now - lastClaimed < 24 * 60 * 60 * 1000) {
-          throw new functions.https.HttpsError('failed-precondition', 'You can only watch this video once every 24 hours');
-        }
-      }
       
       const activatedCrypto = userData.activatedCrypto || [];
       const activeCrypto = activatedCrypto.filter(c => c.status === 'running');
+      if (activeCrypto.length === 0) throw new functions.https.HttpsError('failed-precondition', 'Need active crypto investment');
 
-      if (activeCrypto.length === 0) {
-        throw new functions.https.HttpsError('failed-precondition', 'You need active Crypto Investments to earn video rewards');
-      }
-
-      // Calculate reward: daily profit ÷ 6 videos (watching all 6 earns full daily profit)
       const TOTAL_VIDEOS = 6;
       let totalReward = 0;
       activeCrypto.forEach(crypto => {
-        const rawPrice = String(crypto.price || '0').replace(/[^0-9.-]+/g,"");
-        const invested = parseFloat(rawPrice || 0);
-        // Use live rates — not stale DB values
+        const invested = parseFloat(String(crypto.price || '0').replace(/[^0-9.-]+/g,""));
         const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
-        const percent = CRYPTO_RATES[crypto.id] !== undefined ? CRYPTO_RATES[crypto.id] : parseFloat(crypto.dailyPercent || 0);
-        const dailyProfit = (invested * percent) / 100;
-        totalReward += dailyProfit / TOTAL_VIDEOS; // each video = 1/6 of daily profit
+        const percent = CRYPTO_RATES[crypto.id] || 0;
+        totalReward += (invested * percent / 100) / TOTAL_VIDEOS;
       });
-
-      if (totalReward <= 0) {
-        throw new functions.https.HttpsError('failed-precondition', 'Calculated reward is zero. Please activate a crypto investment.');
-      }
 
       const currentBalance = userData.balance || 0;
-      const currentMiningBalance = userData.miningBalance || 0;
-
-      // Store as ISO string — serverTimestamp() can't be used inside a map field
       claimedVideos[videoId] = new Date().toISOString();
-      
-      transaction.update(userRef, {
-        balance: currentBalance + totalReward,
-        miningBalance: currentMiningBalance + totalReward,
-        claimedVideos: claimedVideos
-      });
+      transaction.update(userRef, { balance: currentBalance + totalReward, claimedVideos });
 
-      // Log transaction
       const txRef = userRef.collection('transactions').doc();
-      transaction.set(txRef, {
-        type: 'movie_reward',
-        videoId: videoId,
-        amount: totalReward,
-        currency: 'USDT',
-        status: 'verified',
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      transaction.set(txRef, { type: 'movie_reward', amount: totalReward, currency: 'USDT', status: 'verified', createdAt: admin.firestore.FieldValue.serverTimestamp() });
 
       return { success: true, rewardAmount: totalReward };
     });
   } catch (err) {
-    console.error("claimVideoReward error:", err);
-    throw new functions.https.HttpsError('internal', err.message || 'Failed to process reward');
+    throw new functions.https.HttpsError('internal', err.message);
   }
 });
