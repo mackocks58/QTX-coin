@@ -10,8 +10,8 @@ import toast from 'react-hot-toast';
 
 const TIERS = [
   { level: 1, label: 'Direct Referral', pct: 10, color: 'var(--warning)', bg: 'rgba(212,175,55,0.1)', icon: Trophy },
-  { level: 2, label: 'Level 2 Network', pct: 3,  color: 'var(--primary)', bg: 'rgba(16,185,129,0.1)', icon: TrendingUp },
-  { level: 3, label: 'Level 3 Network', pct: 1,  color: '#a855f7',        bg: 'rgba(168,85,247,0.1)', icon: Gift },
+  { level: 2, label: 'Level 2 Network', pct: 3, color: 'var(--primary)', bg: 'rgba(16,185,129,0.1)', icon: TrendingUp },
+  { level: 3, label: 'Level 3 Network', pct: 1, color: '#a855f7', bg: 'rgba(168,85,247,0.1)', icon: Gift },
 ];
 
 export const Affiliate = () => {
@@ -23,7 +23,7 @@ export const Affiliate = () => {
   const [copied, setCopied] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [earningsByTier, setEarningsByTier] = useState({ 1: 0, 2: 0, 3: 0 });
-  const referralLink = `https://qtx coin-company.vercel.app/login?ref=${referralCode}`;
+  const referralLink = `https://qtxcoin1.vercel.app/login?ref=${referralCode}`;
   useEffect(() => {
     if (!currentUser) return;
 
