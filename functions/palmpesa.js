@@ -5,8 +5,6 @@ const axios = require("axios");
 const db = admin.firestore();
 const PALMPESA_API_KEY = process.env.PALMPESA_API_KEY;
 
-// Keep Push notification DRY, but we need to re-implement or require it if we separate files.
-// To avoid circular dependencies, we'll redefine the push sender here or just use admin.messaging()
 async function sendPushNotification(uid, title, body) {
   try {
     const userDoc = await db.collection('users').doc(uid).get();
@@ -25,46 +23,62 @@ async function sendPushNotification(uid, title, body) {
   }
 }
 
-async function processSuccessfulDeposit(localTxId, amountLocal, palmpesaOrderId) {
-  const txQuery = await db.collectionGroup("transactions").where("id", "==", localTxId).get();
-  if (txQuery.empty) return;
-  const txDoc = txQuery.docs[0];
-  const txData = txDoc.data();
-  if (txData.status !== "pending") return;
+/**
+ * Core deposit processor.
+ * Accepts a direct Firestore DocumentReference to avoid collectionGroup
+ * index requirements in the hot polling path (palmpesaCheckStatus).
+ *
+ * @param {FirebaseFirestore.DocumentReference} txDocRef - Direct reference to the transaction doc
+ * @param {number} amountLocal - Amount in TZS
+ * @param {string} palmpesaOrderId - The Palmpesa order ID (for logging)
+ */
+async function processSuccessfulDeposit(txDocRef, amountLocal, palmpesaOrderId) {
+  if (!txDocRef) {
+    console.error("processSuccessfulDeposit: txDocRef is required.");
+    return;
+  }
 
-  const userRef = txDoc.ref.parent.parent;
+  // userRef is users/{userId}
+  const userRef = txDocRef.parent.parent;
   const userId = userRef.id;
 
-  // 1. Transaction to update balance and tx status securely
+  // 1. Atomic transaction: mark tx SUCCESS and credit user balance
+  let alreadyProcessed = false;
   await db.runTransaction(async (t) => {
-    const freshTx = await t.get(txDoc.ref);
-    if (freshTx.data().status !== "pending") throw new Error("Already processed");
+    const freshTx = await t.get(txDocRef);
+    if (!freshTx.exists || freshTx.data().status !== "pending") {
+      console.log(`processSuccessfulDeposit: tx ${txDocRef.id} already processed or missing. Skipping.`);
+      alreadyProcessed = true;
+      return; // returning inside transaction handler aborts the transaction without error
+    }
     const freshUser = await t.get(userRef);
-    
-    t.update(txDoc.ref, {
+
+    t.update(txDocRef, {
       status: "SUCCESS",
       amount: amountLocal,
       palmpesaOrderId: palmpesaOrderId || null,
       verifiedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    let newBalance = (freshUser.data().balance || 0) + amountLocal;
-    let spinChancesInc = 0;
-    
-    const thresholdLocal = 1000 * 2600; // $1000 threshold
-    if (amountLocal >= thresholdLocal) {
-      spinChancesInc = 1;
-    }
-    
-    t.update(userRef, { 
+    const newBalance = (freshUser.data().balance || 0) + amountLocal;
+    const thresholdLocal = 1000 * 2600; // TZS equivalent of $1000
+    const spinChancesInc = amountLocal >= thresholdLocal ? 1 : 0;
+
+    t.update(userRef, {
       balance: newBalance,
       ...(spinChancesInc > 0 && { spinChances: admin.firestore.FieldValue.increment(spinChancesInc) })
     });
   });
 
-  await sendPushNotification(userId, "Deposit Successful", `Your mobile money deposit of TZS ${amountLocal.toLocaleString()} has been verified!`);
+  if (alreadyProcessed) return;
 
-  // 2. Process Affiliates sequentially
+  await sendPushNotification(
+    userId,
+    "Deposit Successful 🎉",
+    `Your mobile money deposit of TZS ${amountLocal.toLocaleString()} has been credited to your account!`
+  );
+
+  // 2. Process 3-tier affiliate commissions
   try {
     const TIERS = [
       { pct: 0.10, label: 'Level 1 (Direct) Commission' },
@@ -72,7 +86,7 @@ async function processSuccessfulDeposit(localTxId, amountLocal, palmpesaOrderId)
       { pct: 0.01, label: 'Level 3 Commission' },
     ];
     let currentUid = userId;
-    
+
     for (let tier = 0; tier < TIERS.length; tier++) {
       const uDoc = await db.collection("users").doc(currentUid).get();
       if (!uDoc.exists) break;
@@ -84,43 +98,63 @@ async function processSuccessfulDeposit(localTxId, amountLocal, palmpesaOrderId)
 
       const referrerDoc = refSnap.docs[0];
       const referrerId = referrerDoc.id;
-      const commission = parseFloat((amountLocal * TIERS[tier].pct).toFixed(2));
-
-      await db.collection("users").doc(referrerId).update({ balance: admin.firestore.FieldValue.increment(commission) });
+      const referrerData = referrerDoc.data();
       
+      let commission = parseFloat((amountLocal * TIERS[tier].pct).toFixed(2));
+      let currency = 'TZS';
+
+      // --- Conditional Currency Conversion ---
+      // If referrer is NOT Tanzanian, convert TZS commission to USD/USDT
+      // Exchange rate: 1 USD = 2600 TZS (derived from threshold logic)
+      if (referrerData.country && referrerData.country !== 'Tanzania') {
+        commission = parseFloat((commission / 2600).toFixed(4));
+        currency = 'USDT';
+        console.log(`Converting TZS commission to USD for non-TZ referrer ${referrerId}: ${commission} ${currency}`);
+      }
+
+      await db.collection("users").doc(referrerId).update({
+        balance: admin.firestore.FieldValue.increment(commission)
+      });
+
       await db.collection("users").doc(referrerId).collection("transactions").add({
         type: 'affiliate_reward',
         title: TIERS[tier].label,
         amount: commission,
+        currency: currency,
         fromUid: currentUid,
         status: 'SUCCESS',
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // L1 Spin chance logic
+      // L1 referrer also earns a spin chance for large deposits
       if (tier === 0 && amountLocal >= (1000 * 2600)) {
-         await db.collection("users").doc(referrerId).update({ spinChances: admin.firestore.FieldValue.increment(1) });
+        await db.collection("users").doc(referrerId).update({
+          spinChances: admin.firestore.FieldValue.increment(1)
+        });
       }
 
       currentUid = referrerId;
     }
-  } catch(e) {
+  } catch (e) {
     console.error("Affiliate reward error:", e);
   }
 }
 
+// ─── palmpesaInitiate ─────────────────────────────────────────────────────────
 exports.palmpesaInitiate = functions.region('europe-west1').https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-  
+
   const { name, email, phone, amount, transaction_id } = data;
-  if (!phone || !amount || !transaction_id) throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+  if (!phone || !amount || !transaction_id) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+  }
 
   try {
     const callback_url = `https://europe-west1-${process.env.VITE_FIREBASE_PROJECT_ID || 'xxxx-connection'}.cloudfunctions.net/palmpesaWebhook`;
-    
+
     const response = await axios.post('https://palmpesa.drmlelwa.co.tz/api/palmpesa/initiate', {
-      name: name || "FINTEX User",
-      email: email || "user@fintex.com",
+      name: name || "QTX User",
+      email: email || "user@qtxcoin.com",
       phone: phone,
       amount: amount,
       transaction_id: transaction_id,
@@ -142,11 +176,18 @@ exports.palmpesaInitiate = functions.region('europe-west1').https.onCall(async (
   }
 });
 
+// ─── palmpesaCheckStatus ──────────────────────────────────────────────────────
+// Uses a DIRECT document path lookup (users/{uid}/transactions/{local_tx_id})
+// so NO Firestore collectionGroup index is required for polling.
 exports.palmpesaCheckStatus = functions.region('europe-west1').https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
-  
+
   const { order_id, local_tx_id } = data;
-  if (!order_id || !local_tx_id) throw new functions.https.HttpsError('invalid-argument', 'Missing order_id or local_tx_id');
+  if (!order_id || !local_tx_id) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing order_id or local_tx_id');
+  }
+
+  const uid = context.auth.uid;
 
   try {
     const response = await axios.post('https://palmpesa.drmlelwa.co.tz/api/order-status', {
@@ -161,21 +202,27 @@ exports.palmpesaCheckStatus = functions.region('europe-west1').https.onCall(asyn
 
     const resData = response.data;
     if (resData && resData.data && resData.data.length > 0) {
-       const status = resData.data[0].payment_status;
-       const amount = parseFloat(resData.data[0].amount);
-       
-       if (status === "COMPLETED" || status === "SUCCESS") {
-          await processSuccessfulDeposit(local_tx_id, amount, order_id);
-          return { status: "COMPLETED" };
-       } else if (status === "FAILED") {
-          const txQuery = await db.collectionGroup("transactions").where("id", "==", local_tx_id).get();
-          if (!txQuery.empty) {
-             await txQuery.docs[0].ref.update({ status: "failed", failureReason: "Palmpesa FAILED" });
-          }
-          return { status: "FAILED" };
-       }
-       return { status: status }; // e.g. PENDING
+      const status = resData.data[0].payment_status;
+      const amount = parseFloat(resData.data[0].amount);
+
+      if (status === "COMPLETED" || status === "SUCCESS") {
+        // Direct path lookup — no index needed
+        const txDocRef = db.collection('users').doc(uid).collection('transactions').doc(local_tx_id);
+        const txSnap = await txDocRef.get();
+        const amountToCredit = amount > 0 ? amount : parseFloat(txSnap.data()?.expectedAmount || 0);
+        await processSuccessfulDeposit(txDocRef, amountToCredit, order_id);
+        return { status: "COMPLETED" };
+
+      } else if (status === "FAILED") {
+        // Direct path lookup to mark as failed
+        const txDocRef = db.collection('users').doc(uid).collection('transactions').doc(local_tx_id);
+        await txDocRef.update({ status: "failed", failureReason: "Palmpesa FAILED" });
+        return { status: "FAILED" };
+      }
+
+      return { status: status }; // PENDING or other
     }
+
     return { status: "UNKNOWN" };
   } catch (error) {
     console.error("Palmpesa check status error:", error.response?.data || error.message);
@@ -183,15 +230,18 @@ exports.palmpesaCheckStatus = functions.region('europe-west1').https.onCall(asyn
   }
 });
 
+// ─── palmpesaWebhook ──────────────────────────────────────────────────────────
+// Webhook from Palmpesa — uses collectionGroup query by palmpesaOrderId.
+// Requires the Firestore index defined in firestore.indexes.json.
 exports.palmpesaWebhook = functions.region('europe-west1').https.onRequest(async (req, res) => {
   try {
     const data = req.body;
-    console.log("Palmpesa Webhook received:", data);
-    
+    console.log("Palmpesa Webhook received:", JSON.stringify(data));
+
     let order_id = null;
     let payment_status = null;
     let amount = 0;
-    
+
     if (data.data && Array.isArray(data.data) && data.data.length > 0) {
       order_id = data.data[0].order_id;
       payment_status = data.data[0].payment_status;
@@ -201,20 +251,33 @@ exports.palmpesaWebhook = functions.region('europe-west1').https.onRequest(async
       payment_status = data.payment_status;
       amount = parseFloat(data.amount || 0);
     }
-    
+
     if (order_id && (payment_status === "COMPLETED" || payment_status === "SUCCESS")) {
-       const txQuery = await db.collectionGroup("transactions").where("palmpesaOrderId", "==", order_id).get();
-       if (!txQuery.empty) {
-          const txDoc = txQuery.docs[0];
-          const localId = txDoc.data().id;
-          const txAmount = amount > 0 ? amount : parseFloat(txDoc.data().amount);
-          await processSuccessfulDeposit(localId, txAmount, order_id);
-       }
+      // Find the transaction by palmpesaOrderId field (collectionGroup — needs index)
+      const txQuery = await db.collectionGroup("transactions")
+        .where("palmpesaOrderId", "==", order_id)
+        .get();
+
+      if (!txQuery.empty) {
+        const txDoc = txQuery.docs[0];
+        const txAmount = amount > 0 ? amount : parseFloat(txDoc.data().expectedAmount || txDoc.data().amount || 0);
+        // Pass the DocumentReference directly — no second lookup needed
+        await processSuccessfulDeposit(txDoc.ref, txAmount, order_id);
+      } else {
+        console.warn(`Webhook: No transaction found for palmpesaOrderId=${order_id}`);
+      }
+    } else if (order_id && payment_status === "FAILED") {
+      const txQuery = await db.collectionGroup("transactions")
+        .where("palmpesaOrderId", "==", order_id)
+        .get();
+      if (!txQuery.empty) {
+        await txQuery.docs[0].ref.update({ status: "failed", failureReason: "Palmpesa FAILED (webhook)" });
+      }
     }
-    
+
     res.status(200).send("OK");
   } catch (error) {
     console.error("Webhook error:", error);
-    res.status(500).send("Error");
+    res.status(200).send("OK"); // Always 200 to prevent Palmpesa retries
   }
 });
