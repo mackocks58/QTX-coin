@@ -92,7 +92,7 @@ export const Login = () => {
       try {
         const available = await NativeBiometric.isAvailable();
         if (available.isAvailable) {
-          const res = await NativeBiometric.isCredentialsSaved({ server: 'fintex_auth' });
+          const res = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
           if (res.isSaved) setHasBiometric(true);
         }
       } catch (e) {
@@ -102,10 +102,17 @@ export const Login = () => {
     checkBiometric();
   }, []);
 
-  const { login, signup } = useAuth();
+  const { login, signup, currentUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refId = searchParams.get('ref');
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   const playErrorSound = () => {
     try {
@@ -149,8 +156,11 @@ export const Login = () => {
     setTimeout(() => setIsShaking(false), 400);
   };
 
+  const isPhone = false; // Phone auth disabled
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!email || !password || (!isLogin && !country)) {
       playErrorSound();
       triggerShake();
@@ -165,12 +175,12 @@ export const Login = () => {
         try {
           const available = await NativeBiometric.isAvailable();
           if (available.isAvailable) {
-            const saved = await NativeBiometric.isCredentialsSaved({ server: 'fintex_auth' });
+            const saved = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
             if (!saved.isSaved) {
               await NativeBiometric.setCredentials({
                 username: email,
                 password: password,
-                server: 'fintex_auth',
+                server: 'qtx coin_auth',
               });
               toast.success(t('successBiometricEnabled'));
             }
@@ -217,7 +227,7 @@ export const Login = () => {
       });
 
       const credentials = await NativeBiometric.getCredentials({
-        server: 'fintex_auth',
+        server: 'qtx coin_auth',
       });
       setLoading(true);
       await login(credentials.username, credentials.password);
@@ -303,8 +313,8 @@ export const Login = () => {
 
           {/* ── Logo & Title ── */}
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '32px', paddingTop: '16px' }}>
-          <img src="/logo.png" alt="Fintex Logo" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
-          <h2 style={{ color: 'var(--text-primary)', letterSpacing: '2px', margin: 0, fontSize: '28px' }}>FINTEX</h2>
+          <img src="/logo.png" alt="QTX Coin Logo" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
+          <h2 style={{ color: 'var(--text-primary)', letterSpacing: '2px', margin: 0, fontSize: '28px' }}>QTX Coin</h2>
         </div>
         <h3 className="mb-4 text-center" style={{ color: 'var(--text-secondary)' }}>{isLogin ? t('signInBtn') : t('registerLabel')}</h3>
         
@@ -316,28 +326,31 @@ export const Login = () => {
               className={`input-field ${isShaking && !email ? 'input-error' : ''}`}
               value={email}
               onChange={e => setEmail(e.target.value)}
+              placeholder="email@example.com"
             />
           </div>
-          <div className="input-group">
-            <label className="input-label">{t('password')}</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                className={`input-field ${isShaking && !password ? 'input-error' : ''}`}
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+          {!isPhone && (
+            <div className="input-group">
+              <label className="input-label">{t('password')}</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  className={`input-field ${isShaking && !password ? 'input-error' : ''}`}
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
-          </div>
-          
+          )}
+
           {!isLogin && (
             <div className="input-group">
               <label className="input-label">{t('country')}</label>

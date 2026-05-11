@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { useCurrency } from '../hooks/useCurrency';
 
 const generateSingleMockTransaction = () => {
   const isDeposit = Math.random() > 0.4;
-  const amount = (Math.random() * 1000 + 10).toFixed(2);
+  const amount = (Math.random() * 1000 + 10);
   const userId = Math.floor(Math.random() * 9000) + 1000;
   return {
     id: Date.now() + Math.random(),
-    text: `User ***${userId} ${isDeposit ? 'deposited' : 'withdrawn'} $${amount}`,
+    userId,
+    amount,
     isDeposit
   };
 };
 
 export const LiveTransactions = () => {
+  const { formatCurrency } = useCurrency();
   const [transactions, setTransactions] = useState(() => {
     return Array.from({ length: 4 }).map(() => generateSingleMockTransaction());
   });
@@ -72,14 +75,14 @@ export const LiveTransactions = () => {
                     {tx.isDeposit ? <ArrowDownLeft size={14} color="var(--success)" /> : <ArrowUpRight size={14} color="var(--danger)" />}
                   </div>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                    User ***{tx.text.split('***')[1].substring(0, 4)}
+                    User ***{tx.userId}
                   </span>
                 </div>
                 <div style={{ 
                   color: tx.isDeposit ? 'var(--success)' : 'var(--text-primary)', 
                   fontWeight: 600 
                 }}>
-                  {tx.isDeposit ? '+' : '-'}${tx.text.split('$')[1]}
+                  {tx.isDeposit ? '+' : '-'}{formatCurrency(tx.amount)}
                 </div>
               </motion.div>
             ))}

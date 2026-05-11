@@ -1,6 +1,6 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 
-export const scheduleBotNotifications = async (bot) => {
+export const scheduleBotNotifications = async (bot, formatCurrency = (v) => `$${v}`) => {
   try {
     // Ensure permissions
     const permStatus = await LocalNotifications.checkPermissions();
@@ -41,7 +41,7 @@ export const scheduleBotNotifications = async (bot) => {
       notifications: [
         {
           title: "AI Mining Update ⚡",
-          body: `13 hours remaining to mine $${dailyProfit} from your $${amountInvested.toLocaleString()} ${bot.name} session.`,
+          body: `13 hours remaining to mine ${formatCurrency(dailyProfit)} from your ${formatCurrency(amountInvested)} ${bot.name} session.`,
           id: id13,
           schedule: { at: alert13, every: 'day' },
           smallIcon: "ic_stat_icon_config_sample", // Standard Capacitor fallback
@@ -53,7 +53,7 @@ export const scheduleBotNotifications = async (bot) => {
         },
         {
           title: "AI Mining Almost Complete! 🚀",
-          body: `Only 2 hours remaining to mine $${dailyProfit} from your $${amountInvested.toLocaleString()} ${bot.name} session!`,
+          body: `Only 2 hours remaining to mine ${formatCurrency(dailyProfit)} from your ${formatCurrency(amountInvested)} ${bot.name} session!`,
           id: id2,
           schedule: { at: alert2, every: 'day' },
           smallIcon: "ic_stat_icon_config_sample",

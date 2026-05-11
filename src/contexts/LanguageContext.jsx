@@ -12,7 +12,7 @@ const translations = {
     langPortuguese: 'Português',
 
     // ── Dashboard ─────────────────────────────────────────────────────────────
-    totalAssets: 'FINTEX AI Total Assets',
+    totalAssets: 'QTX Coin AI Total Assets',
     miningWallet: 'AI Mining Wallet',
     investmentWallet: 'Investment Wallet',
     profitWallet: 'Profit Wallet',
@@ -26,8 +26,8 @@ const translations = {
     myBots: 'My Bots',
     investmentProducts: 'Investment Products',
     earnIncome: 'Earn income immediately',
-    certified: 'FINTEX helps you earn long-term AI mining rewards. Certified',
-    footer: '© {year} FINTEX. All rights reserved.',
+    certified: 'QTX Coin helps you earn long-term AI mining rewards. Certified',
+    footer: '© {year} QTX Coin. All rights reserved.',
 
     // ── Wallet ────────────────────────────────────────────────────────────────
     walletTitle: 'Wallet',
@@ -201,7 +201,7 @@ const translations = {
     cancelBtn: 'Cancel',
 
     // ── About / FAQ ───────────────────────────────────────────────────────────
-    aboutTitle: 'About FINTEX',
+    aboutTitle: 'About QTX Coin',
     aboutHero: 'Pioneering the Future of Automated Trading',
     aboutHeroSub: 'Empowering Investors Worldwide',
     faqTitle: 'FAQ & Support',
@@ -211,14 +211,14 @@ const translations = {
 
     // ── Login ─────────────────────────────────────────────────────────────────
     loginTitle: 'Welcome Back',
-    loginSubtitle: 'Sign in to your FINTEX account',
+    loginSubtitle: 'Sign in to your QTX Coin account',
     email: 'Email Address',
     loginBtn: 'Sign In',
     noAccount: "Don't have an account?",
     registerBtn: 'Register',
     loggingIn: 'Signing In...',
     registerTitle: 'Create Account',
-    registerSubtitle: 'Join FINTEX and start earning',
+    registerSubtitle: 'Join QTX Coin and start earning',
     alreadyHaveAccount: 'Already have an account?',
     signIn: 'Sign In',
     signInBtn: 'Sign In',
@@ -245,7 +245,7 @@ const translations = {
     operationTime: 'Operation Time',
     hours24: '24 Hours',
     day: 'Day',
-    yearFooter: '© {year} FINTEX. All rights reserved.',
+    yearFooter: '© {year} QTX Coin. All rights reserved.',
     uidCopied: 'UID copied to clipboard',
     cancelBtn: 'Cancel',
     botActivated: 'activated!',
@@ -253,14 +253,14 @@ const translations = {
 
     // ── About Section Headings ────────────────────────────────────────────────
     aboutSec1: 'Our Mission & Vision',
-    aboutSec2: 'The Technology Behind FINTEX',
+    aboutSec2: 'The Technology Behind QTX Coin',
     aboutSec3: 'Global Presence & Compliance',
     aboutSec4: 'Uncompromising Security',
     aboutSec5: 'The VIP Bot Ecosystem',
     aboutSec6: '3-Tier Affiliate Commission System',
     aboutSec7: 'Gamified Rewards: The Lucky Spin',
     aboutSec8: 'Our Community & The Road Ahead',
-    aboutFooterTitle: 'FINTEX AI Global Headquarters',
+    aboutFooterTitle: 'QTX Coin AI Global Headquarters',
     aboutFooterSub: 'Established 2020 • All Rights Reserved',
     aboutLevel1: 'Level 1 – Direct Referral',
     aboutLevel2: 'Level 2 – Friend\'s Network',
@@ -343,7 +343,7 @@ const translations = {
     langPortuguese: 'Português',
 
     // ── Dashboard ─────────────────────────────────────────────────────────────
-    totalAssets: 'FINTEX IA Total de Ativos',
+    totalAssets: 'QTX Coin IA Total de Ativos',
     miningWallet: 'Carteira de Mineração IA',
     investmentWallet: 'Carteira de Investimento',
     profitWallet: 'Carteira de Lucros',
@@ -357,8 +357,8 @@ const translations = {
     myBots: 'Meus Bots',
     investmentProducts: 'Produtos de Investimento',
     earnIncome: 'Ganhe renda imediatamente',
-    certified: 'FINTEX ajuda você a ganhar recompensas de mineração IA a longo prazo. Certificado',
-    footer: '© {year} FINTEX. Todos os direitos reservados.',
+    certified: 'QTX Coin ajuda você a ganhar recompensas de mineração IA a longo prazo. Certificado',
+    footer: '© {year} QTX Coin. Todos os direitos reservados.',
 
     // ── Wallet ────────────────────────────────────────────────────────────────
     walletTitle: 'Carteira',
@@ -532,7 +532,7 @@ const translations = {
     cancelBtn: 'Cancelar',
 
     // ── About / FAQ ───────────────────────────────────────────────────────────
-    aboutTitle: 'Sobre FINTEX',
+    aboutTitle: 'Sobre QTX Coin',
     aboutHero: 'Pioneirismo no Futuro do Trading Automatizado',
     aboutHeroSub: 'Capacitando Investidores em Todo o Mundo',
     faqTitle: 'FAQ e Suporte',
@@ -542,14 +542,14 @@ const translations = {
 
     // ── Login ─────────────────────────────────────────────────────────────────
     loginTitle: 'Bem-vindo de Volta',
-    loginSubtitle: 'Entre na sua conta FINTEX',
+    loginSubtitle: 'Entre na sua conta QTX Coin',
     email: 'Endereço de E-mail',
     loginBtn: 'Entrar',
     noAccount: 'Não tem uma conta?',
     registerBtn: 'Cadastrar',
     loggingIn: 'Entrando...',
     registerTitle: 'Criar Conta',
-    registerSubtitle: 'Junte-se à FINTEX e comece a ganhar',
+    registerSubtitle: 'Junte-se à QTX Coin e comece a ganhar',
     alreadyHaveAccount: 'Já tem uma conta?',
     signIn: 'Entrar',
     signInBtn: 'Entrar',
@@ -576,7 +576,7 @@ const translations = {
     operationTime: 'Tempo de Operação',
     hours24: '24 Horas',
     day: 'Dia',
-    yearFooter: '© {year} FINTEX. Todos os direitos reservados.',
+    yearFooter: '© {year} QTX Coin. Todos os direitos reservados.',
     uidCopied: 'UID copiado para a área de transferência',
     cancelBtn: 'Cancelar',
     botActivated: 'ativado!',
@@ -584,14 +584,14 @@ const translations = {
 
     // ── About Section Headings ────────────────────────────────────────────────
     aboutSec1: 'Nossa Missão & Visão',
-    aboutSec2: 'A Tecnologia por Trás da FINTEX',
+    aboutSec2: 'A Tecnologia por Trás da QTX Coin',
     aboutSec3: 'Presença Global & Conformidade',
     aboutSec4: 'Segurança Inabalável',
     aboutSec5: 'O Ecossistema de Bots VIP',
     aboutSec6: 'Sistema de Comissão Afiliada de 3 Níveis',
     aboutSec7: 'Recompensas Gamificadas: A Sorte Girar',
     aboutSec8: 'Nossa Comunidade & O Caminho à Frente',
-    aboutFooterTitle: 'Sede Global FINTEX AI',
+    aboutFooterTitle: 'Sede Global QTX Coin AI',
     aboutFooterSub: 'Fundada em 2020 • Todos os direitos reservados',
     aboutLevel1: 'Nível 1 – Indicação Direta',
     aboutLevel2: 'Nível 2 – Rede do Amigo',
@@ -677,7 +677,7 @@ export function useLanguage() {
 export function LanguageProvider({ children }) {
   // 1. Read from localStorage immediately (fast, no flicker)
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('fintex_lang') || 'en';
+    return localStorage.getItem('qtx coin_lang') || 'en';
   });
 
   // 2. On mount: if user is logged in and their Firestore doc has a language,
@@ -689,10 +689,10 @@ export function LanguageProvider({ children }) {
         const snap = await getDoc(doc(db, 'users', user.uid));
         if (snap.exists()) {
           const dbLang = snap.data().language;
-          const localLang = localStorage.getItem('fintex_lang');
+          const localLang = localStorage.getItem('qtx coin_lang');
           if (dbLang && dbLang !== localLang) {
             // DB has a different preference (e.g. user logged in on new device)
-            localStorage.setItem('fintex_lang', dbLang);
+            localStorage.setItem('qtx coin_lang', dbLang);
             window.location.reload();
           }
         }
@@ -712,7 +712,7 @@ export function LanguageProvider({ children }) {
     if (lang === language) return;
 
     // Immediately persist to localStorage so the reload reads the new value
-    localStorage.setItem('fintex_lang', lang);
+    localStorage.setItem('qtx coin_lang', lang);
 
     // Save to Firestore in the background (non-blocking)
     const user = auth.currentUser;

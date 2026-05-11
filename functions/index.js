@@ -183,10 +183,12 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
         if (!freshSnap.exists) return;
         const freshData = freshSnap.data();
         const activatedBots = freshData.activatedBots || [];
+        const activatedCrypto = freshData.activatedCrypto || [];
         
         let updated = false;
         let totalProfit = 0;
 
+        // Process VIP Bots
         const newBots = activatedBots.map(bot => {
           if (bot.status !== 'running') return bot;
           const activatedTime = new Date(bot.activatedAt).getTime();
@@ -205,12 +207,37 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
             const profit = (invested * percent) / 100;
             
             totalProfit += profit;
-            
-            // Increment the lastPayoutAt exactly by 24 hours to prevent time drift
             bot.lastPayoutAt = new Date(lastPayout + msInDay).toISOString();
             updated = true;
           }
           return bot;
+        });
+
+        // Process Crypto Investments
+        const newCrypto = activatedCrypto.map(crypto => {
+          if (crypto.status !== 'running') return crypto;
+          const activatedTime = new Date(crypto.activatedAt).getTime();
+          const lastPayout = crypto.lastPayoutAt ? new Date(crypto.lastPayoutAt).getTime() : activatedTime;
+          
+          if (now >= lastPayout + msInDay) {
+            const daysActive = Math.floor((now - activatedTime) / msInDay);
+            if (daysActive >= 365) {
+              crypto.status = 'expired';
+              updated = true;
+              return crypto;
+            }
+
+            const invested = parseFloat(crypto.price || 0);
+            // Use live rate; fall back to DB value if coin not in map
+        const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
+        const percent = CRYPTO_RATES[crypto.id] || parseFloat(crypto.dailyPercent || 0);
+            const profit = (invested * percent) / 100;
+            
+            totalProfit += profit;
+            crypto.lastPayoutAt = new Date(lastPayout + msInDay).toISOString();
+            updated = true;
+          }
+          return crypto;
         });
 
         if (updated) {
@@ -219,6 +246,7 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
           
           transaction.update(userDoc.ref, {
             activatedBots: newBots,
+            activatedCrypto: newCrypto,
             ...(totalProfit > 0 && {
               balance: currentBalance + totalProfit,
               miningBalance: currentMiningBalance + totalProfit
@@ -302,5 +330,141 @@ exports.adminSendPushNotification = functions.region('europe-west1').https.onCal
   } catch (error) {
     console.error("Admin push error:", error);
     throw new functions.https.HttpsError('internal', 'Failed to send notifications');
+  }
+});
+
+Object.assign(exports, require('./palmpesa'));
+
+// ─── Binance Deposit History (Admin only) ────────────────────────────────────
+exports.getBinanceDeposits = functions.region('europe-west1').https.onCall(async (data, context) => {
+  if (!BINANCE_API_KEY || !BINANCE_SECRET_KEY) {
+    throw new functions.https.HttpsError('failed-precondition', 'Binance API keys not configured');
+  }
+
+  // Fetch last 90 days
+  const endTime = Date.now();
+  const startTime = endTime - 90 * 24 * 60 * 60 * 1000;
+
+  const allDeposits = [];
+
+  // Binance supports max 90 days per request, fetch USDT deposits
+  const coins = ['USDT'];
+  for (const coin of coins) {
+    const qs = `coin=${coin}&startTime=${startTime}&endTime=${endTime}&timestamp=${Date.now()}`;
+    const sig = getBinanceSignature(qs);
+    try {
+      const res = await axios.get(
+        `https://api.binance.com/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`,
+        { headers: { 'X-MBX-APIKEY': BINANCE_API_KEY } }
+      );
+      const deposits = res.data || [];
+      deposits.forEach(d => allDeposits.push({
+        txid: d.txId || d.id || '',
+        coin: d.coin,
+        network: d.network,
+        amount: d.amount,
+        status: d.status === 1 ? 'Success' : d.status === 0 ? 'Pending' : 'Failed',
+        address: d.address,
+        addressTag: d.addressTag || '',
+        insertTime: d.insertTime,
+        date: new Date(d.insertTime).toLocaleString(),
+        confirmTimes: d.confirmTimes || '',
+        unlockConfirm: d.unlockConfirm || ''
+      }));
+    } catch (e) {
+      console.error(`Binance deposit fetch error for ${coin}:`, e.response?.data || e.message);
+    }
+  }
+
+  // Sort newest first
+  allDeposits.sort((a, b) => b.insertTime - a.insertTime);
+  return { deposits: allDeposits };
+});
+
+// ─── Watch-to-Earn Video Rewards ─────────────────────────────────────────────
+exports.claimVideoReward = functions.region('europe-west1').https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be logged in to claim rewards');
+  }
+
+  const { videoId } = data;
+  if (!videoId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Video ID is required');
+  }
+
+  const uid = context.auth.uid;
+  const userRef = db.collection('users').doc(uid);
+
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'User not found');
+      }
+
+      const userData = userDoc.data();
+      const claimedVideos = userData.claimedVideos || {};
+      const lastClaimedRaw = claimedVideos[videoId];
+      if (lastClaimedRaw) {
+        // Handle both Firestore Timestamp objects and ISO strings
+        const lastClaimed = lastClaimedRaw?.toDate ? lastClaimedRaw.toDate().getTime() : new Date(lastClaimedRaw).getTime();
+        const now = Date.now();
+        if (now - lastClaimed < 24 * 60 * 60 * 1000) {
+          throw new functions.https.HttpsError('failed-precondition', 'You can only watch this video once every 24 hours');
+        }
+      }
+      
+      const activatedCrypto = userData.activatedCrypto || [];
+      const activeCrypto = activatedCrypto.filter(c => c.status === 'running');
+
+      if (activeCrypto.length === 0) {
+        throw new functions.https.HttpsError('failed-precondition', 'You need active Crypto Investments to earn video rewards');
+      }
+
+      // Calculate reward: daily profit ÷ 6 videos (watching all 6 earns full daily profit)
+      const TOTAL_VIDEOS = 6;
+      let totalReward = 0;
+      activeCrypto.forEach(crypto => {
+        const rawPrice = String(crypto.price || '0').replace(/[^0-9.-]+/g,"");
+        const invested = parseFloat(rawPrice || 0);
+        // Use live rates — not stale DB values
+        const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
+        const percent = CRYPTO_RATES[crypto.id] !== undefined ? CRYPTO_RATES[crypto.id] : parseFloat(crypto.dailyPercent || 0);
+        const dailyProfit = (invested * percent) / 100;
+        totalReward += dailyProfit / TOTAL_VIDEOS; // each video = 1/6 of daily profit
+      });
+
+      if (totalReward <= 0) {
+        throw new functions.https.HttpsError('failed-precondition', 'Calculated reward is zero. Please activate a crypto investment.');
+      }
+
+      const currentBalance = userData.balance || 0;
+      const currentMiningBalance = userData.miningBalance || 0;
+
+      // Store as ISO string — serverTimestamp() can't be used inside a map field
+      claimedVideos[videoId] = new Date().toISOString();
+      
+      transaction.update(userRef, {
+        balance: currentBalance + totalReward,
+        miningBalance: currentMiningBalance + totalReward,
+        claimedVideos: claimedVideos
+      });
+
+      // Log transaction
+      const txRef = userRef.collection('transactions').doc();
+      transaction.set(txRef, {
+        type: 'movie_reward',
+        videoId: videoId,
+        amount: totalReward,
+        currency: 'USDT',
+        status: 'verified',
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { success: true, rewardAmount: totalReward };
+    });
+  } catch (err) {
+    console.error("claimVideoReward error:", err);
+    throw new functions.https.HttpsError('internal', err.message || 'Failed to process reward');
   }
 });

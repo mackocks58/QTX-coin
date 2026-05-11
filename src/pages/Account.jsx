@@ -41,7 +41,7 @@ export const Account = () => {
   useEffect(() => {
     const checkSettings = async () => {
       try {
-        const bioRes = await NativeBiometric.isCredentialsSaved({ server: 'fintex_auth' });
+        const bioRes = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
         setBiometricEnabled(bioRes.isSaved);
       } catch (e) {
         console.log('Biometric check failed', e);
@@ -81,7 +81,7 @@ export const Account = () => {
   const handleBiometricToggle = async () => {
     if (biometricEnabled) {
       try {
-        await NativeBiometric.deleteCredentials({ server: 'fintex_auth' });
+        await NativeBiometric.deleteCredentials({ server: 'qtx coin_auth' });
         setBiometricEnabled(false);
         toast.success(t('successBiometricDisabled'));
       } catch (e) {
@@ -110,7 +110,7 @@ export const Account = () => {
       await NativeBiometric.setCredentials({
         username: currentUser?.email || 'user',
         password: biometricPassword,
-        server: 'fintex_auth'
+        server: 'qtx coin_auth'
       });
       setBiometricEnabled(true);
       setShowBiometricModal(false);

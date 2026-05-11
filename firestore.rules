@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users collection ────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Transactions sub-collection ────────────────────────────────────
+    match /users/{userId}/transactions/{txId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Support Chats ──────────────────────────────────────────────────
+    // Any authenticated user can READ the supportChats collection
+    // (admins need to list all chats; regular users only see their own in the app)
+    // Only the chat owner can WRITE to the room document
+    match /supportChats/{chatId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == chatId;
+
+      // Messages: user can write to own chat, agents can write replies
+      match /messages/{msgId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null &&
+          (request.auth.uid == chatId || request.resource.data.senderRole == 'agent');
+      }
+    }
+
+    // ── Deposits collection ────────────────────────────────────────────
+    match /deposits/{depositId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Notifications ──────────────────────────────────────────────────
+    match /notifications/{notifId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Deny everything else ───────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -21,7 +21,7 @@ export const TradingChart = () => {
         horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: 400,
+      height: chartContainerRef.current.clientHeight || 250,
     });
 
     const newSeries = chart.addSeries(CandlestickSeries, {
@@ -33,35 +33,60 @@ export const TradingChart = () => {
     });
 
     let ws = null;
+    let basePrice = 0.000033; // Fallback
+    
+    // Fetch real price to anchor the mock chart
+    fetch('https://api.coingecko.com/api/v3/simple/price?ids=quantumx&vs_currencies=usd')
+      .then(r => r.json())
+      .then(d => {
+        if(d.quantumx && d.quantumx.usd) {
+          basePrice = d.quantumx.usd;
+        }
+        generateMockData();
+      })
+      .catch(() => generateMockData());
 
-    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=100')
-      .then(res => res.json())
-      .then(data => {
-        const cdata = data.map(d => {
-          return { time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]) };
-        });
-        newSeries.setData(cdata);
+    const generateMockData = () => {
+      let currentTime = Math.floor(Date.now() / 1000) - 3600; // Start 1 hour ago
+      const cdata = [];
+      let currentPrice = basePrice * 0.98; // Start slightly lower
+
+      // Generate 60 historical candles
+      for(let i = 0; i < 60; i++) {
+        const volatility = currentPrice * 0.02;
+        const change = (Math.random() - 0.45) * volatility;
+        const open = currentPrice;
+        const close = currentPrice + change;
+        const high = Math.max(open, close) + (Math.random() * volatility * 0.5);
+        const low = Math.min(open, close) - (Math.random() * volatility * 0.5);
         
-        ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
-        ws.onmessage = (event) => {
-          const message = JSON.parse(event.data);
-          const kline = message.k;
-          
-          newSeries.update({
-            time: kline.t / 1000,
-            open: parseFloat(kline.o),
-            high: parseFloat(kline.h),
-            low: parseFloat(kline.l),
-            close: parseFloat(kline.c),
-          });
-        };
-      });
+        cdata.push({ time: currentTime, open, high, low, close });
+        currentTime += 60;
+        currentPrice = close;
+      }
+      newSeries.setData(cdata);
+
+      // Simulate live updates
+      ws = setInterval(() => {
+        const volatility = currentPrice * 0.005;
+        const change = (Math.random() - 0.48) * volatility;
+        const close = currentPrice + change;
+        newSeries.update({
+          time: Math.floor(Date.now() / 1000),
+          open: currentPrice,
+          high: Math.max(currentPrice, close) * 1.001,
+          low: Math.min(currentPrice, close) * 0.999,
+          close: close
+        });
+        currentPrice = close;
+      }, 2000);
+    };
 
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (ws) ws.close();
+      if (ws) clearInterval(ws);
       chart.remove();
     };
   }, []);
@@ -69,7 +94,7 @@ export const TradingChart = () => {
   return (
     <div
       ref={chartContainerRef}
-      style={{ width: '100%', height: '400px', borderRadius: '8px', overflow: 'hidden' }}
+      style={{ width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}
     />
   );
 };

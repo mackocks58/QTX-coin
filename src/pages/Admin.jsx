@@ -36,6 +36,40 @@ export const Admin = () => {
   const [pushForm, setPushForm] = useState({ userId: 'all', title: '', body: '', loading: false });
   const [pushImageFile, setPushImageFile] = useState(null);
 
+  // Binance Explore state
+  const [binanceLoading, setBinanceLoading] = useState(false);
+  const [allTxns, setAllTxns] = useState([]);
+  const [allTxnsLoaded, setAllTxnsLoaded] = useState(false);
+  const [txnSearchQuery, setTxnSearchQuery] = useState('');
+  const [networkFilter, setNetworkFilter] = useState('all');
+
+  const TRC20_ADDRESS = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
+  const BSC_ADDRESS = import.meta.env.VITE_BSC_ADDRESS || '0x66922e6229f9501319aa4425f4cd53773fc66a91';
+
+  const handleBinanceExplore = async () => {
+    if (!binanceTxidSearch.trim()) return;
+    setBinanceLoading(true);
+    setBinanceResults([]);
+    try {
+      const q = query(collectionGroup(db, 'transactions'), where('txid', '==', binanceTxidSearch.trim()));
+      const snapshot = await getDocs(q);
+      const results = snapshot.docs.map(doc => {
+        const userRef = doc.ref.parent.parent;
+        return {
+          id: doc.id,
+          userId: userRef ? userRef.id : 'unknown',
+          ref: doc.ref,
+          ...doc.data()
+        };
+      });
+      setBinanceResults(results);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to search TXID');
+    }
+    setBinanceLoading(false);
+  };
+
   const handleAdminPush = async () => {
     if (!pushForm.title || !pushForm.body) {
       toast.error('Title and body are required');
@@ -84,8 +118,25 @@ export const Admin = () => {
       if (activeTab === 'withdrawals') fetchWithdrawals();
       if (activeTab === 'deposits') fetchDeposits();
       if (activeTab === 'users') fetchUsersList();
+      if (activeTab === 'binance_explore' && !allTxnsLoaded) fetchAllTxns();
     }
   }, [isAdmin, activeTab]);
+
+  const fetchAllTxns = async () => {
+    setBinanceLoading(true);
+    setAllTxns([]);
+    try {
+      const getBinanceFn = httpsCallable(functions, 'getBinanceDeposits', { timeout: 30000 });
+      const result = await getBinanceFn();
+      setAllTxns(result.data.deposits || []);
+      setAllTxnsLoaded(true);
+      toast.success(`Loaded ${result.data.deposits.length} Binance deposits`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to fetch Binance deposits: ' + (e.message || 'Unknown error'));
+    }
+    setBinanceLoading(false);
+  };
 
   const fetchStats = async () => {
     setLoading(true);
@@ -482,7 +533,16 @@ export const Admin = () => {
           <TabButton id="users" icon={Users} label="Users Management" />
           <TabButton id="deposits" icon={ArrowDownToLine} label="Deposits" />
           <TabButton id="withdrawals" icon={ArrowUpFromLine} label="Withdrawals" />
+          <TabButton id="binance_explore" icon={Search} label="Binance Explore" />
           <TabButton id="push" icon={Bell} label="Push Notifications" />
+          {/* Support Inbox — opens dedicated page */}
+          <button
+            onClick={() => navigate('/admin/support')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1))', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', fontWeight: 600, fontSize: '14px', margin: '8px 12px 0', width: 'calc(100% - 24px)', textAlign: 'left' }}
+          >
+            <MessageSquare size={16} />
+            Support Inbox
+          </button>
         </div>
       </div>
 
@@ -615,8 +675,8 @@ export const Admin = () => {
                                 </>
                               ) : (
                                 <>
-                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>${(u.balance || 0).toFixed(2)}</td>
-                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#d4af37' }}>${(u.miningBalance || 0).toFixed(2)}</td>
+                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>{u.country === 'Tanzania' ? 'TZS' : '$'} {(u.balance || 0).toLocaleString(undefined, { minimumFractionDigits: u.country === 'Tanzania' ? 0 : 2, maximumFractionDigits: u.country === 'Tanzania' ? 0 : 2 })}</td>
+                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#d4af37' }}>{u.country === 'Tanzania' ? 'TZS' : '$'} {(u.miningBalance || 0).toLocaleString(undefined, { minimumFractionDigits: u.country === 'Tanzania' ? 0 : 2, maximumFractionDigits: u.country === 'Tanzania' ? 0 : 2 })}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>{u.country || 'N/A'}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
                                     <button onClick={() => handleEditClick(u)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}>
@@ -679,7 +739,7 @@ export const Admin = () => {
                             </div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--success)' }}>${(d.expectedAmount || d.amount || 0).toFixed(2)}</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--success)' }}>{d.currency === 'TZS' ? 'TZS' : '$'} {(d.expectedAmount || d.amount || 0).toLocaleString(undefined, { minimumFractionDigits: d.currency === 'TZS' ? 0 : 2, maximumFractionDigits: d.currency === 'TZS' ? 0 : 2 })}</div>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: d.status === 'pending' ? 'var(--warning)' : d.status === 'SUCCESS' ? 'var(--success)' : 'var(--danger)' }}>
                               {d.status}
                             </div>
@@ -749,7 +809,7 @@ export const Admin = () => {
                             </div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>${w.amount?.toFixed(2)}</div>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>{w.currency === 'TZS' ? 'TZS' : '$'} {w.amount?.toLocaleString(undefined, { minimumFractionDigits: w.currency === 'TZS' ? 0 : 2, maximumFractionDigits: w.currency === 'TZS' ? 0 : 2 })}</div>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: w.status === 'pending' ? 'var(--warning)' : w.status === 'SUCCESS' ? 'var(--success)' : 'var(--danger)' }}>
                               {w.status}
                             </div>
@@ -829,7 +889,125 @@ export const Admin = () => {
                 )}
               </div>
             )}
+
+            {/* BINANCE EXPLORE TAB */}
+            {activeTab === 'binance_explore' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                  <h2 style={{ fontSize: '20px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Search size={20} color="#F0B90B" /> Binance Deposit History
+                  </h2>
+                  <div style={{ fontSize: '12px', color: '#F0B90B', background: 'rgba(240,185,11,0.1)', border: '1px solid rgba(240,185,11,0.3)', borderRadius: '20px', padding: '4px 14px', fontWeight: 600 }}>
+                    🟡 Last 90 days · {allTxns.length} deposits
+                  </div>
+                </div>
+
+                {/* Search + Network Filter */}
+                <div className="panel" style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Search size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                  <input type="text" value={txnSearchQuery} onChange={e => setTxnSearchQuery(e.target.value)}
+                    placeholder="Search TXID, coin, network, address..."
+                    style={{ flex: 1, minWidth: '160px', padding: '7px', background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '8px', color: '#fff', fontSize: '13px' }} />
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {['all', 'TRC20', 'BNB Smart Chain', 'ETH'].map(n => (
+                      <button key={n} onClick={() => setNetworkFilter(n)}
+                        style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                          background: networkFilter === n ? '#F0B90B' : 'transparent',
+                          color: networkFilter === n ? '#000' : 'var(--text-muted)',
+                          border: `1px solid ${networkFilter === n ? '#F0B90B' : 'var(--border)'}` }}>
+                        {n === 'all' ? 'All Networks' : n}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={fetchAllTxns} disabled={binanceLoading}
+                    style={{ padding: '7px 16px', fontSize: '12px', flexShrink: 0, background: '#F0B90B', color: '#000', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', opacity: binanceLoading ? 0.7 : 1 }}>
+                    {binanceLoading ? 'Loading...' : '↻ Refresh'}
+                  </button>
+                </div>
+
+                {binanceLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>⏳</div>
+                    Fetching from Binance API...
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {allTxns
+                      .filter(tx => {
+                        const matchNet = networkFilter === 'all' || tx.network === networkFilter;
+                        if (!txnSearchQuery) return matchNet;
+                        const q = txnSearchQuery.toLowerCase();
+                        return matchNet && (
+                          tx.txid?.toLowerCase().includes(q) ||
+                          tx.address?.toLowerCase().includes(q) ||
+                          tx.coin?.toLowerCase().includes(q) ||
+                          tx.network?.toLowerCase().includes(q) ||
+                          String(tx.amount).includes(q)
+                        );
+                      })
+                      .map((tx, i) => (
+                        <div key={tx.txid || i} className="panel" style={{ padding: '12px 16px', borderLeft: `3px solid ${tx.status === 'Success' ? 'var(--success)' : tx.status === 'Pending' ? 'var(--warning)' : 'var(--danger)'}` }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                              {/* Badges */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '10px', background: 'rgba(240,185,11,0.15)', color: '#F0B90B', borderRadius: '4px', padding: '2px 7px', fontWeight: 700 }}>{tx.network}</span>
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: tx.status === 'Success' ? 'var(--success)' : tx.status === 'Pending' ? 'var(--warning)' : 'var(--danger)' }}>{tx.status}</span>
+                                {tx.confirmTimes && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>✓ {tx.confirmTimes} confirms</span>}
+                              </div>
+                              {/* TXID */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-dark)', borderRadius: '6px', padding: '5px 8px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.txid || '—'}</span>
+                                {tx.txid && (
+                                  <button onClick={() => { navigator.clipboard.writeText(tx.txid); toast.success('TXID copied!'); }}
+                                    style={{ background: 'rgba(240,185,11,0.1)', border: '1px solid rgba(240,185,11,0.3)', borderRadius: '4px', cursor: 'pointer', color: '#F0B90B', padding: '2px 6px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                                    <Copy size={9} /> Copy
+                                  </button>
+                                )}
+                              </div>
+                              {/* Address */}
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>To:</span>
+                                <span style={{ fontFamily: 'monospace' }}>{tx.address?.substring(0, 22)}...</span>
+                                <button onClick={() => { navigator.clipboard.writeText(tx.address); toast.success('Address copied'); }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: 0 }}>
+                                  <Copy size={10} />
+                                </button>
+                              </div>
+                              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '3px' }}>{tx.date}</div>
+                            </div>
+                            {/* Amount */}
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontSize: '22px', fontWeight: 800, color: '#F0B90B' }}>{tx.amount}</div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{tx.coin}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    }
+                    {!binanceLoading && allTxnsLoaded && allTxns.filter(tx => networkFilter === 'all' || tx.network === networkFilter).length === 0 && (
+                      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No Binance deposits found in the last 90 days.</div>
+                    )}
+                    {!allTxnsLoaded && !binanceLoading && (
+                      <div style={{ padding: '40px', textAlign: 'center' }}>
+                        <button onClick={fetchAllTxns}
+                          style={{ background: '#F0B90B', color: '#000', border: 'none', borderRadius: '12px', padding: '12px 32px', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>
+                          Load Binance Deposits
+                        </button>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>Fetches last 90 days of USDT deposits via Binance API</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+
+
+                {/* Wallet addresses */}
+
             {/* PUSH NOTIFICATIONS TAB */}
+
             {activeTab === 'push' && (
               <div>
                 <h2 style={{ fontSize: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>

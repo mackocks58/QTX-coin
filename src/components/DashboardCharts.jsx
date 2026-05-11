@@ -4,11 +4,13 @@ import { Bar } from 'react-chartjs-2';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { collection, query, getDocs } from 'firebase/firestore';
+import { useCurrency } from '../hooks/useCurrency';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, LineController, BarController);
 
 export const DashboardCharts = () => {
   const { currentUser } = useAuth();
+  const { symbol, formatCurrency } = useCurrency();
   const [weeklyData, setWeeklyData] = useState({ earnings: [0,0,0,0,0,0,0], counts: [0,0,0,0,0,0,0] });
   const [yearlyData, setYearlyData] = useState({ earnings: [0,0,0,0,0], rates: [0,0,0,0,0] });
 
@@ -106,7 +108,7 @@ export const DashboardCharts = () => {
     datasets: [
       {
         type: "line",
-        label: "Daily Earnings ($)",
+        label: `Daily Earnings (${symbol})`,
         data: weeklyData.earnings,
         borderColor: "#d4af37", // Primary gold
         backgroundColor: "rgba(212, 175, 55, 0.2)",
@@ -138,7 +140,7 @@ export const DashboardCharts = () => {
       y: {
         beginAtZero: true,
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: 'var(--text-secondary)', callback: val => "$" + val }
+        ticks: { color: 'var(--text-secondary)', callback: val => formatCurrency(val) }
       },
       y1: {
         beginAtZero: true,
@@ -161,7 +163,7 @@ export const DashboardCharts = () => {
     datasets: [
       {
         type: "bar",
-        label: "Annual Earnings ($)",
+        label: `Annual Earnings (${symbol})`,
         data: yearlyData.earnings,
         backgroundColor: "rgba(255, 255, 255, 0.1)",
         borderColor: "rgba(255, 255, 255, 0.2)",
@@ -194,7 +196,7 @@ export const DashboardCharts = () => {
       y: {
         beginAtZero: true,
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: 'var(--text-secondary)', callback: val => "$" + val }
+        ticks: { color: 'var(--text-secondary)', callback: val => formatCurrency(val) }
       },
       y1: {
         position: "right",

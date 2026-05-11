@@ -7,11 +7,13 @@ import { db } from '../firebase';
 import { doc, updateDoc, collection, addDoc, increment } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../hooks/useCurrency';
 
 export const Spin = () => {
   const navigate = useNavigate();
   const { currentUser, userData } = useAuth();
   const { t } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [showReward, setShowReward] = useState(false);
@@ -64,7 +66,7 @@ export const Spin = () => {
 
         setIsSpinning(false);
         setShowReward(true);
-        toast.success(t('successSpinWon').replace('${amount}', actualReward));
+        toast.success(t('successSpinWon').replace('${amount}', formatCurrency(actualReward)));
       }, 5000); // 5s matches CSS transition
 
     } catch (error) {
@@ -113,7 +115,7 @@ export const Spin = () => {
             </h3>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: 'var(--text-muted)' }}>Deposit $1000+</p>
+            <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: 'var(--text-muted)' }}>Deposit {formatCurrency(1000)}+</p>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--success)' }}>To earn chances</p>
           </div>
         </div>
@@ -153,9 +155,9 @@ export const Spin = () => {
             <img src="/images/wheel_base.png" alt="Lucky Wheel" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             
             {/* Overlay fake text labels if needed, or just let the raw image shine */}
-            <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>$5000</div>
-            <div style={{ position: 'absolute', bottom: '15%', left: '50%', transform: 'translateX(-50%) rotate(180deg)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>$1000</div>
-            <div style={{ position: 'absolute', top: '50%', left: '15%', transform: 'translateY(-50%) rotate(-90deg)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>$10000</div>
+            <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>{formatCurrency(5000)}</div>
+            <div style={{ position: 'absolute', bottom: '15%', left: '50%', transform: 'translateX(-50%) rotate(180deg)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>{formatCurrency(1000)}</div>
+            <div style={{ position: 'absolute', top: '50%', left: '15%', transform: 'translateY(-50%) rotate(-90deg)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>{formatCurrency(10000)}</div>
             <div style={{ position: 'absolute', top: '50%', right: '15%', transform: 'translateY(-50%) rotate(90deg)', color: '#fff', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '20px', zIndex: 5 }}>iPhone</div>
           </div>
         </div>
@@ -214,7 +216,7 @@ export const Spin = () => {
               </div>
               <h2 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '28px' }}>{t('youWon')}</h2>
               <p style={{ fontSize: '42px', fontWeight: 900, color: 'var(--success)', margin: '0 0 24px 0', textShadow: '0 2px 10px rgba(16,185,129,0.3)' }}>
-                ${rewardAmount}
+                {formatCurrency(rewardAmount)}
               </p>
               <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '24px' }}>
                 {t('bonusCredited')}

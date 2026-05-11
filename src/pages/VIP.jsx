@@ -12,6 +12,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { scheduleBotNotifications } from '../services/botNotifications';
+import { useCurrency } from '../hooks/useCurrency';
 
 /* ─── Tier colour palette ─── */
 const TIER_COLORS = {
@@ -54,6 +55,7 @@ const VipBadge = ({ level }) => {
 /* ─── Active bot card ─── */
 const ActiveBotCard = ({ bot }) => {
   const { t } = useLanguage();
+  const { formatCurrency, convertAndFormatCurrency } = useCurrency();
   const activatedTime = new Date(bot.activatedAt).getTime();
   const now = Date.now();
   const msInDay = 1000 * 60 * 60 * 24;
@@ -110,9 +112,9 @@ const ActiveBotCard = ({ bot }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
           {[
-            { label: t('invested'), value: `$${parseFloat(bot.userAmount || 0).toLocaleString()}`, color: '#fff' },
+            { label: t('invested'), value: formatCurrency(bot.userAmount || 0), color: '#fff' },
             { label: t('dailyIncome'), value: `${bot.dailyPercent}%`, color: 'var(--success)' },
-            { label: t('estDailyProfit'), value: `$${((parseFloat(bot.userAmount || 0) * bot.dailyPercent) / 100).toFixed(2)}`, color: 'var(--success)' },
+            { label: t('estDailyProfit'), value: formatCurrency((parseFloat(bot.userAmount || 0) * bot.dailyPercent) / 100), color: 'var(--success)' },
             { label: t('operationTime'), value: t('hours24'), color: 'var(--text-primary)' },
           ].map((item, i) => (
             <div key={i} style={{ background: 'var(--bg-dark)', padding: '8px 10px', borderRadius: '8px' }}>
@@ -173,6 +175,7 @@ const ActiveBotCard = ({ bot }) => {
 /* ─── Bot marketplace card ─── */
 const BotCard = ({ bot, onSelect }) => {
   const { t } = useLanguage();
+  const { formatCurrency, convertAndFormatCurrency } = useCurrency();
   const c = TIER_COLORS[bot.vipLevel] || { from: '#d4af37', to: '#f5d98b' };
   return (
     <div style={{
@@ -221,7 +224,7 @@ const BotCard = ({ bot, onSelect }) => {
               <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('investmentRange')}</span>
             </div>
             <strong style={{ fontSize: '12px', color: '#fff' }}>
-              ${bot.minAmount.toLocaleString()} – ${bot.maxAmount.toLocaleString()}
+              {convertAndFormatCurrency(bot.minAmount)} – {convertAndFormatCurrency(bot.maxAmount)}
             </strong>
           </div>
 
@@ -271,14 +274,20 @@ const BotCard = ({ bot, onSelect }) => {
 /* ─── Confirmation modal ─── */
 const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
   const { t } = useLanguage();
+  const { formatCurrency, convertAndFormatCurrency, symbol, rate } = useCurrency();
   const [amount, setAmount] = useState('');
   const parsed = parseFloat(amount) || 0;
   const dailyProfit = ((parsed * bot.dailyPercent) / 100).toFixed(2);
   const isValid = parsed >= bot.minAmount && parsed <= bot.maxAmount;
 
   const handleConfirm = () => {
-    if (!isValid) return toast.error(t('errInvalidAmount').replace('${min}', bot.minAmount.toLocaleString()).replace('${max}', bot.maxAmount.toLocaleString()));
-    if (parsed > balance) return toast.error(t('errInsufficientBalance').replace('${bal}', balance.toFixed(2)));
+    const localMinAmount = bot.minAmount * rate;
+    const localMaxAmount = bot.maxAmount * rate;
+    if (!isValid || parsed < localMinAmount || parsed > localMaxAmount) return toast.error(t('errInvalidAmount').replace('${min}', convertAndFormatCurrency(bot.minAmount)).replace('${max}', convertAndFormatCurrency(bot.maxAmount)));
+    
+    const userBalance = parseFloat(balance || 0);
+    if (parsed > userBalance) return toast.error(t('errInsufficientBalance').replace('${bal}', formatCurrency(userBalance)));
+    
     onConfirm(bot, parsed);
   };
 
@@ -317,12 +326,12 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
               {t('investmentAmount')}
             </label>
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', fontWeight: 700, fontSize: '14px' }}>$</span>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', fontWeight: 700, fontSize: '14px' }}>{symbol}</span>
               <input
                 type="number"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
-                placeholder={`${bot.minAmount} – ${bot.maxAmount}`}
+                placeholder={`${bot.minAmount * rate} – ${bot.maxAmount * rate}`}
                 style={{
                   width: '100%', padding: '12px 12px 12px 28px', borderRadius: '10px',
                   background: 'var(--bg-dark)', border: `1px solid ${isValid || !amount ? 'var(--border)' : '#ef4444'}`,
@@ -331,7 +340,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
               />
             </div>
             <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '5px 0 0 0' }}>
-              Range: ${bot.minAmount.toLocaleString()} – ${bot.maxAmount.toLocaleString()} • Your balance: <strong style={{ color: 'var(--primary)' }}>${balance.toFixed(2)}</strong>
+              Range: {convertAndFormatCurrency(bot.minAmount)} – {convertAndFormatCurrency(bot.maxAmount)} • Your balance: <strong style={{ color: 'var(--primary)' }}>{formatCurrency(balance)}</strong>
             </p>
           </div>
 
@@ -340,7 +349,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
             {[
               { label: t('botMarketplace').replace('🤖 ',''), value: bot.name },
               { label: t('dailyReturnRate'), value: `${bot.dailyPercent}%`, color: 'var(--success)' },
-              { label: t('estDailyProfit'), value: parsed > 0 ? `$${dailyProfit}` : '—', color: 'var(--success)' },
+              { label: t('estDailyProfit'), value: parsed > 0 ? formatCurrency(dailyProfit) : '—', color: 'var(--success)' },
               { label: t('contractLifecycle'), value: t('days365') },
               { label: t('payoutCycle'), value: t('every24h') },
             ].map((row, i) => (
@@ -352,7 +361,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
             <div style={{ height: '1px', background: 'var(--border)' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('totalDeducted')}</span>
-              <strong style={{ fontSize: '18px', color: '#fff' }}>{parsed > 0 ? `$${parsed.toLocaleString()}` : '—'}</strong>
+              <strong style={{ fontSize: '18px', color: '#fff' }}>{parsed > 0 ? formatCurrency(parsed) : '—'}</strong>
             </div>
           </div>
 
@@ -457,6 +466,7 @@ const InfoModal = ({ onClose }) => {
 export const VIP = () => {
   const { currentUser, balance, userData } = useAuth();
   const { t } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('bots');   // 'bots' | 'mybots'
   const [selectedBot, setSelectedBot] = useState(null);
@@ -473,7 +483,7 @@ export const VIP = () => {
       const snap = await getDoc(userRef);
       if (!snap.exists()) throw new Error('User document not found');
 
-      const liveBalance = snap.data().balance || 0;
+      const liveBalance = parseFloat(snap.data().balance || 0);
       if (liveBalance < userAmount) throw new Error('Insufficient balance (live check).');
 
       const currentBots = snap.data().activatedBots || [];
@@ -494,7 +504,7 @@ export const VIP = () => {
       });
 
       // Schedule local notifications for this specific bot's lifecycle
-      scheduleBotNotifications(record);
+      scheduleBotNotifications(record, formatCurrency);
 
       toast.success(`${bot.name} ${t('botActivated')} 🤖`, { id: toastId });
       setSelectedBot(null);

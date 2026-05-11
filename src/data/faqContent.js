@@ -4,16 +4,16 @@ export const FAQ_DATA = [
     icon: "Globe",
     items: [
       {
-        question: "What exactly is the FINTEX Platform and how does it revolutionize digital finance?",
-        answer: `FINTEX is a globally recognized, state-of-the-art decentralized platform designed specifically to democratize high-frequency AI-driven cryptocurrency trading and advanced digital asset management. Built by a consortium of leading quantitative analysts, blockchain engineers, and financial strategists, the platform leverages proprietary artificial intelligence algorithms to scan, analyze, and execute profitable trading opportunities across dozens of global cryptocurrency exchanges in milliseconds. 
+        question: "What exactly is the QTX Coin Platform and how does it revolutionize digital finance?",
+        answer: `QTX Coin is a globally recognized, state-of-the-art decentralized platform designed specifically to democratize high-frequency AI-driven cryptocurrency trading and advanced digital asset management. Built by a consortium of leading quantitative analysts, blockchain engineers, and financial strategists, the platform leverages proprietary artificial intelligence algorithms to scan, analyze, and execute profitable trading opportunities across dozens of global cryptocurrency exchanges in milliseconds. 
 
-Traditionally, quantitative trading algorithms and high-frequency trading (HFT) bots were exclusively reserved for institutional investors, massive hedge funds, and ultra-high-net-worth individuals due to the astronomical costs of development and the requirement for massive computational power. FINTEX shatters this barrier to entry. By utilizing cloud-based decentralized computing and pooling resources, we allow everyday users from all corners of the globe to lease "VIP Trading Bots" that do the heavy lifting on their behalf. 
+Traditionally, quantitative trading algorithms and high-frequency trading (HFT) bots were exclusively reserved for institutional investors, massive hedge funds, and ultra-high-net-worth individuals due to the astronomical costs of development and the requirement for massive computational power. QTX Coin shatters this barrier to entry. By utilizing cloud-based decentralized computing and pooling resources, we allow everyday users from all corners of the globe to lease "VIP Trading Bots" that do the heavy lifting on their behalf. 
 
-When you join FINTEX, you are not simply buying a cryptocurrency; you are effectively hiring a tirelessly working, emotionless, hyper-intelligent digital employee. These AI bots analyze massive volumes of real-time market data, including order book depth, historical price action, momentum indicators, and macroeconomic news sentiment, to execute arbitrage and micro-trades that guarantee a stable daily return on investment. Whether the market is experiencing a bullish euphoric rally or a severe bearish downturn, our algorithms are designed to remain market-neutral, hedging risks and securing your daily profits without fail.`
+When you join QTX Coin, you are not simply buying a cryptocurrency; you are effectively hiring a tirelessly working, emotionless, hyper-intelligent digital employee. These AI bots analyze massive volumes of real-time market data, including order book depth, historical price action, momentum indicators, and macroeconomic news sentiment, to execute arbitrage and micro-trades that guarantee a stable daily return on investment. Whether the market is experiencing a bullish euphoric rally or a severe bearish downturn, our algorithms are designed to remain market-neutral, hedging risks and securing your daily profits without fail.`
       },
       {
         question: "How does the AI Mining Technology work behind the scenes?",
-        answer: `The core engine driving the FINTEX ecosystem is our proprietary 'Neural-Quant AI Mining Technology.' Unlike traditional proof-of-work (PoW) cryptocurrency mining that requires expensive hardware, massive electricity consumption, and complex cooling systems, our AI Mining operates entirely in the cloud, utilizing advanced machine learning models for predictive market analysis.
+        answer: `The core engine driving the QTX Coin ecosystem is our proprietary 'Neural-Quant AI Mining Technology.' Unlike traditional proof-of-work (PoW) cryptocurrency mining that requires expensive hardware, massive electricity consumption, and complex cooling systems, our AI Mining operates entirely in the cloud, utilizing advanced machine learning models for predictive market analysis.
 
 Here is a detailed breakdown of how the AI Mining Technology operates:
 1. Data Aggregation: The AI continuously ingests petabytes of data from over 40 global cryptocurrency exchanges (including Binance, Coinbase, Kraken, and OKX). It tracks price discrepancies, liquidity pools, and trading volumes in real-time.
@@ -24,8 +24,8 @@ Here is a detailed breakdown of how the AI Mining Technology operates:
 This sophisticated infrastructure ensures that your capital is constantly working, compounding your wealth effortlessly while you sleep, work, or spend time with your family.`
       },
       {
-        question: "Is FINTEX a secure and legally compliant platform?",
-        answer: `Security and transparency are the foundational pillars of the FINTEX ecosystem. We understand that in the digital age, the safety of your funds and personal data is paramount. 
+        question: "Is QTX Coin a secure and legally compliant platform?",
+        answer: `Security and transparency are the foundational pillars of the QTX Coin ecosystem. We understand that in the digital age, the safety of your funds and personal data is paramount. 
 
 To ensure military-grade security, our platform is fortified with multiple layers of defense:
 - Advanced Encryption: All data transmitted between your device and our servers is secured using AES-256 end-to-end encryption. This is the exact same cryptographic standard utilized by global banking institutions and government agencies.
@@ -33,7 +33,7 @@ To ensure military-grade security, our platform is fortified with multiple layer
 - Real-time Threat Monitoring: Our cybersecurity team utilizes AI-driven threat detection systems that monitor network traffic 24/7/365. Any suspicious login attempts, unusual withdrawal patterns, or brute-force attacks are immediately neutralized, and the affected accounts are temporarily frozen pending user verification.
 - Smart Contract Audits: All underlying blockchain interactions and smart contracts governing our reward distributions are regularly audited by premier third-party cybersecurity firms. These exhaustive audits ensure there are no vulnerabilities, backdoors, or logical flaws in the code.
 
-Legally, FINTEX operates in strict compliance with international financial regulations. We enforce comprehensive Anti-Money Laundering (AML) and Know Your Customer (KYC) protocols where necessary, ensuring that our platform remains a clean, secure environment for legitimate investors worldwide.`
+Legally, QTX Coin operates in strict compliance with international financial regulations. We enforce comprehensive Anti-Money Laundering (AML) and Know Your Customer (KYC) protocols where necessary, ensuring that our platform remains a clean, secure environment for legitimate investors worldwide.`
       }
     ]
   },
@@ -43,7 +43,7 @@ Legally, FINTEX operates in strict compliance with international financial regul
     items: [
       {
         question: "What are VIP Trading Bots and how do I activate one?",
-        answer: `VIP Trading Bots are the flagship investment vehicles offered by FINTEX. They represent varying tiers of access to our AI trading algorithms. Depending on your financial goals and available capital, you can select from a wide range of bots, each meticulously calibrated to deliver a specific daily percentage return.
+        answer: `VIP Trading Bots are the flagship investment vehicles offered by QTX Coin. They represent varying tiers of access to our AI trading algorithms. Depending on your financial goals and available capital, you can select from a wide range of bots, each meticulously calibrated to deliver a specific daily percentage return.
 
 To activate a VIP Trading Bot, you must follow these exact steps:
 1. Recharge Your Account: First, ensure that your primary 'Wallet Balance' has sufficient funds. You can recharge your account using Cryptocurrency (USDT/BTC/ETH), Binance Pay, or supported Mobile Money networks depending on your geographical location.
@@ -56,7 +56,7 @@ Once activated, no further manual intervention is required. The bot operates ent
       },
       {
         question: "How and when are the daily profits distributed?",
-        answer: `FINTEX utilizes an incredibly precise, automated cron-job scheduling system to manage profit distributions. We believe in absolute punctuality and transparency regarding your earnings.
+        answer: `QTX Coin utilizes an incredibly precise, automated cron-job scheduling system to manage profit distributions. We believe in absolute punctuality and transparency regarding your earnings.
 
 The Profit Cycle:
 The moment you successfully activate a VIP bot, a digital timestamp is recorded in our database. Exactly 24 hours (86,400 seconds) from that precise moment, the bot completes its first daily trading cycle. 
@@ -71,7 +71,7 @@ This process repeats flawlessly every single day, including weekends and public 
       },
       {
         question: "What happens when a bot's 365-day contract expires?",
-        answer: `Every VIP Trading Bot leased on the FINTEX platform operates on a strict, immutable 365-day (one full year) lifecycle contract. We have engineered the system this way to ensure long-term sustainability and to manage the liquidity pools effectively.
+        answer: `Every VIP Trading Bot leased on the QTX Coin platform operates on a strict, immutable 365-day (one full year) lifecycle contract. We have engineered the system this way to ensure long-term sustainability and to manage the liquidity pools effectively.
 
 Throughout the 365 days:
 Your bot will relentlessly generate daily profits. By the end of the lifecycle, assuming you have not reinvested or compounded your earnings, you will have received a massive cumulative return. For instance, a bot generating 5% daily will have produced an astronomical 1,825% return on your initial capital over the course of the year.
@@ -91,8 +91,8 @@ Important Note: When a bot expires, it permanently ceases all trading activities
     icon: "Wallet",
     items: [
       {
-        question: "How do I deposit funds (recharge) into my FINTEX account?",
-        answer: `Funding your FINTEX account is a streamlined, highly secure process designed to accommodate users from all global jurisdictions. We currently support multiple robust payment gateways to ensure maximum flexibility and speed.
+        question: "How do I deposit funds (recharge) into my QTX Coin account?",
+        answer: `Funding your QTX Coin account is a streamlined, highly secure process designed to accommodate users from all global jurisdictions. We currently support multiple robust payment gateways to ensure maximum flexibility and speed.
 
 Step-by-Step Deposit Guide:
 1. Navigate to the Wallet: From your main dashboard, click on the 'Recharge' or 'Deposit' icon.
@@ -104,15 +104,15 @@ Step-by-Step Deposit Guide:
    - For Crypto: The system will generate a unique, one-time secure wallet address. Copy this address exactly and paste it into your external wallet or exchange to send the funds.
    - For Binance Pay: You will be provided with our official Binance Pay ID.
    - For Mobile Money: You will see detailed instructions including the merchant phone number, account name, and USSD codes required to complete the transfer.
-4. Submit Proof of Payment: After you have initiated the transfer from your side, you must enter the exact amount sent and provide the Transaction ID (TXID), Hash, or Mobile Reference Number into the FINTEX deposit form.
+4. Submit Proof of Payment: After you have initiated the transfer from your side, you must enter the exact amount sent and provide the Transaction ID (TXID), Hash, or Mobile Reference Number into the QTX Coin deposit form.
 5. Verification: Once submitted, your deposit enters a 'Pending' state. Our automated backend systems, integrated directly with blockchain explorers and banking APIs, will scan the network to verify your transaction.
-6. Credit: As soon as the transaction is confirmed (usually within 3 to 15 minutes for crypto), your primary FINTEX balance will automatically update, and you will receive an in-app notification confirming the successful recharge.`
+6. Credit: As soon as the transaction is confirmed (usually within 3 to 15 minutes for crypto), your primary QTX Coin balance will automatically update, and you will receive an in-app notification confirming the successful recharge.`
       },
       {
         question: "Why is my deposit still showing as 'Pending'?",
         answer: `If your deposit is marked as 'Pending,' there is absolutely no need to panic. This is a standard part of the financial verification process. There are several common reasons why a deposit might take longer than usual to reflect in your available balance:
 
-1. Blockchain Network Congestion: If you deposited using a cryptocurrency like Bitcoin or Ethereum, the respective blockchain networks can occasionally experience extreme congestion due to high global transaction volumes. This means miners take longer to confirm your block. FINTEX requires a specific number of network confirmations (usually 3 to 6) before crediting funds to prevent double-spending attacks.
+1. Blockchain Network Congestion: If you deposited using a cryptocurrency like Bitcoin or Ethereum, the respective blockchain networks can occasionally experience extreme congestion due to high global transaction volumes. This means miners take longer to confirm your block. QTX Coin requires a specific number of network confirmations (usually 3 to 6) before crediting funds to prevent double-spending attacks.
 2. Incorrect TXID/Reference Number: If you manually typed the Transaction Hash or Reference Number and made a typographical error, our automated scanners will not be able to locate the payment on the ledger. Always use the 'Copy' button on your exchange or mobile app to ensure 100% accuracy.
 3. Third-Party Delays: If you used a local Mobile Money provider, there are occasionally API downtimes or maintenance windows initiated by the telecom companies that delay the communication between their servers and ours.
 4. Security Review: For unusually large deposits, our system may flag the transaction for a manual administrative review to comply with international security protocols. This is for your own safety.
@@ -121,10 +121,10 @@ If your deposit has been pending for more than 2 hours, please ensure you have d
       },
       {
         question: "What is 'Account Binding' and why is it absolutely mandatory?",
-        answer: `Account Binding is one of the most critical security features on the FINTEX platform. Before you are permitted to initiate any withdrawals, you must legally bind your external receiving account to your FINTEX profile. 
+        answer: `Account Binding is one of the most critical security features on the QTX Coin platform. Before you are permitted to initiate any withdrawals, you must legally bind your external receiving account to your QTX Coin profile. 
 
 Why is it mandatory?
-This stringent requirement is an anti-theft and anti-fraud mechanism. In the highly unlikely event that a malicious actor manages to gain access to your FINTEX account (for example, if you leaked your password or fell victim to a phishing scam), they will be entirely unable to steal your funds. The system physically restricts all outgoing withdrawals exclusively to the specific wallet address or account number that you previously bound and verified. The hacker cannot change the bound account without triggering massive security alerts and secondary verifications.
+This stringent requirement is an anti-theft and anti-fraud mechanism. In the highly unlikely event that a malicious actor manages to gain access to your QTX Coin account (for example, if you leaked your password or fell victim to a phishing scam), they will be entirely unable to steal your funds. The system physically restricts all outgoing withdrawals exclusively to the specific wallet address or account number that you previously bound and verified. The hacker cannot change the bound account without triggering massive security alerts and secondary verifications.
 
 How to Bind Your Account:
 1. Navigate to 'Account' > 'Bind Account'.
@@ -144,7 +144,7 @@ Once an account is bound, it is locked into the system. If you ever need to upda
     items: [
       {
         question: "How do I withdraw my profits, and what are the rules?",
-        answer: `Withdrawing your hard-earned profits from FINTEX is a simple, highly secure process. We pride ourselves on ensuring that you have rapid access to your liquid assets whenever you need them.
+        answer: `Withdrawing your hard-earned profits from QTX Coin is a simple, highly secure process. We pride ourselves on ensuring that you have rapid access to your liquid assets whenever you need them.
 
 The Withdrawal Process:
 1. Prerequisites: Ensure you have already bound your receiving account (as explained in the Account Binding section) and that your available 'Profit Wallet' balance meets the minimum withdrawal threshold for your region.
@@ -160,7 +160,7 @@ Withdrawal Rules & Processing Times:
       },
       {
         question: "Why was my withdrawal request rejected?",
-        answer: `FINTEX maintains a flawless record of payouts. If your withdrawal request was rejected and the funds were refunded back to your FINTEX wallet, it is almost certainly due to a technical error on your end or a protective security measure triggered by the system.
+        answer: `QTX Coin maintains a flawless record of payouts. If your withdrawal request was rejected and the funds were refunded back to your QTX Coin wallet, it is almost certainly due to a technical error on your end or a protective security measure triggered by the system.
 
 Common Reasons for Rejection:
 1. Invalid Bound Account: This is the number one reason for rejection. If you bound a cryptocurrency address but selected the wrong network (e.g., you provided an ERC20 address but selected the TRC20 network option), the blockchain will reject the transfer. Similarly, if you provided an invalid Binance Pay ID or an unregistered mobile money number, our system cannot physically send the funds.
@@ -189,7 +189,7 @@ Once you have earned a spin chance, simply navigate to the 'Lucky Spin' page fro
       },
       {
         question: "How much can I win from the Lucky Spin, and is it guaranteed?",
-        answer: `Yes, every single spin is a guaranteed win! There are no "blank" segments on the FINTEX Lucky Wheel. 
+        answer: `Yes, every single spin is a guaranteed win! There are no "blank" segments on the QTX Coin Lucky Wheel. 
 
 When you spin the wheel, the underlying smart algorithm calculates a guaranteed randomized cash reward that ranges between 1% and 10% of the $1,000 qualifying threshold. This means every time you spin, you will instantly win a random cash prize ranging anywhere from $10 to $100. 
 
@@ -204,16 +204,16 @@ The moment the wheel stops spinning, your randomized reward (between $10 and $10
     icon: "UserPlus",
     items: [
       {
-        question: "How does the FINTEX Affiliate Program work?",
-        answer: `The FINTEX Affiliate Program is widely regarded as one of the most lucrative network-building systems in the decentralized finance space. We believe that our most powerful marketing tool is the success and word-of-mouth recommendations of our existing users. Therefore, we heavily incentivize you to share the platform with your friends, family, and social media followers.
+        question: "How does the QTX Coin Affiliate Program work?",
+        answer: `The QTX Coin Affiliate Program is widely regarded as one of the most lucrative network-building systems in the decentralized finance space. We believe that our most powerful marketing tool is the success and word-of-mouth recommendations of our existing users. Therefore, we heavily incentivize you to share the platform with your friends, family, and social media followers.
 
 The Mechanics of the Program:
-Every registered FINTEX user is automatically assigned a unique, alphanumeric Referral Code and a personalized Invitation Link, which can be found on the 'Invite' or 'Affiliate' page.
+Every registered QTX Coin user is automatically assigned a unique, alphanumeric Referral Code and a personalized Invitation Link, which can be found on the 'Invite' or 'Affiliate' page.
 
 When a new user clicks your link or manually enters your Referral Code during registration, they are permanently cryptographically bound to your affiliate network as a 'Direct Referral' (Level 1).
 
 The 3-Tier Commission Structure:
-FINTEX operates a deep, multi-level commission system that rewards not just your direct recruits, but the entire network you build beneath you. Here is exactly how it works:
+QTX Coin operates a deep, multi-level commission system that rewards not just your direct recruits, but the entire network you build beneath you. Here is exactly how it works:
 
 • Level 1 – Direct Referral (10%): When someone you personally invite makes a deposit and it is approved, you instantly receive 10% of that deposit credited to your balance. Example: Your friend deposits $500 → You earn $50 immediately.
 
@@ -224,14 +224,14 @@ FINTEX operates a deep, multi-level commission system that rewards not just your
 All commissions are fully automated. The exact second a deposit is approved by the admin, every eligible referrer in the chain receives their commission simultaneously. A transaction receipt labeled 'Affiliate Reward' with the tier level is generated in each referrer's history for full transparency.`
       },
       {
-        question: "What are the best strategies for growing my FINTEX affiliate network?",
-        answer: `Building a massive, income-generating affiliate network requires consistency, transparency, and education. Our top earners treat their FINTEX network as a serious business. Here are the most effective strategies utilized by our elite affiliates:
+        question: "What are the best strategies for growing my QTX Coin affiliate network?",
+        answer: `Building a massive, income-generating affiliate network requires consistency, transparency, and education. Our top earners treat their QTX Coin network as a serious business. Here are the most effective strategies utilized by our elite affiliates:
 
 1. Leverage Social Proof: People are naturally skeptical of online platforms. The single most effective way to recruit is by showing indisputable proof of your own success. Take screenshots of your active VIP bots, your daily mining profits, and most importantly, your successful withdrawal receipts. Post these consistently on WhatsApp statuses, Telegram groups, Facebook, and Twitter.
 2. Create Educational Content: Do not simply spam your referral link. Create short tutorial videos using screen-recording software. Show your audience exactly how to register, how to bind an account, and how to activate a bot. By positioning yourself as a helpful mentor rather than a salesman, you build immense trust.
-3. Host Webinars and Zoom Calls: Gather interested prospects and host weekly presentations. Walk them through the FINTEX ecosystem, explain how the AI arbitrage works, and host live Q&A sessions.
+3. Host Webinars and Zoom Calls: Gather interested prospects and host weekly presentations. Walk them through the QTX Coin ecosystem, explain how the AI arbitrage works, and host live Q&A sessions.
 4. Support Your Downline: Your job does not end when someone signs up. Create a private group chat for your referrals. Answer their questions, guide them through their first deposit, and encourage them to recruit their own teams. A motivated downline builds a stronger network.
-5. Utilize the Promotional Materials: FINTEX periodically releases high-quality promotional banners, PDF pitch decks, and official videos. Utilize these professional assets to lend credibility to your marketing campaigns.`
+5. Utilize the Promotional Materials: QTX Coin periodically releases high-quality promotional banners, PDF pitch decks, and official videos. Utilize these professional assets to lend credibility to your marketing campaigns.`
       }
     ]
   },
@@ -243,20 +243,20 @@ All commissions are fully automated. The exact second a deposit is approved by t
         question: "I forgot my password or my account is locked. What do I do?",
         answer: `Security protocols dictate that account access issues must be handled with extreme care to prevent unauthorized social engineering attacks. 
 
-If you have simply forgotten your password, navigate to the Login page and click the 'Forgot Password' link. You will be prompted to enter the email address associated with your FINTEX account. The system will dispatch an automated, secure password reset link to your inbox. Please ensure you check your Spam or Junk folders if the email does not arrive within 5 minutes. Click the link, create a new highly secure password (incorporating uppercase letters, numbers, and symbols), and log back in.
+If you have simply forgotten your password, navigate to the Login page and click the 'Forgot Password' link. You will be prompted to enter the email address associated with your QTX Coin account. The system will dispatch an automated, secure password reset link to your inbox. Please ensure you check your Spam or Junk folders if the email does not arrive within 5 minutes. Click the link, create a new highly secure password (incorporating uppercase letters, numbers, and symbols), and log back in.
 
 If your account has been explicitly 'Locked' or 'Suspended', this means our automated security AI has detected a severe violation of our Terms of Service or highly suspicious activity (such as multiple failed login attempts from a foreign IP address, or attempts to exploit the platform). 
 
 In the event of an account lock, you cannot resolve it automatically. You must immediately contact our Global Support Team via the Floating Support Bubble visible on the bottom right of your screen. You will be required to undergo a comprehensive manual identity verification process. Be prepared to provide:
 1. A clear photograph of your government-issued ID or Passport.
-2. A selfie of you holding that ID next to a piece of paper with today's date and the word "FINTEX" written on it.
+2. A selfie of you holding that ID next to a piece of paper with today's date and the word "QTX Coin" written on it.
 3. Proof of the transactions/deposits you have made into the account.
 
 This rigorous process is non-negotiable and exists entirely to ensure that hackers cannot steal your identity and access your funds.`
       },
       {
         question: "How do I contact customer support if I have a complex issue?",
-        answer: `FINTEX is committed to providing world-class, responsive customer support. If your issue is not resolved by reading this extensive FAQ document, you have direct lines of communication to our dedicated support agents.
+        answer: `QTX Coin is committed to providing world-class, responsive customer support. If your issue is not resolved by reading this extensive FAQ document, you have direct lines of communication to our dedicated support agents.
 
 The primary and most efficient method of contact is the Floating Support Bubble located on your screen. Clicking this will open a direct, encrypted live chat with our support infrastructure. 
 
@@ -266,7 +266,7 @@ When contacting support regarding a specific transaction (such as a missing depo
 3. The Transaction Hash (TXID) or Mobile Reference Number.
 4. A clear, uncropped screenshot of the error or the payment receipt from your external wallet/bank.
 
-Do not send generic messages such as "Help my deposit hasn't arrived." Our agents deal with thousands of queries daily; providing all necessary technical details upfront allows them to instantly locate your records in the database and resolve the issue in minutes rather than days. Please note that FINTEX administrators will NEVER ask you for your password or ask you to send funds to a "support wallet" to unlock your account. Beware of impersonators on social media platforms.`
+Do not send generic messages such as "Help my deposit hasn't arrived." Our agents deal with thousands of queries daily; providing all necessary technical details upfront allows them to instantly locate your records in the database and resolve the issue in minutes rather than days. Please note that QTX Coin administrators will NEVER ask you for your password or ask you to send funds to a "support wallet" to unlock your account. Beware of impersonators on social media platforms.`
       }
     ]
   }

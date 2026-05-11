@@ -51,13 +51,13 @@ export const About = () => {
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
-              Welcome to FINTEX AI, the world's most advanced and comprehensive automated algorithmic trading platform. Founded on the principle that institutional-grade financial technology should be accessible to everyone, our platform democratizes access to high-frequency trading (HFT) environments, quantitative analysis, and artificial intelligence-driven asset management.
+              Welcome to QTX Coin AI, the world's most advanced and comprehensive automated algorithmic trading platform. Founded on the principle that institutional-grade financial technology should be accessible to everyone, our platform democratizes access to high-frequency trading (HFT) environments, quantitative analysis, and artificial intelligence-driven asset management.
             </p>
             <p>
-              Our vision is to entirely bridge the gap between retail investors and Wall Street. For decades, the most lucrative investment opportunities and sophisticated trading algorithms have been locked behind the closed doors of massive hedge funds, requiring millions of dollars in capital just to gain entry. FINTEX AI changes this paradigm. By pooling resources and utilizing ultra-scalable cloud computing infrastructure, we allow users to activate powerful, distinct trading bots—ranging from our introductory VIP 1 tier to the monumental VIP 12 Omni bot—tailored exactly to their risk appetite and financial goals.
+              Our vision is to entirely bridge the gap between retail investors and Wall Street. For decades, the most lucrative investment opportunities and sophisticated trading algorithms have been locked behind the closed doors of massive hedge funds, requiring millions of dollars in capital just to gain entry. QTX Coin AI changes this paradigm. By pooling resources and utilizing ultra-scalable cloud computing infrastructure, we allow users to activate powerful, distinct trading bots—ranging from our introductory VIP 1 tier to the monumental VIP 12 Omni bot—tailored exactly to their risk appetite and financial goals.
             </p>
             <p>
-              We believe in absolute transparency, unwavering security, and consistent results. When you activate a FINTEX, you are not simply guessing on market movements; you are deploying a relentlessly optimized piece of software that analyzes thousands of market variables per second. It works 24 hours a day, 7 days a week, 365 days a year, ensuring that your capital is continuously working for you while you sleep.
+              We believe in absolute transparency, unwavering security, and consistent results. When you activate a QTX Coin, you are not simply guessing on market movements; you are deploying a relentlessly optimized piece of software that analyzes thousands of market variables per second. It works 24 hours a day, 7 days a week, 365 days a year, ensuring that your capital is continuously working for you while you sleep.
             </p>
           </div>
         </section>
@@ -70,10 +70,10 @@ export const About = () => {
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
-              At the core of our platform lies the FINTEX Quantum Engine, a proprietary AI architecture developed by a global team of data scientists, financial analysts, and ex-institutional traders. This engine is designed to ingest massive amounts of unstructured financial data—including real-time price feeds across global exchanges, macroeconomic indicators, geopolitical news sentiment, and on-chain metrics for digital assets.
+              At the core of our platform lies the QTX Coin Quantum Engine, a proprietary AI architecture developed by a global team of data scientists, financial analysts, and ex-institutional traders. This engine is designed to ingest massive amounts of unstructured financial data—including real-time price feeds across global exchanges, macroeconomic indicators, geopolitical news sentiment, and on-chain metrics for digital assets.
             </p>
             <p>
-              <strong>Machine Learning & Neural Networks:</strong> The engine utilizes deep reinforcement learning. It does not follow simple "if-this-then-that" rules. Instead, it continuously learns from market conditions. Every trade it executes, whether successful or not, feeds back into the neural network, refining its predictive capabilities. This means that FINTEX gets smarter with every passing millisecond.
+              <strong>Machine Learning & Neural Networks:</strong> The engine utilizes deep reinforcement learning. It does not follow simple "if-this-then-that" rules. Instead, it continuously learns from market conditions. Every trade it executes, whether successful or not, feeds back into the neural network, refining its predictive capabilities. This means that QTX Coin gets smarter with every passing millisecond.
             </p>
             <p>
               <strong>High-Frequency Execution:</strong> Speed is the ultimate currency in modern financial markets. Our servers are co-located in prime data centers in New York, London, Tokyo, and Frankfurt, directly adjacent to major stock and digital asset exchanges. This proximity reduces latency to micro-seconds, allowing our bots to execute arbitrage opportunities and micro-trades before the broader market even registers a price change.
@@ -92,10 +92,10 @@ export const About = () => {
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
-              FINTEX AI operates on a truly global scale. We proudly serve over 2.5 million active users across more than 150 countries. Our platform is fully localized, supporting multiple languages and region-specific payment gateways to ensure a frictionless experience regardless of where our users reside.
+              QTX Coin AI operates on a truly global scale. We proudly serve over 2.5 million active users across more than 150 countries. Our platform is fully localized, supporting multiple languages and region-specific payment gateways to ensure a frictionless experience regardless of where our users reside.
             </p>
             <p>
-              <strong>Regulatory Compliance:</strong> Operating in the global financial sector requires rigorous adherence to international laws. FINTEX AI maintains strict compliance with Anti-Money Laundering (AML) and Know Your Customer (KYC) regulations. We work closely with financial regulatory bodies in key jurisdictions to ensure that our operations are entirely transparent and legally sound. Our commitment to compliance protects not only our platform but, more importantly, the capital of our investors.
+              <strong>Regulatory Compliance:</strong> Operating in the global financial sector requires rigorous adherence to international laws. QTX Coin AI maintains strict compliance with Anti-Money Laundering (AML) and Know Your Customer (KYC) regulations. We work closely with financial regulatory bodies in key jurisdictions to ensure that our operations are entirely transparent and legally sound. Our commitment to compliance protects not only our platform but, more importantly, the capital of our investors.
             </p>
             <p>
               <strong>Global Server Infrastructure:</strong> To support a user base that spans the globe, we employ a decentralized server architecture utilizing cutting-edge edge computing. This ensures that the user interface remains lightning-fast and highly responsive, whether you are logging in from a metropolis in Asia or a remote town in South America. Total uptime for our platform over the past 24 months has been an industry-leading 99.99%.
@@ -136,7 +136,7 @@ export const About = () => {
               The cornerstone of our platform is the VIP Bot Marketplace. We understand that investors have different starting points and different long-term objectives. Therefore, we developed a tiered system consisting of 12 distinct AI bots, ranging from VIP 1 to VIP 12.
             </p>
             <p>
-              <strong>Structured Progression:</strong> Our system is designed to allow users to start small, perhaps testing the waters with the FINTEX Alpha (VIP 1), and then reinvesting their daily profits to progressively upgrade to higher-yielding bots. The higher the VIP tier, the more sophisticated the underlying trading algorithms become, and the larger the capital pools they can access. This translates directly to higher guaranteed daily return percentages.
+              <strong>Structured Progression:</strong> Our system is designed to allow users to start small, perhaps testing the waters with the QTX Coin Alpha (VIP 1), and then reinvesting their daily profits to progressively upgrade to higher-yielding bots. The higher the VIP tier, the more sophisticated the underlying trading algorithms become, and the larger the capital pools they can access. This translates directly to higher guaranteed daily return percentages.
             </p>
             <p>
               <strong>365-Day Lifecycle & Daily Payouts:</strong> Every bot operates on a strict 365-day smart contract. The moment you activate a bot, the countdown begins. For an entire year, the bot will relentlessly execute trades and generate profits. These profits are not locked away; they are credited to your profit wallet every 24 hours. This daily payout cycle ensures that you have constant liquidity and complete control over your earnings, whether you choose to withdraw them immediately or compound them into new bot activations.
@@ -152,7 +152,7 @@ export const About = () => {
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
-              FINTEX operates one of the most powerful multi-level referral commission systems in the decentralized finance space. You do not just earn from the people you invite — you earn from the people <strong style={{ color: '#fff' }}>they</strong> invite too, up to 3 levels deep.
+              QTX Coin operates one of the most powerful multi-level referral commission systems in the decentralized finance space. You do not just earn from the people you invite — you earn from the people <strong style={{ color: '#fff' }}>they</strong> invite too, up to 3 levels deep.
             </p>
 
             {/* Referral chain image */}
@@ -188,13 +188,13 @@ export const About = () => {
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
-              Beyond the predictable, steady income generated by our VIP bots and the lucrative 30% direct referral commissions, FINTEX AI strongly believes in sporadically rewarding our most active users through high-impact gamification. The crown jewel of this reward structure is the <strong>Lucky Spin Wheel</strong>.
+              Beyond the predictable, steady income generated by our VIP bots and the lucrative 30% direct referral commissions, QTX Coin AI strongly believes in sporadically rewarding our most active users through high-impact gamification. The crown jewel of this reward structure is the <strong>Lucky Spin Wheel</strong>.
             </p>
             <p>
               <strong>Instant Cash Injections:</strong> The Lucky Spin is not a typical lottery. It is a guaranteed reward mechanism. Users earn a chance to spin the wheel whenever they make a qualifying deposit of $1,000 or more, or whenever a direct referral of theirs makes a qualifying deposit. Every single spin guarantees an instant cash prize ranging from $10 to $100, credited directly to your withdrawable balance in real-time.
             </p>
             <p>
-              This gamified layer ensures that while the AI algorithms are steadily compounding your wealth in the background, you also experience the immediate thrill of instant, substantial cash bonuses for your active participation in growing the FINTEX ecosystem.
+              This gamified layer ensures that while the AI algorithms are steadily compounding your wealth in the background, you also experience the immediate thrill of instant, substantial cash bonuses for your active participation in growing the QTX Coin ecosystem.
             </p>
           </div>
         </section>
@@ -207,16 +207,16 @@ export const About = () => {
           </div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
             <p>
-              Beyond the code and the capital, FINTEX AI is fundamentally about people. We are incredibly proud of the global community of investors we have cultivated. Our lucrative Affiliate Program is a testament to our belief in collective growth; we reward our users generously for introducing new members to the platform, creating a network effect that benefits everyone involved.
+              Beyond the code and the capital, QTX Coin AI is fundamentally about people. We are incredibly proud of the global community of investors we have cultivated. Our lucrative Affiliate Program is a testament to our belief in collective growth; we reward our users generously for introducing new members to the platform, creating a network effect that benefits everyone involved.
             </p>
             <p>
               <strong>24/7 Support:</strong> We recognize that automated trading can seem complex. That is why we maintain a dedicated, multi-lingual customer support team available around the clock. Whether you have a question about a withdrawal, need assistance navigating the VIP tiers, or simply want to learn more about our security protocols, our team is always ready to assist.
             </p>
             <p>
-              <strong>The Roadmap to 2030:</strong> The financial landscape is evolving at breakneck speed, and FINTEX AI is positioned at the very vanguard of this revolution. Our roadmap over the next several years includes the integration of quantum computing principles into our core AI engine, the expansion into decentralized finance (DeFi) liquidity provisioning, and the launch of our own proprietary blockchain network to further reduce transaction costs and increase transparency.
+              <strong>The Roadmap to 2030:</strong> The financial landscape is evolving at breakneck speed, and QTX Coin AI is positioned at the very vanguard of this revolution. Our roadmap over the next several years includes the integration of quantum computing principles into our core AI engine, the expansion into decentralized finance (DeFi) liquidity provisioning, and the launch of our own proprietary blockchain network to further reduce transaction costs and increase transparency.
             </p>
             <p>
-              We are not just adapting to the future of finance; we are actively building it. We invite you to activate a bot, join our community, and take absolute control of your financial destiny with FINTEX AI.
+              We are not just adapting to the future of finance; we are actively building it. We invite you to activate a bot, join our community, and take absolute control of your financial destiny with QTX Coin AI.
             </p>
           </div>
         </section>

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { scheduleBotNotifications } from '../services/botNotifications';
+import { useCurrency } from '../hooks/useCurrency';
 
 /* ─── Tier colour palette ─── */
 const TIER_COLORS = {
@@ -48,6 +49,7 @@ const VipBadge = ({ level }) => {
 /* ─── Active bot card ─── */
 const ActiveBotCard = ({ bot }) => {
   const [timeLeft, setTimeLeft] = useState('00:00:00');
+  const { formatCurrency } = useCurrency();
   
   const activatedTime = new Date(bot.activatedAt).getTime();
   const msInDay = 1000 * 60 * 60 * 24;
@@ -128,9 +130,9 @@ const ActiveBotCard = ({ bot }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
           {[
-            { label: 'Invested', value: `$${parseFloat(bot.userAmount || bot.price || 0).toLocaleString()}`, color: '#fff' },
+            { label: 'Invested', value: formatCurrency(bot.userAmount || bot.price || 0), color: '#fff' },
             { label: 'Daily Income', value: `${bot.dailyPercent || bot.returnRange || 0}%`, color: 'var(--success)' },
-            { label: 'Est. Daily Profit', value: `$${((parseFloat(bot.userAmount || bot.price || 0) * parseFloat(bot.dailyPercent || parseInt(bot.returnRange) || 0)) / 100).toFixed(2)}`, color: 'var(--success)' },
+            { label: 'Est. Daily Profit', value: formatCurrency((parseFloat(bot.userAmount || bot.price || 0) * parseFloat(bot.dailyPercent || parseInt(bot.returnRange) || 0)) / 100), color: 'var(--success)' },
             { label: 'Operation Time', value: '24 Hours', color: 'var(--text-primary)' },
           ].map((item, i) => (
             <div key={i} style={{ background: 'var(--bg-dark)', padding: '8px 10px', borderRadius: '8px' }}>
@@ -196,6 +198,7 @@ const ActiveBotCard = ({ bot }) => {
 
 export const MyBots = () => {
   const { currentUser, userData } = useAuth();
+  const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
   const activatedBots = userData?.activatedBots || [];
   const [history, setHistory] = useState([]);
@@ -229,7 +232,7 @@ export const MyBots = () => {
         // Only schedule if it's currently running (not expired)
         const daysActive = Math.floor((Date.now() - new Date(bot.activatedAt).getTime()) / (1000 * 60 * 60 * 24));
         if (daysActive < 365) {
-          scheduleBotNotifications(bot);
+          scheduleBotNotifications(bot, formatCurrency);
         }
       });
     }
@@ -298,7 +301,7 @@ export const MyBots = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <strong style={{ display: 'block', fontSize: '14px', color: 'var(--success)' }}>
-                    +${parseFloat(record.amount || 0).toFixed(2)}
+                    +{formatCurrency(record.amount || 0)}
                   </strong>
                   <span style={{ fontSize: '9px', color: 'var(--success)', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '10px' }}>Success</span>
                 </div>

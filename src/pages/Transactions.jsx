@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { CheckCircle2, Clock, XCircle, ArrowDownLeft, ArrowUpRight, ChevronLeft } from 'lucide-react';
@@ -13,6 +14,7 @@ import { QRCodeSVG } from 'qrcode.react';
 export const Transactions = () => {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
+  const { formatCurrency, isTZ, symbol } = useCurrency();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [selectedTx, setSelectedTx] = useState(null);
@@ -30,7 +32,7 @@ export const Transactions = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`FINTEX_Receipt_${selectedTx.txid || selectedTx.id}.pdf`);
+      pdf.save(`QTX Coin_Receipt_${selectedTx.txid || selectedTx.id}.pdf`);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
     }
@@ -126,7 +128,7 @@ export const Transactions = () => {
               }
             </p>
             <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0', color: selectedTx.type === 'deposit' ? 'var(--success)' : 'var(--danger)' }}>
-              {selectedTx.type === 'deposit' ? '+' : '-'}{selectedTx.amount?.toFixed(4) || selectedTx.expectedAmount?.toFixed(4)} {selectedTx.currency || 'USDT'}
+              {selectedTx.type === 'deposit' ? '+' : '-'}{formatCurrency(selectedTx.amount || selectedTx.expectedAmount || 0)}
             </div>
           </div>
 
@@ -135,7 +137,7 @@ export const Transactions = () => {
             <div style={{ marginBottom: '8px' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('from')}</div>
               <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'withdrawal' ? 'FINTEX System Wallet' : (selectedTx.from || 'Wallet Address (External)')}
+                {selectedTx.type === 'withdrawal' ? 'QTX Coin System Wallet' : (selectedTx.from || 'Wallet Address (External)')}
               </div>
             </div>
             <div style={{ marginBottom: '8px' }}>
@@ -185,10 +187,16 @@ export const Transactions = () => {
               </div>
             </div>
             
+            {(selectedTx.note && selectedTx.status === 'cancelled') && (
+              <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: '8px', color: 'var(--danger)', fontSize: '12px', fontWeight: 600 }}>
+                {t('cancelReason') || 'Cancellation Reason'}: {selectedTx.note}
+              </div>
+            )}
+            
             {(selectedTx.txid || selectedTx.type === 'withdrawal') && (
               <div style={{ width: '70px', height: '70px', flexShrink: 0, background: '#fff', padding: '3px', borderRadius: '6px', border: '1px solid var(--border)' }}>
                 <QRCodeSVG 
-                  value={selectedTx.txid ? `https://tronscan.org/#/transaction/${selectedTx.txid}` : `FINTEX-WD-${selectedTx.id}`} 
+                  value={selectedTx.txid ? `https://tronscan.org/#/transaction/${selectedTx.txid}` : `QTX Coin-WD-${selectedTx.id}`} 
                   size={62} 
                 />
               </div>
@@ -206,7 +214,7 @@ export const Transactions = () => {
           </button>
 
           <div style={{ textAlign: 'center', fontSize: '11px', padding: '16px 0 0 0', color: '#888' }}>
-            © {new Date().getFullYear()} FINTEX. All rights reserved.
+            © {new Date().getFullYear()} QTX Coin. All rights reserved.
           </div>
         </motion.div>
       ) : (
@@ -259,7 +267,7 @@ export const Transactions = () => {
                       
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontWeight: 600, color: tx.status === 'failed' ? 'var(--text-muted)' : tx.type === 'deposit' ? 'var(--success)' : 'var(--text-primary)' }}>
-                          {tx.type === 'deposit' ? '+' : '-'}${tx.amount?.toFixed(2) || tx.expectedAmount?.toFixed(2)}
+                          {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount || tx.expectedAmount || 0)}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
@@ -274,6 +282,11 @@ export const Transactions = () => {
                           {tx.status === 'pending' && remainingMs !== null && remainingMs > 0 && (
                             <div style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
                               {t('expiresLabel')} {formatTime(remainingMs)}
+                            </div>
+                          )}
+                          {(tx.status === 'cancelled' || tx.status === 'failed') && tx.note && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--danger)', fontWeight: 600, marginTop: '2px', maxWidth: '140px', textAlign: 'right' }}>
+                              {tx.note}
                             </div>
                           )}
                         </div>

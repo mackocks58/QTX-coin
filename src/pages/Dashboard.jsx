@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../hooks/useCurrency';
 import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check } from 'lucide-react';
 import { LiveTransactions } from '../components/LiveTransactions';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { SpinPromoPopup } from '../components/SpinPromoPopup';
 
 export const Dashboard = () => {
-  const { currentUser, userData, balance, miningBalance, investmentBalance } = useAuth();
+  const { currentUser, userData, balance, miningBalance, investmentBalance, qtxBalance } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
+  const { formatCurrency, rate } = useCurrency();
   const navigate = useNavigate();
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
@@ -34,7 +36,9 @@ export const Dashboard = () => {
   // Wallet values mapped directly from Firestore
   const profitWallet = balance || 0;
   const miningWallet = miningBalance || 0;
-  const investmentWallet = investmentBalance || 0;
+  const cryptoInvestments = userData?.activatedCrypto?.filter(c => c.status === 'running').reduce((sum, c) => sum + parseFloat(c.price || 0), 0) || 0;
+  const investmentWallet = (investmentBalance || 0) + cryptoInvestments;
+  const qtxWallet = qtxBalance || 0;
   const totalAssets = profitWallet + miningWallet + investmentWallet;
   
   const unreadNotificationsCount = userData?.notifications?.filter(n => !n.read).length || 0;
@@ -100,7 +104,7 @@ export const Dashboard = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <img src="/logo.png" alt="Logo" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
-            <h3 style={{ margin: 0, letterSpacing: '1px', fontSize: '18px', color: 'var(--text-primary)' }}>FINTEX</h3>
+            <h3 style={{ margin: 0, letterSpacing: '1px', fontSize: '18px', color: 'var(--text-primary)' }}>QTX Coin</h3>
             {/* Bell notification — placed next to company name */}
             <div onClick={() => navigate('/notifications')} style={{ position: 'relative', cursor: 'pointer', padding: '4px', marginLeft: '4px' }}>
               <Bell size={18} color="var(--primary)" />
@@ -225,23 +229,28 @@ export const Dashboard = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h2 style={{ fontSize: '12px', color: '#ccc', margin: 0, fontWeight: 500 }}>{t('totalAssets')}</h2>
             <div style={{ color: '#f5d98b', fontSize: '20px', fontWeight: 'bold', textShadow: '0 2px 10px rgba(212,175,55,0.4)' }}>
-              ${totalAssets.toFixed(2)}
+              {formatCurrency(totalAssets)}
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0', paddingBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ color: 'var(--text-secondary)' }}>{t('miningWallet')}</span>
-            <span style={{ fontWeight: 600, color: '#fff' }}>${miningWallet.toFixed(2)}</span>
+            <span style={{ fontWeight: 600, color: '#fff' }}>{formatCurrency(miningWallet)}</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0', paddingBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ color: 'var(--text-secondary)' }}>{t('investmentWallet')}</span>
-            <span style={{ fontWeight: 600, color: '#fff' }}>${investmentWallet.toFixed(2)}</span>
+            <span style={{ fontWeight: 600, color: '#fff' }}>{formatCurrency(investmentWallet)}</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0 0 0', paddingTop: '2px' }}>
             <span style={{ color: 'var(--text-secondary)' }}>{t('profitWallet')}</span>
-            <span style={{ fontWeight: 700, color: 'var(--success)' }}>${profitWallet.toFixed(2)}</span>
+            <span style={{ fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(profitWallet)}</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', margin: '6px 0 0 0', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>QTX Holdings</span>
+            <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{qtxWallet.toFixed(4)} QTX</span>
           </div>
         </div>
       </div>
@@ -252,12 +261,12 @@ export const Dashboard = () => {
           {[
             { icon: <ArrowDownToLine size={18} color="var(--primary)" />, label: t('recharge'), path: '/wallet' },
             { icon: <Send size={18} color="var(--primary)" />, label: t('withdraw'), path: '/withdraw' },
-            { icon: <Crown size={18} color="var(--warning)" />, label: t('vipBots'), path: '/vip' },
+            { icon: <Crown size={18} color="var(--warning)" />, label: 'Assets', path: '/assets' },
             { icon: <img src="/images/spin_icon.png" alt="spin" style={{ width: '22px', height: '22px', animation: 'dashSpin 4s linear infinite' }} />, label: t('luckySpin'), path: '/spin' },
             { icon: <ShieldCheck size={18} color="var(--text-muted)" />, label: t('security'), path: '/security' },
             { icon: <UserPlus size={18} color="var(--success)" />, label: t('invite'), path: '/affiliate' },
             { icon: <Building size={18} color="var(--text-muted)" />, label: t('about'), path: '/about' },
-            { icon: <Bot size={18} color="var(--primary)" />, label: t('myBots'), path: '/my-bots' },
+            { icon: <Globe size={18} color="var(--primary)" />, label: 'Market', path: '/market' },
           ].map((item, idx) => (
             <div 
               key={idx} 
@@ -276,15 +285,14 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* INVESTMENT */}
       <div 
         onClick={() => navigate('/trading')}
         style={{ background: 'var(--bg-panel)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', border: '1px solid var(--border)' }}
         className="hover:border-primary"
       >
         <div>
-          <strong style={{ fontSize: '12px', display: 'block', marginBottom: '2px', color: 'var(--text-primary)' }}>{t('investmentProducts')}</strong>
-          <small style={{ color: 'var(--success)', fontSize: '10px' }}>{t('earnIncome')}</small>
+          <strong style={{ fontSize: '12px', display: 'block', marginBottom: '2px', color: 'var(--text-primary)' }}>Trade QTX Coin</strong>
+          <small style={{ color: 'var(--success)', fontSize: '10px' }}>Buy \u0026 Sell QTX</small>
         </div>
         <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <ArrowRight size={12} color="var(--primary)" />
@@ -298,7 +306,7 @@ export const Dashboard = () => {
       <DashboardCharts />
 
       <footer style={{ textAlign: 'center', fontSize: '9px', margin: '12px 0 0 0', color: 'var(--text-muted)' }}>
-        © {new Date().getFullYear()} FINTEX. All rights reserved.
+        © {new Date().getFullYear()} QTX Coin. All rights reserved.
       </footer>
 
       <style>{`

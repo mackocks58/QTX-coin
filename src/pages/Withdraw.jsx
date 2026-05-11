@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X } from 'lucide-react';
@@ -41,6 +42,7 @@ const NetworkBadge = ({ network, size = 20 }) => {
 
 export const Withdraw = () => {
   const { currentUser, balance } = useAuth();
+  const { formatCurrency, convertAndFormatCurrency, symbol } = useCurrency();
   const { t } = useLanguage();
   const navigate = useNavigate();
   
@@ -89,7 +91,7 @@ export const Withdraw = () => {
     if (!amount || isNaN(numAmount) || numAmount < 10 || numAmount > balance || !selectedAccount) {
       triggerShake();
       if (!amount) return toast.error('Please enter an amount');
-      if (isNaN(numAmount) || numAmount < 10) return toast.error('Minimum withdrawal amount is $10 USD');
+      if (isNaN(numAmount) || numAmount < 10) return toast.error(`Minimum withdrawal amount is ${convertAndFormatCurrency(10)}`);
       if (numAmount > balance) return toast.error('Insufficient balance');
       if (!selectedAccount) return toast.error('Please select a withdrawal account');
     }
@@ -152,7 +154,7 @@ export const Withdraw = () => {
         <div className="panel mb-4">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <span className="text-muted">{t('availableBalance')}</span>
-            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>${balance.toFixed(2)}</span>
+            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(balance)}</span>
           </div>
 
           {accounts.length === 0 ? (
@@ -208,7 +210,7 @@ export const Withdraw = () => {
               <div className="input-group">
                 <label className="input-label">{t('amountUsd')}</label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>$</span>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>{symbol}</span>
                   <input 
                     type="number" 
                     className="input-field" 
@@ -271,7 +273,7 @@ export const Withdraw = () => {
               <div style={{ padding: '20px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('withdrawalAmount')}</div>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--primary)' }}>${Number(amount).toFixed(2)}</div>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(Number(amount))}</div>
                   <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '4px' }}>{t('noFeesApplied')}</div>
                 </div>
 

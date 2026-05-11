@@ -32,7 +32,7 @@ export const FAQ = () => {
 
   // Images to interleave
   const images = [
-    { src: '/logo.png', alt: 'FINTEX Logo', style: { height: '80px', objectFit: 'contain' } },
+    { src: '/logo.png', alt: 'QTX Coin Logo', style: { height: '80px', objectFit: 'contain' } },
     { src: '/images/bot.png', alt: 'AI Trading Bot', style: { width: '100%', borderRadius: '12px', boxShadow: '0 4px 15px rgba(16,185,129,0.3)', border: '1px solid var(--primary)' } },
     { src: '/images/wheel_base.png', alt: 'Lucky Spin Wheel', style: { width: '100%', borderRadius: '50%', boxShadow: '0 4px 25px rgba(212,175,55,0.4)', border: '2px solid var(--warning)' } },
     { src: '/images/referral_chain.png', alt: '3-Tier Referral Commission Chain', style: { width: '100%', borderRadius: '16px', boxShadow: '0 4px 20px rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.3)' } },

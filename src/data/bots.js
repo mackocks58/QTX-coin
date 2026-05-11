@@ -4,7 +4,7 @@ export const VIP_BOTS = [
   {
     id: 1,
     vipLevel: "VIP 1",
-    name: "FINTEX Alpha",
+    name: "QTX Coin Alpha",
     minAmount: 10,
     maxAmount: 3000,
     dailyPercent: 5,
@@ -14,7 +14,7 @@ export const VIP_BOTS = [
   {
     id: 2,
     vipLevel: "VIP 2",
-    name: "FINTEX Beta",
+    name: "QTX Coin Beta",
     minAmount: 3000,
     maxAmount: 10000,
     dailyPercent: 7,
@@ -24,7 +24,7 @@ export const VIP_BOTS = [
   {
     id: 3,
     vipLevel: "VIP 3",
-    name: "FINTEX Gamma",
+    name: "QTX Coin Gamma",
     minAmount: 10000,
     maxAmount: 30000,
     dailyPercent: 8,
@@ -34,7 +34,7 @@ export const VIP_BOTS = [
   {
     id: 4,
     vipLevel: "VIP 4",
-    name: "FINTEX Delta",
+    name: "QTX Coin Delta",
     minAmount: 30000,
     maxAmount: 60000,
     dailyPercent: 9,
@@ -44,7 +44,7 @@ export const VIP_BOTS = [
   {
     id: 5,
     vipLevel: "VIP 5",
-    name: "FINTEX Epsilon",
+    name: "QTX Coin Epsilon",
     minAmount: 60000,
     maxAmount: 100000,
     dailyPercent: 10,
@@ -54,7 +54,7 @@ export const VIP_BOTS = [
   {
     id: 6,
     vipLevel: "VIP 6",
-    name: "FINTEX Zeta",
+    name: "QTX Coin Zeta",
     minAmount: 100000,
     maxAmount: 200000,
     dailyPercent: 11,
@@ -64,7 +64,7 @@ export const VIP_BOTS = [
   {
     id: 7,
     vipLevel: "VIP 7",
-    name: "FINTEX Eta",
+    name: "QTX Coin Eta",
     minAmount: 200000,
     maxAmount: 350000,
     dailyPercent: 11.5,
@@ -74,7 +74,7 @@ export const VIP_BOTS = [
   {
     id: 8,
     vipLevel: "VIP 8",
-    name: "FINTEX Theta",
+    name: "QTX Coin Theta",
     minAmount: 350000,
     maxAmount: 500000,
     dailyPercent: 12,
@@ -84,7 +84,7 @@ export const VIP_BOTS = [
   {
     id: 9,
     vipLevel: "VIP 9",
-    name: "FINTEX Iota",
+    name: "QTX Coin Iota",
     minAmount: 500000,
     maxAmount: 700000,
     dailyPercent: 12.5,
@@ -94,7 +94,7 @@ export const VIP_BOTS = [
   {
     id: 10,
     vipLevel: "VIP 10",
-    name: "FINTEX Kappa",
+    name: "QTX Coin Kappa",
     minAmount: 700000,
     maxAmount: 1000000,
     dailyPercent: 13,
@@ -104,7 +104,7 @@ export const VIP_BOTS = [
   {
     id: 11,
     vipLevel: "VIP 11",
-    name: "FINTEX Lambda",
+    name: "QTX Coin Lambda",
     minAmount: 1000000,
     maxAmount: 2000000,
     dailyPercent: 14,
@@ -114,7 +114,7 @@ export const VIP_BOTS = [
   {
     id: 12,
     vipLevel: "VIP 12",
-    name: "FINTEX Omni",
+    name: "QTX Coin Omni",
     minAmount: 2000000,
     maxAmount: 5000000,
     dailyPercent: 15,
