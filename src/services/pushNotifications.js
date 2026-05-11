@@ -7,7 +7,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 export const setupPushNotifications = async (userId) => {
   if (!userId) return;
   if (Capacitor.getPlatform() !== 'android' && Capacitor.getPlatform() !== 'ios') {
-    console.log('Push notifications are only available on native platforms.');
+    // Silently skip — push notifications are native-only
     return;
   }
 

@@ -243,16 +243,16 @@ const Topbar = ({ setSidebarOpen }) => {
           <Globe size={24} color="var(--primary)" />
         )}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {isAdmin && (
           <Link to="/admin" className="btn" style={{ background: 'var(--danger)', color: '#fff', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', border: 'none' }}>
             <ShieldAlert size={14} /> Admin
           </Link>
         )}
-        {/* Language Switcher */}
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('liveBalance')}</div>
-          <div style={{ fontWeight: 600, color: 'var(--success)' }}>{formatCurrency(balance)}</div>
+        {/* Balance */}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div className="topbar-balance-label" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('liveBalance')}</div>
+          <div style={{ fontWeight: 700, color: 'var(--success)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{formatCurrency(balance)}</div>
         </div>
         <div ref={langRef} style={{ position: 'relative' }}>
           <button
@@ -309,7 +309,10 @@ const Topbar = ({ setSidebarOpen }) => {
           </AnimatePresence>
         </div>
 
-        <Link to="/wallet" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>{t('deposit')}</Link>
+        <Link to="/wallet" className="btn btn-primary topbar-deposit-btn" style={{ padding: '6px 12px', fontSize: '0.8rem', flexShrink: 0, gap: '4px' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          <span className="topbar-deposit-text">{t('deposit')}</span>
+        </Link>
       </div>
     </header>
   );

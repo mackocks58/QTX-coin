@@ -408,11 +408,34 @@ button {
   }
 
   .topbar {
-    padding: 0 16px;
+    padding: 0 10px;
   }
 
-  .flex.gap-4 {
-    flex-direction: column;
+  /* Topbar right section — stays as a row on mobile */
+  .topbar-right {
+    gap: 6px !important;
+  }
+
+  /* Hide the 'Live Balance' label on small screens — keep the value */
+  .topbar-balance-label {
+    display: none;
+  }
+
+  /* Shrink deposit button on small screens */
+  .topbar-deposit-btn {
+    padding: 6px 8px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Hide deposit button text on very small screens, show icon only */
+  @media (max-width: 380px) {
+    .topbar-deposit-text {
+      display: none;
+    }
+    .topbar-deposit-btn {
+      padding: 6px !important;
+      min-width: 32px;
+    }
   }
   
   .panel {

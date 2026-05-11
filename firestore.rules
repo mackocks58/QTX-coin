@@ -2,29 +2,39 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Users collection ────────────────────────────────────────────────
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // ── Admin helper ─────────────────────────────────────────────────────
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'mackocks588@gmail.com';
     }
 
-    // ── Transactions sub-collection ────────────────────────────────────
+    // ── Users collection ────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+    }
+
+    // ── Transactions sub-collection (single-user access) ────────────────
     match /users/{userId}/transactions/{txId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+    }
+
+    // ── collectionGroup("transactions") — required for Admin queries ─────
+    // This wildcard rule is what allows getDocs(collectionGroup(db, 'transactions'))
+    // to succeed. Without it, cross-user collectionGroup reads are always denied.
+    match /{path=**}/transactions/{txId} {
+      allow read, write: if isAdmin();
     }
 
     // ── Support Chats ──────────────────────────────────────────────────
-    // Any authenticated user can READ the supportChats collection
-    // (admins need to list all chats; regular users only see their own in the app)
-    // Only the chat owner can WRITE to the room document
+    // Admin can read all chats; regular users can only write to their own room
     match /supportChats/{chatId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == chatId;
+      allow write: if isAdmin() || (request.auth != null && request.auth.uid == chatId);
 
-      // Messages: user can write to own chat, agents can write replies
+      // Messages: user can write to own chat, agents/admin can write replies
       match /messages/{msgId} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null &&
-          (request.auth.uid == chatId || request.resource.data.senderRole == 'agent');
+        allow write: if isAdmin() || (request.auth != null &&
+          (request.auth.uid == chatId || request.resource.data.senderRole == 'agent'));
       }
     }
 
