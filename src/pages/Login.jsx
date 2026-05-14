@@ -68,7 +68,8 @@ const CustomCountrySelect = ({ value, onChange, t }) => {
 };
 
 export const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const [isLogin, setIsLogin] = useState(searchParams.get('mode') === 'login');
   const { t, language, changeLanguage } = useLanguage();
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
@@ -104,7 +105,6 @@ export const Login = () => {
 
   const { login, signup, currentUser } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const refId = searchParams.get('ref');
 
   // Auto-redirect if already authenticated

@@ -20,6 +20,14 @@
   "fieldOverrides": [
     {
       "collectionGroup": "transactions",
+      "fieldPath": "type",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
       "fieldPath": "palmpesaOrderId",
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" },
