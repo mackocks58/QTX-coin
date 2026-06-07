@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QTX Coin AI - Official Documentation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+    .page {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 60px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-radius: 12px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+      padding-bottom: 30px;
+      border-bottom: 4px solid #10b981;
+    }
+    .logo {
+      height: 120px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #0f172a;
+      font-size: 36px;
+      margin: 0;
+      font-weight: 800;
+    }
+    h2 {
+      color: #10b981;
+      font-size: 24px;
+      margin-top: 40px;
+      border-left: 4px solid #10b981;
+      padding-left: 12px;
+    }
+    h3 {
+      color: #3b82f6;
+      font-size: 20px;
+      margin-top: 30px;
+    }
+    p {
+      font-size: 15px;
+      color: #475569;
+    }
+    .section-img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin: 20px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border: 2px solid #e2e8f0;
+    }
+    .faq-block {
+      background: #f1f5f9;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border-left: 4px solid #a855f7;
+    }
+    .faq-q {
+      font-weight: 800;
+      color: #a855f7;
+    }
+    .faq-a {
+      margin-top: 10px;
+    }
+    .highlight {
+      background: #fef3c7;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      color: #d97706;
+    }
+    
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #a855f7;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: all 0.2s;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Inter', sans-serif;
+    }
+    .print-btn:hover {
+      background: #9333ea;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+
+    /* Plans Grid Styles */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .plan-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+    }
+    .plan-card:hover { border-color: #10b981; }
+    .plan-logo-wrap {
+      width: 50px;
+      height: 50px;
+      margin: 0 auto 10px auto;
+      background: #f8fafc;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+    .plan-logo { width: 100%; height: 100%; object-fit: contain; }
+    .plan-name { font-weight: 800; color: #0f172a; margin: 0 0 5px 0; }
+    .plan-price { font-size: 18px; color: #10b981; font-weight: 700; margin-bottom: 5px; }
+    .plan-percent { font-size: 14px; color: #64748b; font-weight: 600; }
+    
+    .watch-earn-box {
+      background: linear-gradient(135deg, rgba(234,179,8,0.1) 0%, rgba(234,179,8,0.05) 100%);
+      border: 2px solid #f59e0b;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+    }
+    .watch-earn-title { color: #d97706; font-size: 20px; font-weight: 800; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px; }
+    
+    .step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .step-num {
+      min-width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-text {
+      font-size: 14px;
+      color: #92400e;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    @media print {
+      body { background: white; }
+      .page { box-shadow: none; margin: 0; padding: 20px; border-radius: 0; max-width: 100%; }
+      .section-img { max-height: 250px; page-break-inside: avoid; }
+      h2, h3, .faq-block { page-break-inside: avoid; }
+      .print-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="7 10 12 15 17 10"></polyline>
+    <line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>
+  Download as PDF
+</button>
+
+<div class="page">
+  <div class="header">
+    <img src="/logo.png" alt="QTX Coin Logo" class="logo" />
+    <h1>QTX Coin AI</h1>
+    <p style="color: #64748b; font-size: 18px; margin-top: 10px;">Official Platform Documentation &amp; Guide</p>
+  </div>
+
+  <h2>1. Welcome to QTX Coin AI</h2>
+  <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80" alt="Corporate" class="section-img" />
+  <p>Welcome to QTX Coin AI — the world's most advanced automated algorithmic trading platform. Founded on the principle that institutional-grade financial technology should be accessible to everyone, we have democratized access to high-frequency trading, quantitative analysis, and AI-powered asset management.</p>
+  <p>Our mission is to bridge the gap between everyday people and world-class financial systems. For decades, the most profitable algorithms were locked away inside major hedge funds. QTX Coin AI has broken that barrier.</p>
+
+  <h2>2. Crypto Investment Contracts</h2>
+  <p>QTX Coin offers <strong>10 Cryptocurrency Investment Contracts</strong>. Each runs on a <strong>365-day cycle</strong> and automatically pays daily percentage returns to your balance every 24 hours — no manual action required.</p>
+
+  <div class="plans-grid">
+    <!-- Dogecoin -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(243,186,47,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/dogecoin-doge-logo.png" /></div>
+      <div class="plan-name">Dogecoin (DOGE)</div>
+      <div class="plan-price">MWK 25,500</div>
+      <div class="plan-percent" style="color: #F3BA2F">6.25% Daily · MWK 1,594/day</div>
+    </div>
+    <!-- Cardano -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(0,51,173,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/cardano-ada-logo.png" /></div>
+      <div class="plan-name">Cardano (ADA)</div>
+      <div class="plan-price">MWK 51,000</div>
+      <div class="plan-percent" style="color: #0033AD">6.5% Daily · MWK 3,315/day</div>
+    </div>
+    <!-- Polygon -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(130,71,229,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/polygon-matic-logo.png" /></div>
+      <div class="plan-name">Polygon (MATIC)</div>
+      <div class="plan-price">MWK 102,000</div>
+      <div class="plan-percent" style="color: #8247E5">7.0% Daily · MWK 7,140/day</div>
+    </div>
+    <!-- XRP -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(35,41,47,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/xrp-xrp-logo.png" /></div>
+      <div class="plan-name">XRP (XRP)</div>
+      <div class="plan-price">MWK 255,000</div>
+      <div class="plan-percent" style="color: #23292F">7.5% Daily · MWK 19,125/day</div>
+    </div>
+    <!-- Chainlink -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(42,90,218,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/chainlink-link-logo.png" /></div>
+      <div class="plan-name">Chainlink (LINK)</div>
+      <div class="plan-price">MWK 510,000</div>
+      <div class="plan-percent" style="color: #2A5ADA">8.0% Daily · MWK 40,800/day</div>
+    </div>
+    <!-- Polkadot -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(230,0,122,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/polkadot-new-dot-logo.png" /></div>
+      <div class="plan-name">Polkadot (DOT)</div>
+      <div class="plan-price">MWK 1,020,000</div>
+      <div class="plan-percent" style="color: #E6007A">8.5% Daily · MWK 86,700/day</div>
+    </div>
+    <!-- Avalanche -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(232,65,66,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/avalanche-avax-logo.png" /></div>
+      <div class="plan-name">Avalanche (AVAX)</div>
+      <div class="plan-price">MWK 2,040,000</div>
+      <div class="plan-percent" style="color: #E84142">9.0% Daily · MWK 183,600/day</div>
+    </div>
+    <!-- Solana -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(20,241,149,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/solana-sol-logo.png" /></div>
+      <div class="plan-name">Solana (SOL)</div>
+      <div class="plan-price">MWK 4,250,000</div>
+      <div class="plan-percent" style="color: #14F195">10.0% Daily · MWK 425,000/day</div>
+    </div>
+    <!-- Ethereum -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(98,126,234,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/ethereum-eth-logo.png" /></div>
+      <div class="plan-name">Ethereum (ETH)</div>
+      <div class="plan-price">MWK 8,500,000</div>
+      <div class="plan-percent" style="color: #627EEA">11.0% Daily · MWK 935,000/day</div>
+    </div>
+    <!-- Bitcoin -->
+    <div class="plan-card">
+      <div class="plan-logo-wrap" style="box-shadow: 0 4px 10px rgba(247,147,26,0.3);"><img class="plan-logo" src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" /></div>
+      <div class="plan-name">Bitcoin (BTC)</div>
+      <div class="plan-price">MWK 17,000,000</div>
+      <div class="plan-percent" style="color: #F7931A">12.0% Daily · MWK 2,040,000/day</div>
+    </div>
+  </div>
+
+  <h2>3. Global Infrastructure &amp; Security</h2>
+
+  <img src="/images/wallet.png" alt="Security" class="section-img" style="border-color: #3b82f6;" />
+  <p>Our computational engine operates without interruption across 150+ countries, adhering strictly to central regulatory compliance frameworks.</p>
+  <p><strong>Military-Grade Encryption:</strong> AES-256 encryption guarantees complete security during all internal operations, further shielded by hermetic TLS 1.3 tunnels.</p>
+  <p><strong>Cold Storage Protection:</strong> Over 95% of all platform funds are held offline in intercontinental cold-storage vaults, completely inaccessible to hackers.</p>
+
+  <h2>5. Referral Commission System (Affiliates)</h2>
+  <img src="/images/referral_chain.png" alt="Referral Commission Structure" class="section-img" style="border-color: #f59e0b;" />
+  <p>We reward members who actively grow the QTX community through our tiered commission program.</p>
+  <ul>
+    <li><strong>Level 1 (Direct Referrals): <span style="color: #f59e0b">10%</span></strong> — Earn 10% of every deposit made by someone you refer directly.</li>
+    <li><strong>Level 2 (Secondary Network): <span style="color: #3b82f6">3%</span></strong> — Earn 3% from deposits made by your referrals' referrals.</li>
+    <li><strong>Level 3 (Tertiary Network): <span style="color: #a855f7">1%</span></strong> — Earn 1% from the third tier of your network tree.</li>
+  </ul>
+
+  <h2>6. Lucky Spin Rewards</h2>
+  <img src="/images/wheel_base.png" alt="Lucky Spin Wheel" class="section-img" style="border-color: #f43f5e; width: 50%; display: block; margin: 20px auto;" />
+  <p>Unlock the Lucky Spin Wheel by depositing above MWK 100,000 or by earning affiliate commissions. Prizes range from <strong>MWK 10,000 to MWK 100,000</strong> in bonus credits.</p>
+
+  <hr style="margin: 50px 0; border: none; border-top: 2px dashed #cbd5e1;" />
+
+  <div style="text-align: center;">
+    <h1 style="color: #a855f7;">Frequently Asked Questions</h1>
+    <p>Answers to the most common questions from our members.</p>
+  </div>
+
+  <h3>General</h3>
+  <div class="faq-block">
+    <div class="faq-q">Q: What is QTX Coin AI?</div>
+    <div class="faq-a">QTX Coin AI is an automated AI-powered investment platform that allows every member to generate daily income through crypto investment contracts and VIP trading bots — without any trading experience required.</div>
+  </div>
+  <div class="faq-block">
+    <div class="faq-q">Q: How does the AI engine work?</div>
+    <div class="faq-a">The AI Brain operates in the cloud, continuously scanning over 40 parallel global exchange feeds. It identifies micro-arbitrage opportunities in real time and executes profitable trades at ultra-low latency to generate consistent daily returns.</div>
+  </div>
+  
+  <h3>VIP Bots &amp; Daily Profits</h3>
+  <div class="faq-block">
+    <div class="faq-q">Q: How do I activate a VIP Bot?</div>
+    <div class="faq-a">Go to the Upgrade tab, choose a VIP tier that fits your available balance, deposit any amount within its range, and the bot activates instantly. Returns accumulate every 24 hours for 365 days.</div>
+  </div>
+  <div class="faq-block">
+    <div class="faq-q">Q: When exactly are daily profits paid?</div>
+    <div class="faq-a">Profits are credited precisely 24 hours after each activation or last payout. The system is fully automated — there is nothing you need to do for VIP bot payouts.</div>
+  </div>
+
+  <h3>Deposits &amp; Withdrawals</h3>
+  <div class="faq-block">
+    <div class="faq-q">Q: How do I make a withdrawal?</div>
+    <div class="faq-a">First, bind your withdrawal account by linking your <strong>TNM Mpamba</strong> or <strong>Airtel Money</strong> Malawi mobile number in the Account settings. Once bound, submit a withdrawal request from the Wallet page. Withdrawals are typically processed within minutes.</div>
+  </div>
+  <div class="faq-block">
+    <div class="faq-q">Q: Why must I bind my account before withdrawing?</div>
+    <div class="faq-a">Binding your mobile money account verifies ownership and prevents unauthorised access to your earnings. A bound and verified account is the only secure channel through which funds can be released.</div>
+  </div>
+
+  <h3>Referral Networks</h3>
+  <div class="faq-block">
+    <div class="faq-q">Q: How can I maximise my affiliate earnings?</div>
+    <div class="faq-a">Share your referral code actively on social platforms like Facebook and WhatsApp. Every time someone you refer makes a deposit, you earn immediately. Growing a team of 30+ active members also unlocks your Welcome Bonus withdrawal eligibility.</div>
+  </div>
+
+  <div style="text-align: center; margin-top: 50px; color: #94a3b8; font-size: 14px;">
+    &copy; 2026 QTX Coin AI. All Rights Reserved. <br/> This document is strictly internal, instructional, and confidential. Reproduction or redistribution is prohibited.
+  </div>
+</div>
+
+</body>
+</html>

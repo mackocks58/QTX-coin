@@ -1,0 +1,1 @@
+Wallet.jsx: 641 - Parsing error: Expected corresponding JSX closing tag for <motion.div>
