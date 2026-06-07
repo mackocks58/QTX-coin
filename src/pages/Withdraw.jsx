@@ -168,6 +168,10 @@ export const Withdraw = () => {
     const numAmount = Number(amount);
     setWithdrawing(true);
     try {
+      // Generate unique QTX transaction hash
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const txHash = 'QTX' + Array.from({ length: 15 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+
       // Create transaction
       await addDoc(collection(db, 'users', currentUser.uid, 'transactions'), {
         type: 'withdrawal',
@@ -175,6 +179,7 @@ export const Withdraw = () => {
         amount: numAmount,
         status: 'pending',
         accountDetails: selectedAccount,
+        txid: txHash,
         createdAt: serverTimestamp(),
       });
 

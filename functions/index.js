@@ -277,25 +277,24 @@ exports.onTransactionUpdated = functions.region('europe-west1').firestore
       let currency = newData.currency || 'USD';
 
       if (newData.type === 'withdrawal') {
-        let destination = '';
+        const txid = newData.txid || 'N/A';
+        let destinationLine = '';
         if (newData.accountDetails) {
           if (newData.accountDetails.type === 'crypto_address') {
-            destination = `\nAddress: ${newData.accountDetails.address}\nNetwork: ${newData.accountDetails.network}`;
+            destinationLine = `Destination Address: ${newData.accountDetails.address}\nNetwork: ${newData.accountDetails.network}`;
           } else if (newData.accountDetails.type === 'binance_id') {
-            destination = `\nBinance Pay ID: ${newData.accountDetails.binanceId}`;
+            destinationLine = `Binance Pay ID: ${newData.accountDetails.binanceId}`;
           } else if (newData.accountDetails.type === 'mobile') {
-            destination = `\nMobile Number: ${newData.accountDetails.accountNumber}\nAccount Name: ${newData.accountDetails.accountName}\nNetwork: ${newData.accountDetails.network}`;
+            destinationLine = `Mobile Number: ${newData.accountDetails.accountNumber}\nAccount Name: ${newData.accountDetails.accountName}\nNetwork: ${newData.accountDetails.network}`;
           }
         }
-        
-        let txidStr = newData.txid ? `\nTransaction Hash: ${newData.txid}` : '';
 
         if (isSuccess) {
-          const body = `Your withdrawal of ${amount} ${currency} has been approved and processed.\nAmount: ${amount} ${currency}${destination}${txidStr}\nStatus: Approved`;
-          await sendPushNotification(userId, "Withdrawal Approved", body);
+          const body = `${txid} confirmed — You have successfully withdrawn ${amount} ${currency} from your QTX Coin wallet.\n\n━━━━━━━━━━━━━━━━━━━\n📋 TRANSACTION DETAILS\n━━━━━━━━━━━━━━━━━━━\nTransaction ID: ${txid}\nAmount: ${amount} ${currency}\nType: Withdrawal\n${destinationLine}\nStatus: ✅ Approved & Processed\nSent By: QTX Coin\n━━━━━━━━━━━━━━━━━━━\n\n🎉 Congratulations! Your funds have been sent. Please allow a few minutes for the transfer to reflect on your account. Thank you for using QTX Coin!`;
+          await sendPushNotification(userId, `${txid} Confirmed ✅`, body);
         } else if (isFailed) {
-          const body = `Your withdrawal of ${amount} ${currency} was rejected.\nReason: ${newData.failureReason || 'Admin action'}${destination}`;
-          await sendPushNotification(userId, "Withdrawal Failed", body);
+          const body = `${txid} — Your withdrawal of ${amount} ${currency} could not be processed.\n\nReason: ${newData.failureReason || 'Rejected by admin'}\n${destinationLine}\n\nYour balance has been refunded. Please contact support if you need assistance.`;
+          await sendPushNotification(userId, "Withdrawal Failed ❌", body);
         }
       } else if (newData.type === 'deposit') {
         let networkStr = newData.network ? `\nNetwork: ${newData.network}` : '';
