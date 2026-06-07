@@ -317,7 +317,8 @@ export const Login = () => {
       await NativeBiometric.verifyIdentity({
         reason: "Authenticate to log in",
         title: "Biometric Login",
-        subtitle: "Verify your identity to continue",
+        subtitle: "Verify your identity or use screen lock",
+        useFallback: true
       });
 
       const credentials = await NativeBiometric.getCredentials({
