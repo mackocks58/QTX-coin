@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
-import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -41,7 +41,7 @@ const NetworkBadge = ({ network, size = 20 }) => {
 };
 
 export const Withdraw = () => {
-  const { currentUser, balance } = useAuth();
+  const { currentUser, balance, welcomeBonus } = useAuth();
   const { formatCurrency, convertAndFormatCurrency, symbol } = useCurrency();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -53,6 +53,9 @@ export const Withdraw = () => {
   const [withdrawing, setWithdrawing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [withdrawSource, setWithdrawSource] = useState('main'); // 'main' or 'bonus'
+  const [bonusEligibility, setBonusEligibility] = useState(null); // null = not checked, { approved: bool, referrals: number }
 
   const controls = useAnimation();
 
@@ -86,15 +89,78 @@ export const Withdraw = () => {
     fetchAccounts();
   }, [currentUser]);
 
-  const handlePreWithdraw = () => {
-    const numAmount = Number(amount);
-    if (!amount || isNaN(numAmount) || numAmount < 10 || numAmount > balance || !selectedAccount) {
-      triggerShake();
-      if (!amount) return toast.error('Please enter an amount');
-      if (isNaN(numAmount) || numAmount < 10) return toast.error(`Minimum withdrawal amount is ${convertAndFormatCurrency(10)}`);
-      if (numAmount > balance) return toast.error('Insufficient balance');
-      if (!selectedAccount) return toast.error('Please select a withdrawal account');
+  const checkBonusEligibility = async () => {
+    if (!currentUser) return { approved: false, referrals: 0 };
+    
+    // Check for at least 1 approved deposit (admin sets status to 'SUCCESS')
+    const depositsQ = query(
+      collection(db, 'users', currentUser.uid, 'transactions'),
+      where('type', '==', 'deposit'),
+      where('status', '==', 'SUCCESS')
+    );
+    const depositsSnap = await getDocs(depositsQ);
+    const hasApprovedDeposit = !depositsSnap.empty;
+
+    // Count users referred by this user
+    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    const myReferralCode = userSnap.data()?.referralCode;
+    let referralCount = 0;
+    if (myReferralCode) {
+      const referralsQ = query(
+        collection(db, 'users'),
+        where('referredByCode', '==', myReferralCode)
+      );
+      const referralsSnap = await getDocs(referralsQ);
+      referralCount = referralsSnap.size;
     }
+
+    const result = { approved: hasApprovedDeposit, referrals: referralCount };
+    setBonusEligibility(result);
+    return result;
+  };
+
+  const handlePreWithdraw = async () => {
+    const numAmount = Number(amount);
+    const activeBalance = withdrawSource === 'main' ? balance : welcomeBonus;
+    
+    if (!amount || isNaN(numAmount) || numAmount < 10 || numAmount > activeBalance || !selectedAccount) {
+      triggerShake();
+      if (!amount) return setErrorMsg('Please enter an amount');
+      if (isNaN(numAmount) || numAmount < 10) return setErrorMsg(`Minimum withdrawal amount is ${convertAndFormatCurrency(10)}`);
+      if (numAmount > activeBalance) return setErrorMsg(
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ color: 'var(--danger)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>INSUFFICIENT BALANCE</div>
+          <div>Your {withdrawSource === 'main' ? 'Main Balance' : 'Welcome Bonus'} is <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(activeBalance)}</span>. You cannot withdraw more than that.</div>
+        </div>
+      );
+      if (!selectedAccount) return setErrorMsg('Please select a withdrawal account');
+    }
+
+    // Extra validation for welcome bonus
+    if (withdrawSource === 'bonus') {
+      const eligibility = await checkBonusEligibility();
+
+      if (!eligibility.approved) {
+        triggerShake();
+        return setErrorMsg(
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ color: 'var(--danger)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>NO APPROVED DEPOSIT</div>
+            <div>You need to have at least <span style={{ color: 'var(--primary)', fontWeight: 600 }}>1 approved deposit</span> to withdraw your Welcome Bonus. Please make a deposit first.</div>
+          </div>
+        );
+      }
+
+      if (eligibility.referrals < 20) {
+        triggerShake();
+        return setErrorMsg(
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ color: 'var(--danger)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>INSUFFICIENT REFERRALS</div>
+            <div>You need <span style={{ color: 'var(--primary)', fontWeight: 600 }}>20 active referrals</span> to withdraw your Welcome Bonus. You currently have <span style={{ color: 'var(--warning)', fontWeight: 600 }}>{eligibility.referrals} / 20</span> referrals.</div>
+          </div>
+        );
+      }
+    }
+
     setShowConfirm(true);
   };
 
@@ -105,6 +171,7 @@ export const Withdraw = () => {
       // Create transaction
       await addDoc(collection(db, 'users', currentUser.uid, 'transactions'), {
         type: 'withdrawal',
+        source: withdrawSource,
         amount: numAmount,
         status: 'pending',
         accountDetails: selectedAccount,
@@ -112,15 +179,17 @@ export const Withdraw = () => {
       });
 
       // Deduct balance
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        balance: increment(-numAmount)
-      });
+      const updateData = withdrawSource === 'main' 
+        ? { balance: increment(-numAmount) }
+        : { welcomeBonus: increment(-numAmount) };
+        
+      await updateDoc(doc(db, 'users', currentUser.uid), updateData);
 
       setAmount('');
       setShowConfirm(false);
       setShowSuccess(true);
     } catch (error) {
-      toast.error('Failed to process withdrawal. Please try again later.');
+      setErrorMsg('Failed to process withdrawal. Please try again later.');
     }
     setWithdrawing(false);
   };
@@ -152,9 +221,24 @@ export const Withdraw = () => {
         </div>
 
         <div className="panel mb-4">
+          <div style={{ display: 'flex', background: 'var(--bg-dark)', borderRadius: '12px', padding: '4px', marginBottom: '20px' }}>
+            <button 
+              onClick={() => setWithdrawSource('main')}
+              style={{ flex: 1, padding: '10px', borderRadius: '10px', background: withdrawSource === 'main' ? 'var(--primary)' : 'transparent', color: withdrawSource === 'main' ? '#fff' : 'var(--text-muted)', border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'var(--transition)' }}
+            >
+              Main Balance
+            </button>
+            <button 
+              onClick={() => setWithdrawSource('bonus')}
+              style={{ flex: 1, padding: '10px', borderRadius: '10px', background: withdrawSource === 'bonus' ? 'var(--primary)' : 'transparent', color: withdrawSource === 'bonus' ? '#fff' : 'var(--text-muted)', border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'var(--transition)' }}
+            >
+              Welcome Bonus
+            </button>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span className="text-muted">{t('availableBalance')}</span>
-            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(balance)}</span>
+            <span className="text-muted">{withdrawSource === 'main' ? t('availableBalance') : 'Available Bonus'}</span>
+            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(withdrawSource === 'main' ? balance : welcomeBonus)}</span>
           </div>
 
           {accounts.length === 0 ? (
@@ -220,7 +304,7 @@ export const Withdraw = () => {
                     style={{ paddingLeft: '32px', width: '100%', boxSizing: 'border-box' }}
                   />
                   <button 
-                    onClick={() => setAmount(balance.toString())}
+                    onClick={() => setAmount(withdrawSource === 'main' ? balance.toString() : welcomeBonus.toString())}
                     style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                   >
                     MAX
@@ -245,77 +329,150 @@ export const Withdraw = () => {
         </div>
       </motion.div>
 
-      {/* Confirmation Modal */}
+      {/* Modals Container */}
       <AnimatePresence>
-        {showConfirm && selectedAccount && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+        {/* Error Bottom Sheet */}
+        {errorMsg && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setErrorMsg(null)}
+          >
             <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => !withdrawing && setShowConfirm(false)}
-              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} 
-            />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '16px', width: '100%', maxWidth: '400px', position: 'relative', zIndex: 101, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '12px 24px 32px 24px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.4)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
             >
-              <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontSize: '18px' }}>{t('confirmWithdrawal')}</h3>
-                <button onClick={() => !withdrawing && setShowConfirm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} disabled={withdrawing}>
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '24px' }} />
+              
+              <div style={{ textAlign: 'center', padding: '10px 0 20px 0' }}>
+                <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
+                  <AlertTriangle size={36} color="var(--danger)" />
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Withdrawal Error
+                </h3>
+                <div style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.5' }}>
+                  {errorMsg}
+                </div>
+              </div>
+
+              <button onClick={() => setErrorMsg(null)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--danger)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                Dismiss
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Confirmation Bottom Sheet */}
+        {showConfirm && selectedAccount && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => !withdrawing && setShowConfirm(false)}
+          >
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '12px 24px 32px 24px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.4)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '16px' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+                  {t('confirmWithdrawal')}
+                </h3>
+                <button type="button" onClick={() => !withdrawing && setShowConfirm(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'background 0.2s' }} disabled={withdrawing}>
                   <X size={20} />
                 </button>
               </div>
-              
-              <div style={{ padding: '20px' }}>
+
+              <div style={{ padding: '0' }}>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('withdrawalAmount')}</div>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(Number(amount))}</div>
+                  <div style={{ fontSize: '36px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-1px' }}>{formatCurrency(Number(amount))}</div>
                   <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '4px' }}>{t('noFeesApplied')}</div>
                 </div>
 
-                <div style={{ background: 'var(--bg-dark)', borderRadius: '12px', padding: '16px', marginBottom: '24px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('transferDetails')}</div>
+                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{t('transferDetails')}</div>
                   
                   {selectedAccount.type === 'binance_id' && (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <NetworkBadge network="BINANCE" size={32} />
-                          <span style={{ fontWeight: 600, fontSize: '15px' }}>Binance Pay</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <NetworkBadge network="BINANCE" size={36} />
+                          <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Binance Pay</span>
                         </div>
-                        <span style={{ fontSize: '11px', background: 'rgba(240,185,11,0.15)', color: '#f0b90b', padding: '3px 8px', borderRadius: '20px', fontWeight: 600 }}>BNB Chain</span>
+                        <span style={{ fontSize: '12px', background: 'rgba(240,185,11,0.15)', color: '#f0b90b', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>BNB Chain</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Method</span>
-                        <span style={{ fontWeight: 500, fontSize: '14px' }}>Binance Pay</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Method</span>
+                        <span style={{ fontWeight: 500, fontSize: '15px', color: 'var(--text-primary)' }}>Binance Pay</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Pay ID</span>
-                        <span style={{ fontWeight: 600, fontSize: '14px' }}>{selectedAccount.binanceId}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Pay ID</span>
+                        <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>{selectedAccount.binanceId}</span>
                       </div>
                     </>
                   )}
 
                   {selectedAccount.type === 'crypto_address' && (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <NetworkBadge network={selectedAccount.network} size={32} />
-                          <span style={{ fontWeight: 600, fontSize: '15px' }}>{selectedAccount.network}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <NetworkBadge network={selectedAccount.network} size={36} />
+                          <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{selectedAccount.network}</span>
                         </div>
-                        <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', padding: '3px 8px', borderRadius: '20px', fontWeight: 600 }}>Crypto</span>
+                        <span style={{ fontSize: '12px', background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>Crypto</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Network</span>
-                        <span style={{ fontWeight: 500, fontSize: '14px' }}>{selectedAccount.network}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Network</span>
+                        <span style={{ fontWeight: 500, fontSize: '15px', color: 'var(--text-primary)' }}>{selectedAccount.network}</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Destination Address</span>
-                        <span style={{ fontWeight: 600, fontSize: '13px', wordBreak: 'break-all', background: 'rgba(255,255,255,0.05)', padding: '6px 8px', borderRadius: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Destination Address</span>
+                        <span style={{ fontWeight: 600, fontSize: '14px', wordBreak: 'break-all', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px', color: 'var(--primary)', border: '1px solid rgba(16,185,129,0.1)' }}>
                           {selectedAccount.address}
                         </span>
                       </div>
@@ -324,17 +481,20 @@ export const Withdraw = () => {
 
                   {selectedAccount.type === 'mobile' && (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Provider</span>
-                        <span style={{ fontWeight: 500, fontSize: '14px' }}>{selectedAccount.network}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>📱</div>
+                          <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Mobile Money</span>
+                        </div>
+                        <span style={{ fontSize: '12px', background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>{selectedAccount.network}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Account Name</span>
-                        <span style={{ fontWeight: 500, fontSize: '14px' }}>{selectedAccount.accountName}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Account Name</span>
+                        <span style={{ fontWeight: 500, fontSize: '15px', color: 'var(--text-primary)' }}>{selectedAccount.accountName}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Mobile Number</span>
-                        <span style={{ fontWeight: 600, fontSize: '14px' }}>{selectedAccount.accountNumber}</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Mobile Number</span>
+                        <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>{selectedAccount.accountNumber}</span>
                       </div>
                     </>
                   )}
@@ -342,16 +502,14 @@ export const Withdraw = () => {
 
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button 
-                    className="btn btn-outline" 
-                    style={{ flex: 1, padding: '12px' }}
+                    style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'var(--text-primary)', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
                     onClick={() => setShowConfirm(false)}
                     disabled={withdrawing}
                   >
                     {t('cancel')}
                   </button>
                   <button 
-                    className="btn btn-primary" 
-                    style={{ flex: 1, padding: '12px' }}
+                    style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
                     onClick={executeWithdraw}
                     disabled={withdrawing}
                   >
@@ -360,34 +518,53 @@ export const Withdraw = () => {
                 </div>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
 
+        {/* Success Bottom Sheet */}
         {showSuccess && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              backdropFilter: 'blur(4px)'
+            }}
+          >
             <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} 
-            />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '16px', width: '100%', maxWidth: '400px', minHeight: '440px', position: 'relative', zIndex: 101, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '12px 24px 32px 24px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.4)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              onClick={e => e.stopPropagation()}
             >
-              <div style={{ position: 'relative', marginBottom: '32px' }}>
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '32px', zIndex: 10 }} />
+              
+              <div style={{ position: 'relative', marginBottom: '40px', display: 'flex', justifyContent: 'center' }}>
                 {/* Bomb Effect Particles */}
                 {Array.from({ length: 16 }).map((_, i) => (
                   <motion.div
                     key={i}
                     initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
                     animate={{ 
-                      x: Math.cos((i * 360) / 16 * (Math.PI / 180)) * 100, 
-                      y: Math.sin((i * 360) / 16 * (Math.PI / 180)) * 100,
-                      scale: [0, Math.random() * 1.5 + 0.5, 0],
+                      x: Math.cos((i * 360) / 16 * (Math.PI / 180)) * 120, 
+                      y: Math.sin((i * 360) / 16 * (Math.PI / 180)) * 120,
+                      scale: [0, Math.random() * 1.5 + 0.8, 0],
                       opacity: [1, 1, 0]
                     }}
                     transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
@@ -401,20 +578,28 @@ export const Withdraw = () => {
                       marginLeft: '-3px',
                       borderRadius: '50%',
                       background: i % 3 === 0 ? '#fff' : 'var(--success)',
-                      boxShadow: '0 0 10px var(--success)',
+                      boxShadow: '0 0 12px var(--success)',
                       zIndex: 1
                     }}
                   />
                 ))}
                 
+                {/* Expanding pulse rings */}
+                <motion.div
+                  initial={{ scale: 0, opacity: 0.8 }}
+                  animate={{ scale: [0, 1.5], opacity: [0.8, 0] }}
+                  transition={{ duration: 1, ease: "easeOut", repeat: 1, delay: 0.2 }}
+                  style={{ position: 'absolute', width: '100px', height: '100px', borderRadius: '50%', border: '4px solid var(--success)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}
+                />
+
                 {/* Main Verified Badge */}
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', damping: 12, stiffness: 150, delay: 0.2 }}
-                  style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid var(--success)', position: 'relative', zIndex: 2, boxShadow: '0 0 30px rgba(16, 185, 129, 0.3)' }}
+                  transition={{ type: 'spring', damping: 10, stiffness: 150, delay: 0.2 }}
+                  style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid var(--success)', position: 'relative', zIndex: 2, boxShadow: '0 0 35px rgba(16, 185, 129, 0.4)' }}
                 >
-                  <CheckCircle2 size={50} color="var(--success)" />
+                  <CheckCircle2 size={56} color="var(--success)" />
                 </motion.div>
               </div>
 
@@ -422,7 +607,7 @@ export const Withdraw = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                style={{ fontSize: '26px', margin: '0 0 12px 0', color: 'var(--text-primary)', textAlign: 'center', fontWeight: 700 }}
+                style={{ fontSize: '1.6rem', margin: '0 0 12px 0', color: 'var(--text-primary)', textAlign: 'center', fontWeight: 800, letterSpacing: '-0.5px' }}
               >
                 {t('successfullySubmitted')}
               </motion.h3>
@@ -431,17 +616,16 @@ export const Withdraw = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '15px', marginBottom: '32px', lineHeight: 1.5 }}
+                style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '1.05rem', marginBottom: '36px', lineHeight: 1.5 }}
               >
-                {t('withdrawalQueued')}
+                {t('withdrawalQueued') || 'Your withdrawal request has been queued.'}
               </motion.p>
 
               <motion.button
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '14px', fontSize: '16px' }}
+                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', zIndex: 10 }}
                 onClick={() => {
                   setShowSuccess(false);
                   navigate('/transactions');
@@ -450,7 +634,7 @@ export const Withdraw = () => {
                 {t('viewTransactions')}
               </motion.button>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

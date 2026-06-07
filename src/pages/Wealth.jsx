@@ -10,16 +10,16 @@ import { db } from '../firebase';
 import toast from 'react-hot-toast';
 
 export const CRYPTO_PLANS = [
-  { id: 'doge', name: 'Dogecoin', symbol: 'DOGE', price: 15, dailyPercent: 2.2, color: '#F3BA2F', logo: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png' },
-  { id: 'ada', name: 'Cardano', symbol: 'ADA', price: 30, dailyPercent: 3, color: '#0033AD', logo: 'https://cryptologos.cc/logos/cardano-ada-logo.png' },
-  { id: 'matic', name: 'Polygon', symbol: 'MATIC', price: 60, dailyPercent: 3.6, color: '#8247E5', logo: 'https://cryptologos.cc/logos/polygon-matic-logo.png' },
-  { id: 'xrp', name: 'XRP', symbol: 'XRP', price: 150, dailyPercent: 4, color: '#23292F', logo: 'https://cryptologos.cc/logos/xrp-xrp-logo.png' },
-  { id: 'link', name: 'Chainlink', symbol: 'LINK', price: 300, dailyPercent: 5, color: '#2A5ADA', logo: 'https://cryptologos.cc/logos/chainlink-link-logo.png' },
-  { id: 'dot', name: 'Polkadot', symbol: 'DOT', price: 600, dailyPercent: 6, color: '#E6007A', logo: 'https://cryptologos.cc/logos/polkadot-new-dot-logo.png' },
-  { id: 'avax', name: 'Avalanche', symbol: 'AVAX', price: 1200, dailyPercent: 7, color: '#E84142', logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.png' },
-  { id: 'sol', name: 'Solana', symbol: 'SOL', price: 2500, dailyPercent: 8, color: '#14F195', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
-  { id: 'eth', name: 'Ethereum', symbol: 'ETH', price: 5000, dailyPercent: 9, color: '#627EEA', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
-  { id: 'btc', name: 'Bitcoin', symbol: 'BTC', price: 10000, dailyPercent: 10, color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' }
+  { id: 'doge', name: 'Dogecoin', symbol: 'DOGE', price: 15, dailyPercent: 6.0, color: '#F3BA2F', logo: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png' },
+  { id: 'ada', name: 'Cardano', symbol: 'ADA', price: 30, dailyPercent: 6.8, color: '#0033AD', logo: 'https://cryptologos.cc/logos/cardano-ada-logo.png' },
+  { id: 'matic', name: 'Polygon', symbol: 'MATIC', price: 60, dailyPercent: 7.4, color: '#8247E5', logo: 'https://cryptologos.cc/logos/polygon-matic-logo.png' },
+  { id: 'xrp', name: 'XRP', symbol: 'XRP', price: 150, dailyPercent: 8.0, color: '#23292F', logo: 'https://cryptologos.cc/logos/xrp-xrp-logo.png' },
+  { id: 'link', name: 'Chainlink', symbol: 'LINK', price: 300, dailyPercent: 8.8, color: '#2A5ADA', logo: 'https://cryptologos.cc/logos/chainlink-link-logo.png' },
+  { id: 'dot', name: 'Polkadot', symbol: 'DOT', price: 600, dailyPercent: 9.6, color: '#E6007A', logo: 'https://cryptologos.cc/logos/polkadot-new-dot-logo.png' },
+  { id: 'avax', name: 'Avalanche', symbol: 'AVAX', price: 1200, dailyPercent: 10.4, color: '#E84142', logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.png' },
+  { id: 'sol', name: 'Solana', symbol: 'SOL', price: 2500, dailyPercent: 11.0, color: '#14F195', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+  { id: 'eth', name: 'Ethereum', symbol: 'ETH', price: 5000, dailyPercent: 12.0, color: '#627EEA', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
+  { id: 'btc', name: 'Bitcoin', symbol: 'BTC', price: 10000, dailyPercent: 14.0, color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' }
 ];
 
 export const Wealth = () => {
@@ -29,6 +29,7 @@ export const Wealth = () => {
   const navigate = useNavigate();
   const [processingId, setProcessingId] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [successPlan, setSuccessPlan] = useState(null);
 
   const activeCrypto = userData?.activatedCrypto?.find(c => c.status === 'running');
   const activePlanDef = activeCrypto ? CRYPTO_PLANS.find(p => p.id === activeCrypto.id) : null;
@@ -91,7 +92,8 @@ export const Wealth = () => {
         activatedCrypto: [...filteredCrypto, newCrypto]
       });
 
-      toast.success(`Successfully invested in ${plan.name}!`, { id: loadingToast });
+      toast.dismiss(loadingToast);
+      setSuccessPlan(plan);
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Failed to invest.");
@@ -234,35 +236,57 @@ export const Wealth = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}
+            transition={{ duration: 0.2 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setSelectedPlan(null)}
           >
             <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              style={{ background: 'var(--bg-panel)', width: '100%', maxWidth: '400px', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', border: '1px solid var(--border)' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '12px 24px 32px 24px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.4)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
             >
-              <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)' }}>
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '16px' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
                   {activePriceUSD > 0 ? '⬆ Upgrade Investment' : 'Confirm Investment'}
                 </h3>
-                <button onClick={() => setSelectedPlan(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
+                <button onClick={() => setSelectedPlan(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
                   <X size={20} />
                 </button>
               </div>
               
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-                  <img src={selectedPlan.logo} alt={selectedPlan.name} style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--bg-dark)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+                    <img src={selectedPlan.logo} alt={selectedPlan.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  </div>
                   <div>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{selectedPlan.name}</h4>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{selectedPlan.symbol} Mining Contract</div>
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-dark)', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   {activePriceUSD > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <span style={{ color: 'var(--text-secondary)' }}>Current Plan</span>
                       <span style={{ color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'line-through' }}>{activePlanDef?.name} ({convertAndFormatCurrency(activePriceUSD)})</span>
                     </div>
@@ -285,14 +309,66 @@ export const Wealth = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => setSelectedPlan(null)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => setSelectedPlan(null)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'var(--text-primary)', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}>
                     Cancel
                   </button>
-                  <button onClick={() => confirmInvest(selectedPlan)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => confirmInvest(selectedPlan)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
                     Confirm
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+        
+        {successPlan && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setSuccessPlan(null)}
+          >
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '12px 24px 32px 24px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.4)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '24px' }} />
+              
+              <div style={{ textAlign: 'center', padding: '10px 0 20px 0' }}>
+                <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', border: '2px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
+                  <CheckCircle2 size={40} color="var(--success)" />
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Investment Successful!
+                </h3>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.5' }}>
+                  You have successfully invested in <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{successPlan.name}</span>. Start tracking your daily profits now!
+                </p>
+              </div>
+
+              <button onClick={() => setSuccessPlan(null)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+                Done
+              </button>
             </motion.div>
           </motion.div>
         )}

@@ -402,6 +402,16 @@ export const Account = () => {
           </Link>
         </div>
 
+        {/* App Download Button */}
+        <a 
+          href="/QTXCoin1.apk" 
+          download
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'linear-gradient(135deg, var(--primary), #0ea5e9)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', marginTop: '16px', textDecoration: 'none', boxShadow: '0 4px 15px rgba(56, 189, 248, 0.3)' }}
+        >
+          <Smartphone size={18} />
+          <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.3px' }}>Download Our Android App</span>
+        </a>
+
         {/* Logout Button */}
         <button 
           onClick={async () => {

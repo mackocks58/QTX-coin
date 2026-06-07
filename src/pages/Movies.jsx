@@ -19,7 +19,7 @@ const ACTION_MOVIES = [
   { id: 'xa_yFaLhiRE', title: 'Top Gun: Maverick', duration: '2:12' },
 ];
 
-const LIVE_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
+const LIVE_RATES = { doge: 6.0, ada: 6.8, matic: 7.4, xrp: 8.0, link: 8.8, dot: 9.6, avax: 10.4, sol: 11.0, eth: 12.0, btc: 14.0 };
 const REQUIRED_WATCH_TIME = 30;
 const MS_24H = 24 * 60 * 60 * 1000;
 

@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
   const [qtxBalance, setQtxBalance] = useState(0);
   const [miningBalance, setMiningBalance] = useState(0);
   const [investmentBalance, setInvestmentBalance] = useState(0);
+  const [welcomeBonus, setWelcomeBonus] = useState(0);
   const [userData, setUserData] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
             setQtxBalance(data.qtxBalance || 0);
             setMiningBalance(data.miningBalance || 0);
             setInvestmentBalance(data.investmentBalance || 0);
+            setWelcomeBonus(data.welcomeBonus || 0);
             setUserData({
               photoURL: data.photoURL || null,
               lastPhotoUpdate: data.lastPhotoUpdate || null,
@@ -62,6 +64,7 @@ export function AuthProvider({ children }) {
         setQtxBalance(0);
         setMiningBalance(0);
         setInvestmentBalance(0);
+        setWelcomeBonus(0);
         setLoading(false);
       }
     });
@@ -83,6 +86,7 @@ export function AuthProvider({ children }) {
       email: email,
       phone: null,
       balance: 0,
+      welcomeBonus: 50,
       qtxBalance: 0,
       miningBalance: 0,
       investmentBalance: 0,
@@ -139,6 +143,7 @@ export function AuthProvider({ children }) {
           email: null,
           phone: user.phoneNumber,
           balance: 0,
+          welcomeBonus: 50,
           qtxBalance: 0,
           miningBalance: 0,
           investmentBalance: 0,
@@ -296,6 +301,7 @@ export function AuthProvider({ children }) {
     qtxBalance,
     miningBalance,
     investmentBalance,
+    welcomeBonus,
     userData,
     signup,
     setupRecaptcha,

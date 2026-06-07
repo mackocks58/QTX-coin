@@ -26,6 +26,7 @@ import { Assets } from './pages/Assets';
 import { Market } from './pages/Market';
 import { Movies } from './pages/Movies';
 import { Wealth } from './pages/Wealth';
+import { ChatEarn } from './pages/ChatEarn';
 import { Support } from './pages/Support';
 import { AdminSupport } from './pages/AdminSupport';
 import { useCurrency } from './hooks/useCurrency';
@@ -378,6 +379,7 @@ function AppContent() {
             <Route path="/assets" element={<PrivateRoute><Assets /></PrivateRoute>} />
             <Route path="/market" element={<PrivateRoute><Market /></PrivateRoute>} />
             <Route path="/movies" element={<PrivateRoute><Movies /></PrivateRoute>} />
+            <Route path="/chat-earn" element={<PrivateRoute><ChatEarn /></PrivateRoute>} />
             <Route path="/wealth" element={<PrivateRoute><Wealth /></PrivateRoute>} />
             <Route path="/support" element={<PrivateRoute><Support /></PrivateRoute>} />
             <Route path="/admin/support" element={<PrivateRoute><AdminSupport /></PrivateRoute>} />

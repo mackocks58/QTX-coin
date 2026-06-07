@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Fingerprint, Globe, Check } from 'lucide-react';
+import { Eye, EyeOff, Fingerprint, Globe, Check, Search, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
@@ -17,19 +17,25 @@ const COUNTRIES = [
   { code: 'ZM', name: 'Zambia' },
   { code: 'BI', name: 'Burundi' },
   { code: 'GH', name: 'Ghana' },
+  { code: 'NG', name: 'Nigeria' },
   { code: 'UN', name: 'Global/Other' }
 ];
 
 const CustomCountrySelect = ({ value, onChange, t }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const selected = COUNTRIES.find(c => c.name === value);
 
+  const filteredCountries = COUNTRIES.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
+    <>
       <div 
         className="input-field"
         style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', color: selected ? 'inherit' : 'var(--text-muted)' }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(true)}
       >
         {selected ? (
           <>
@@ -41,29 +47,117 @@ const CustomCountrySelect = ({ value, onChange, t }) => {
         )}
         <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>▼</span>
       </div>
-      
-      {isOpen && (
-        <div style={{ 
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, 
-          backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border)', 
-          borderRadius: 'var(--radius-md)', marginTop: '4px', maxHeight: '200px', 
-          overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-        }}>
-          {COUNTRIES.map(c => (
-            <div 
-              key={c.code}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
-              onClick={() => { onChange(c.name); setIsOpen(false); }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-dark)'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 2000, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setIsOpen(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '12px 24px 32px 24px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.4)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
             >
-              <img src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} alt="flag" style={{ width: '20px', borderRadius: '2px' }} />
-              <span>{c.name}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+              {/* Drag Pill */}
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '16px' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>{t('selectCountry')}</h3>
+                <button type="button" onClick={() => setIsOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', transition: 'background 0.2s' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ position: 'relative', marginBottom: '20px' }}>
+                <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder={t('search') || 'Search countries...'}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%', padding: '16px 16px 16px 48px',
+                    borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)',
+                    backgroundColor: 'rgba(0,0,0,0.2)', color: 'var(--text-primary)',
+                    fontSize: '1.05rem', outline: 'none', boxSizing: 'border-box',
+                    transition: 'border-color 0.2s, box-shadow 0.2s'
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = 'var(--primary)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.15)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'rgba(255,255,255,0.08)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ overflowY: 'auto', flex: 1, margin: '0 -16px', padding: '0 16px', scrollbarWidth: 'none' }}>
+                <style>{`.country-list::-webkit-scrollbar { display: none; }`}</style>
+                <div className="country-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {filteredCountries.length > 0 ? (
+                  filteredCountries.map(c => (
+                    <div 
+                      key={c.code}
+                      style={{ 
+                        display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', 
+                        cursor: 'pointer', borderRadius: '16px',
+                        backgroundColor: value === c.name ? 'rgba(16,185,129,0.08)' : 'transparent',
+                        border: value === c.name ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={e => { if(value !== c.name) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)' }}
+                      onMouseLeave={e => { if(value !== c.name) e.currentTarget.style.backgroundColor = 'transparent' }}
+                      onClick={() => { onChange(c.name); setIsOpen(false); }}
+                    >
+                      <div style={{ 
+                        width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: 'var(--bg-dark)', border: '1px solid rgba(255,255,255,0.05)'
+                      }}>
+                        <img src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} alt="flag" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <span style={{ fontSize: '1.1rem', color: value === c.name ? 'var(--primary)' : 'var(--text-primary)', fontWeight: value === c.name ? 600 : 500 }}>{c.name}</span>
+                      {value === c.name && <Check size={20} color="var(--primary)" style={{ marginLeft: 'auto' }} />}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <Search size={32} opacity={0.2} />
+                    <span>No countries found</span>
+                  </div>
+                )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

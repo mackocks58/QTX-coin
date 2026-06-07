@@ -4,13 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
-import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check } from 'lucide-react';
+import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check, MessageCircle } from 'lucide-react';
 import { LiveTransactions } from '../components/LiveTransactions';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { SpinPromoPopup } from '../components/SpinPromoPopup';
 
 export const Dashboard = () => {
-  const { currentUser, userData, balance, miningBalance, investmentBalance, qtxBalance } = useAuth();
+  const { currentUser, userData, balance, miningBalance, investmentBalance, qtxBalance, welcomeBonus } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
   const { formatCurrency, rate } = useCurrency();
   const navigate = useNavigate();
@@ -207,10 +207,38 @@ export const Dashboard = () => {
           to { transform: rotate(360deg); }
         }
       `}</style>
-      <div style={{ background: 'linear-gradient(90deg, #ff4d4d, #ff8c00)', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: 'white', fontWeight: 500, boxShadow: '0 2px 8px rgba(255, 140, 0, 0.2)' }}>
-        <Bell size={14} style={{ flexShrink: 0 }} />
-        <span style={{ lineHeight: 1.1 }}>{t('certified')}</span>
+      <div style={{ background: 'linear-gradient(90deg, #ff4d4d, #ff8c00)', padding: '8px 10px', borderRadius: '8px', marginBottom: '16px', fontSize: '11px', display: 'flex', alignItems: 'center', color: 'white', fontWeight: 500, boxShadow: '0 2px 8px rgba(255, 140, 0, 0.2)' }}>
+        <Bell size={14} style={{ flexShrink: 0, marginRight: '8px' }} />
+        <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', position: 'relative' }}>
+          <motion.div 
+            animate={{ x: [ '100%', '-100%' ] }}
+            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+            style={{ display: 'inline-block', lineHeight: 1.1 }}
+          >
+            {t('certified')}
+          </motion.div>
+        </div>
       </div>
+
+      {/* WELCOME BONUS SECTION */}
+      <motion.div 
+        animate={{ scale: [1, 1.015, 1], boxShadow: ['0 4px 15px rgba(168, 85, 247, 0.2)', '0 4px 20px rgba(168, 85, 247, 0.45)', '0 4px 15px rgba(168, 85, 247, 0.2)'] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ background: 'linear-gradient(135deg, #a855f7, #ec4899)', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Gift size={20} color="#fff" />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 600, opacity: 0.9, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Welcome Bonus</h3>
+            <p style={{ margin: 0, fontSize: '10px', opacity: 0.8 }}>Available to withdraw</p>
+          </div>
+        </div>
+        <div style={{ fontSize: '22px', fontWeight: 800, textShadow: '0 2px 10px rgba(0,0,0,0.2)', fontVariantNumeric: 'tabular-nums' }}>
+          {formatCurrency(welcomeBonus || 0)}
+        </div>
+      </motion.div>
 
       {/* CARD */}
       <div style={{ 
@@ -265,6 +293,7 @@ export const Dashboard = () => {
             { icon: <img src="/images/spin_icon.png" alt="spin" style={{ width: '22px', height: '22px', animation: 'dashSpin 4s linear infinite' }} />, label: t('luckySpin'), path: '/spin' },
             { icon: <ShieldCheck size={18} color="var(--text-muted)" />, label: t('security'), path: '/security' },
             { icon: <UserPlus size={18} color="var(--success)" />, label: t('invite'), path: '/affiliate' },
+            { icon: <MessageCircle size={18} color="#a855f7" />, label: 'Chat Earn', path: '/chat-earn' },
             { icon: <Building size={18} color="var(--text-muted)" />, label: t('about'), path: '/about' },
             { icon: <Globe size={18} color="var(--primary)" />, label: 'Market', path: '/market' },
           ].map((item, idx) => (
@@ -292,12 +321,42 @@ export const Dashboard = () => {
       >
         <div>
           <strong style={{ fontSize: '12px', display: 'block', marginBottom: '2px', color: 'var(--text-primary)' }}>Trade QTX Coin</strong>
-          <small style={{ color: 'var(--success)', fontSize: '10px' }}>Buy \u0026 Sell QTX</small>
+          <small style={{ color: 'var(--success)', fontSize: '10px' }}>Buy & Sell QTX</small>
         </div>
         <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <ArrowRight size={12} color="var(--primary)" />
         </div>
       </div>
+
+      {/* App Download Banner */}
+      <a 
+        href="/QTXCoin1.apk" 
+        download
+        style={{ 
+          marginTop: '12px',
+          background: 'linear-gradient(135deg, var(--primary), #0ea5e9)', 
+          padding: '12px 14px', 
+          borderRadius: '8px', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          cursor: 'pointer', 
+          textDecoration: 'none',
+          color: '#fff',
+          boxShadow: '0 4px 15px rgba(56, 189, 248, 0.3)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Smartphone size={22} />
+          <div>
+            <strong style={{ fontSize: '14px', display: 'block', marginBottom: '2px', fontWeight: 700, letterSpacing: '0.3px' }}>Download Mobile App</strong>
+            <small style={{ opacity: 0.9, fontSize: '11px', fontWeight: 500 }}>Get the official QTX Coin APK</small>
+          </div>
+        </div>
+        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ArrowDownToLine size={16} color="#fff" />
+        </div>
+      </a>
 
       <div style={{ marginTop: '12px' }}>
         <LiveTransactions />

@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
-import { Copy, CheckCircle2, Info, X, ChevronLeft, Phone } from 'lucide-react';
+import { Copy, CheckCircle2, Info, X, ChevronLeft, Phone, AlertTriangle } from 'lucide-react';
 
 export const Wallet = () => {
   const { currentUser, userData } = useAuth();
@@ -24,6 +24,8 @@ export const Wallet = () => {
   const [copied, setCopied] = useState(false);
   const [hasPending, setHasPending] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [successData, setSuccessData] = useState(null);
 
   // Palmpesa specific state
   const [mobilePhone, setMobilePhone] = useState(userData?.phoneNumber || '');
@@ -96,16 +98,13 @@ export const Wallet = () => {
 
   const handleVerify = async () => {
     if (hasPending) {
-      toast.error('You already have a pending transaction.');
-      return;
+      return setErrorMsg('You already have a pending transaction.');
     }
     if (!expectedAmount || isNaN(expectedAmount) || parseFloat(expectedAmount) <= 0) {
-      toast.error('Please enter a valid transfer amount');
-      return;
+      return setErrorMsg('Please enter a valid transfer amount');
     }
     if (!txid || txid.length < 10) {
-      toast.error('Please enter a valid Transaction ID (TXID)');
-      return;
+      return setErrorMsg('Please enter a valid Transaction ID (TXID)');
     }
 
     setIsVerifying(true);
@@ -138,23 +137,34 @@ export const Wallet = () => {
         createdAt: serverTimestamp()
       });
 
-      toast.success(t('successTxSubmitted'), { id: loadingToast, duration: 6000 });
+      toast.dismiss(loadingToast);
+      setSuccessData({
+        title: 'Verifying Deposit ⏳',
+        message: 'Transaction submitted and is pending verification.',
+        details: [
+          { label: 'Network', value: activeTab },
+          { label: 'Amount', value: parseFloat(expectedAmount).toLocaleString() + ' USDT', color: 'var(--primary)' },
+          { label: 'TXID', value: txid.substring(0, 8) + '...' + txid.substring(txid.length - 8) },
+          { label: 'Status', value: 'Pending', color: 'var(--warning)' }
+        ]
+      });
       setTxid('');
       setExpectedAmount('');
     } catch (error) {
-      toast.error(error.message || 'Failed to submit transaction', { id: loadingToast });
+      toast.dismiss(loadingToast);
+      setErrorMsg(error.message || 'Failed to submit transaction');
     }
     
     setIsVerifying(false);
   };
 
   const handleMobileDeposit = async () => {
-    if (hasPending) return toast.error('You already have a pending transaction.');
+    if (hasPending) return setErrorMsg('You already have a pending transaction.');
     if (!expectedAmount || isNaN(expectedAmount) || parseFloat(expectedAmount) < 500) {
-      return toast.error('Minimum deposit is TZS 500');
+      return setErrorMsg('Minimum deposit is TZS 500');
     }
     if (!mobilePhone || mobilePhone.length < 9) {
-      return toast.error('Please enter a valid phone number (e.g. 0744...)');
+      return setErrorMsg('Please enter a valid phone number (e.g. 0744...)');
     }
 
     setIsVerifying(true);
@@ -205,7 +215,8 @@ export const Wallet = () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error(error.message || 'Payment initiation failed', { id: loadingToast });
+      toast.dismiss(loadingToast);
+      setErrorMsg(error.message || 'Payment initiation failed');
       setPollingStatus('FAILED');
     }
     
@@ -221,7 +232,7 @@ export const Wallet = () => {
           status: 'cancelled',
           cancelledAt: serverTimestamp()
         });
-        toast('Payment cancelled.', { icon: '🚫' });
+        setErrorMsg('Payment cancelled. 🚫');
       } catch (e) { console.error('Cancel update failed:', e); }
     }
   };
@@ -240,14 +251,22 @@ export const Wallet = () => {
         if (status === 'COMPLETED' || status === 'SUCCESS') {
            clearInterval(interval);
            setPollingStatus('COMPLETED');
-           toast.success('🎉 Deposit Successful! Balance updated.');
+           setSuccessData({
+             title: 'Deposit Successful 🎉',
+             message: 'Your balance has been updated instantly.',
+             details: [
+               { label: 'Network', value: 'Mobile Money' },
+               { label: 'Amount', value: `TZS ${parseFloat(expectedAmount).toLocaleString()}`, color: 'var(--success)' },
+               { label: 'Status', value: 'Completed', color: 'var(--success)' }
+             ]
+           });
            setExpectedAmount('');
            setTimeout(() => { setShowPaymentPopup(false); }, 3000);
         } else if (status === 'FAILED') {
            clearInterval(interval);
            setPollingStatus('FAILED');
            setShowPaymentPopup(false);
-           toast.error('Deposit Failed or Cancelled.');
+           setErrorMsg('Deposit Failed or Cancelled.');
         } else if (attempts >= maxAttempts) {
            clearInterval(interval);
            setPollingStatus('TIMEOUT');
@@ -260,7 +279,7 @@ export const Wallet = () => {
                cancelReason: 'timeout'
              });
            } catch(e) { console.error(e); }
-           toast.error('Payment timed out after 5 minutes. Please try again.');
+           setErrorMsg('Payment timed out after 5 minutes. Please try again.');
         }
       } catch (e) {
         console.error('Polling error:', e);
@@ -500,15 +519,16 @@ export const Wallet = () => {
         {showInstructions && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
             onClick={() => setShowInstructions(false)}
           >
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              style={{ background: 'var(--bg-panel)', padding: '16px', borderRadius: 'var(--radius-md)', maxWidth: '450px', width: '100%', border: '1px solid var(--border)', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{ background: 'var(--bg-panel)', padding: '24px 16px', borderRadius: '32px 32px 0 0', maxWidth: '500px', width: '100%', border: '1px solid var(--border)', position: 'relative', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={() => setShowInstructions(false)} style={{ position: 'absolute', top: '12px', right: '12px', color: 'var(--text-muted)', background: 'transparent' }}>
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 16px' }} />
+              <button onClick={() => setShowInstructions(false)} style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--text-muted)', background: 'transparent' }}>
                 <X size={20} />
               </button>
               <h3 className="mb-3 text-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
@@ -551,13 +571,14 @@ export const Wallet = () => {
         {showPaymentPopup && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(8px)' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           >
             <motion.div
-              initial={{ scale: 0.85, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.85, opacity: 0, y: 20 }}
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              style={{ background: 'linear-gradient(135deg, #0f1a12 0%, #111827 100%)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '20px', padding: '20px 20px 16px', maxWidth: '340px', width: '100%', textAlign: 'center', boxShadow: '0 0 40px rgba(16,185,129,0.12), 0 20px 40px rgba(0,0,0,0.6)' }}
+              style={{ background: 'linear-gradient(135deg, #0f1a12 0%, #111827 100%)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '32px 32px 0 0', padding: '24px 20px 32px', maxWidth: '500px', width: '100%', textAlign: 'center', boxShadow: '0 -10px 40px rgba(0,0,0,0.6)' }}
             >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 16px' }} />
               {/* Spinner + Badge — compact 80px */}
               <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 12px' }}>
                 {pollingStatus === 'COMPLETED' ? (
@@ -626,6 +647,71 @@ export const Wallet = () => {
               )}
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {/* --- Error Bottom Sheet --- */}
+        {errorMsg && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => setErrorMsg(null)}>
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: '100%', background: 'var(--bg-panel)', borderTop: '1px solid var(--border)', borderRadius: '32px 32px 0 0', padding: '24px 24px 40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 20px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <AlertTriangle size={24} color="var(--danger)" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>Action Failed</h3>
+                  <div style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.5' }}>{errorMsg}</div>
+                </div>
+              </div>
+              <button onClick={() => setErrorMsg(null)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--danger)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', marginTop: '24px', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>Dismiss</button>
+            </motion.div>
+          </div>
+        )}
+
+        {/* --- Success Bottom Sheet --- */}
+        {successData && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => setSuccessData(null)}>
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: '100%', background: 'var(--bg-panel)', borderTop: '1px solid var(--border)', borderRadius: '32px 32px 0 0', padding: '24px 24px 40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 24px' }} />
+              
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <CheckCircle2 size={32} color="var(--success)" />
+                </div>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{successData.title}</h3>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{successData.message}</p>
+              </div>
+
+              <div style={{ background: 'var(--bg-dark)', padding: '16px', borderRadius: '16px', marginBottom: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', fontWeight: 700 }}>Transaction Details</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {successData.details.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                      <strong style={{ color: item.color || '#fff' }}>{item.value}</strong>
+                    </div>
+                  ))}
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Date</span>
+                    <strong style={{ color: '#fff' }}>{new Date().toLocaleString()}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={() => setSuccessData(null)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', fontSize: '1.05rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}>Continue</button>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

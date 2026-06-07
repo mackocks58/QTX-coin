@@ -166,7 +166,6 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
             }
 
             console.log(`Verified deposit ${pendingTx.txid} for ${amount} ${matchedDeposit.coin}`);
-            await sendPushNotification(userId, "Deposit Successful", `Your deposit of ${amount} ${matchedDeposit.coin} has been verified and credited!`);
           }
         }
       }
@@ -220,7 +219,7 @@ exports.processBotPayouts = functions.region('europe-west1').pubsub.schedule('ev
           
           if (now >= lastPayout + msInDay) {
             const invested = parseFloat(crypto.price || 0);
-            const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
+            const CRYPTO_RATES = { doge: 6.0, ada: 6.8, matic: 7.4, xrp: 8.0, link: 8.8, dot: 9.6, avax: 10.4, sol: 11.0, eth: 12.0, btc: 14.0 };
             const percent = CRYPTO_RATES[crypto.id] || parseFloat(crypto.dailyPercent || 0);
             const profit = (invested * percent) / 100;
             
@@ -272,11 +271,42 @@ exports.onTransactionUpdated = functions.region('europe-west1').firestore
     const userId = context.params.userId;
 
     if (oldData.status === 'pending' && newData.status !== 'pending') {
+      const isSuccess = newData.status === 'SUCCESS' || newData.status === 'success' || newData.status === 'verified';
+      const isFailed = newData.status === 'failed' || newData.status === 'rejected';
+      const amount = newData.amount || newData.expectedAmount || 0;
+      let currency = newData.currency || 'USD';
+
       if (newData.type === 'withdrawal') {
-        if (newData.status === 'SUCCESS' || newData.status === 'success') {
-          await sendPushNotification(userId, "Withdrawal Approved", `Your withdrawal of $${newData.amount} has been approved and processed.`);
-        } else if (newData.status === 'failed' || newData.status === 'rejected') {
-          await sendPushNotification(userId, "Withdrawal Failed", `Your withdrawal of $${newData.amount} was rejected. Reason: ${newData.failureReason || 'Admin action'}`);
+        let destination = '';
+        if (newData.accountDetails) {
+          if (newData.accountDetails.type === 'crypto_address') {
+            destination = `\nAddress: ${newData.accountDetails.address}\nNetwork: ${newData.accountDetails.network}`;
+          } else if (newData.accountDetails.type === 'binance_id') {
+            destination = `\nBinance Pay ID: ${newData.accountDetails.binanceId}`;
+          } else if (newData.accountDetails.type === 'mobile') {
+            destination = `\nMobile Number: ${newData.accountDetails.accountNumber}\nAccount Name: ${newData.accountDetails.accountName}\nNetwork: ${newData.accountDetails.network}`;
+          }
+        }
+        
+        let txidStr = newData.txid ? `\nTransaction Hash: ${newData.txid}` : '';
+
+        if (isSuccess) {
+          const body = `Your withdrawal of ${amount} ${currency} has been approved and processed.\nAmount: ${amount} ${currency}${destination}${txidStr}\nStatus: Approved`;
+          await sendPushNotification(userId, "Withdrawal Approved", body);
+        } else if (isFailed) {
+          const body = `Your withdrawal of ${amount} ${currency} was rejected.\nReason: ${newData.failureReason || 'Admin action'}${destination}`;
+          await sendPushNotification(userId, "Withdrawal Failed", body);
+        }
+      } else if (newData.type === 'deposit') {
+        let networkStr = newData.network ? `\nNetwork: ${newData.network}` : '';
+        let txidStr = newData.txid ? `\nTransaction Hash: ${newData.txid}` : '';
+
+        if (isSuccess) {
+          const body = `Your deposit of ${amount} ${currency} has been approved.\nAmount: ${amount} ${currency}${networkStr}${txidStr}\nStatus: Verified`;
+          await sendPushNotification(userId, "Deposit Approved", body);
+        } else if (isFailed) {
+          const body = `Your deposit of ${amount} ${currency} was rejected.\nReason: ${newData.failureReason || 'Admin action'}${networkStr}${txidStr}`;
+          await sendPushNotification(userId, "Deposit Failed", body);
         }
       }
     }
@@ -361,7 +391,7 @@ exports.claimVideoReward = functions.region('europe-west1').https.onCall(async (
       let totalReward = 0;
       activeCrypto.forEach(crypto => {
         const invested = parseFloat(String(crypto.price || '0').replace(/[^0-9.-]+/g,""));
-        const CRYPTO_RATES = { doge: 2.2, ada: 3, matic: 3.6, xrp: 4, link: 5, dot: 6, avax: 7, sol: 8, eth: 9, btc: 10 };
+        const CRYPTO_RATES = { doge: 6.0, ada: 6.8, matic: 7.4, xrp: 8.0, link: 8.8, dot: 9.6, avax: 10.4, sol: 11.0, eth: 12.0, btc: 14.0 };
         const percent = CRYPTO_RATES[crypto.id] || 0;
         totalReward += (invested * percent / 100) / TOTAL_VIDEOS;
       });

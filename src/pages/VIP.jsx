@@ -283,28 +283,36 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
   const handleConfirm = () => {
     const localMinAmount = bot.minAmount * rate;
     const localMaxAmount = bot.maxAmount * rate;
-    if (!isValid || parsed < localMinAmount || parsed > localMaxAmount) return toast.error(t('errInvalidAmount').replace('${min}', convertAndFormatCurrency(bot.minAmount)).replace('${max}', convertAndFormatCurrency(bot.maxAmount)));
+    if (!isValid || parsed < localMinAmount || parsed > localMaxAmount) {
+      return onConfirm(bot, parsed, t('errInvalidAmount').replace('${min}', convertAndFormatCurrency(bot.minAmount)).replace('${max}', convertAndFormatCurrency(bot.maxAmount)));
+    }
     
     const userBalance = parseFloat(balance || 0);
-    if (parsed > userBalance) return toast.error(t('errInsufficientBalance').replace('${bal}', formatCurrency(userBalance)));
+    if (parsed > userBalance) {
+      return onConfirm(bot, parsed, t('errInsufficientBalance').replace('${bal}', formatCurrency(userBalance)));
+    }
     
-    onConfirm(bot, parsed);
+    onConfirm(bot, parsed, null);
   };
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(6px)' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--bg-panel)', borderRadius: '20px', maxWidth: '400px', width: '100%', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.6)' }}
+        style={{ background: 'var(--bg-panel)', borderRadius: '32px 32px 0 0', maxWidth: '500px', width: '100%', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
       >
         {/* Image header */}
         <div style={{ position: 'relative', height: '110px' }}>
+          <div style={{ position: 'absolute', top: '10px', left: '0', right: '0', display: 'flex', justifyContent: 'center', zIndex: 10 }}>
+            <div style={{ width: '40px', height: '5px', background: 'rgba(255,255,255,0.4)', borderRadius: '3px' }} />
+          </div>
           <img src={bot.image} alt={bot.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg-panel) 0%, transparent 100%)' }} />
           <div style={{ position: 'absolute', top: '10px', left: '12px' }}><VipBadge level={bot.vipLevel} /></div>
@@ -401,17 +409,21 @@ const InfoModal = ({ onClose }) => {
   const { t } = useLanguage();
   return (
   <div
-    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(6px)' }}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
     onClick={onClose}
   >
     <motion.div
-      initial={{ scale: 0.9, opacity: 0, y: 20 }}
-      animate={{ scale: 1, opacity: 1, y: 0 }}
-      exit={{ scale: 0.9, opacity: 0, y: 20 }}
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       onClick={e => e.stopPropagation()}
-      style={{ background: 'var(--bg-panel)', borderRadius: '20px', maxWidth: '450px', width: '100%', border: '1px solid var(--primary-glow)', overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.6)' }}
+      style={{ background: 'var(--bg-panel)', borderRadius: '32px 32px 0 0', maxWidth: '500px', width: '100%', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
     >
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: '24px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '10px', left: '0', right: '0', display: 'flex', justifyContent: 'center', zIndex: 10 }}>
+          <div style={{ width: '40px', height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px' }} />
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ background: 'rgba(212,175,55,0.15)', padding: '8px', borderRadius: '12px' }}>
@@ -472,12 +484,16 @@ export const VIP = () => {
   const [selectedBot, setSelectedBot] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [successData, setSuccessData] = useState(null);
   const activatedBots = userData?.activatedBots || [];
 
-  const handleConfirm = async (bot, userAmount) => {
+  const handleConfirm = async (bot, userAmount, errorMessage) => {
+    if (errorMessage) {
+      return setErrorMsg(errorMessage);
+    }
+    
     setActivating(true);
-    const toastId = toast.loading(`Activating ${bot.name}…`);
-
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const snap = await getDoc(userRef);
@@ -506,11 +522,21 @@ export const VIP = () => {
       // Schedule local notifications for this specific bot's lifecycle
       scheduleBotNotifications(record, formatCurrency);
 
-      toast.success(`${bot.name} ${t('botActivated')} 🤖`, { id: toastId });
+      const dailyProfit = ((userAmount * bot.dailyPercent) / 100).toFixed(2);
+      
+      setSuccessData({
+        title: `${bot.name} Activated 🎉`,
+        message: t('botActivated'),
+        details: [
+          { label: 'Bot Name', value: bot.name },
+          { label: 'Amount Invested', value: formatCurrency(userAmount), color: '#fff' },
+          { label: 'Daily Return', value: `${bot.dailyPercent}%`, color: 'var(--success)' },
+          { label: 'Est. Daily Profit', value: formatCurrency(dailyProfit), color: 'var(--success)' }
+        ]
+      });
       setSelectedBot(null);
-      setActiveTab('mybots');
     } catch (err) {
-      toast.error(err.message || t('activationFailed'), { id: toastId });
+      setErrorMsg(err.message || t('activationFailed'));
     } finally {
       setActivating(false);
     }
@@ -618,6 +644,73 @@ export const VIP = () => {
         
         {showInfo && (
           <InfoModal onClose={() => setShowInfo(false)} />
+        )}
+
+        {/* --- Error Bottom Sheet --- */}
+        {errorMsg && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => setErrorMsg(null)}>
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: '100%', background: 'var(--bg-panel)', borderTop: '1px solid var(--border)', borderRadius: '32px 32px 0 0', padding: '24px 24px 40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 20px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <AlertTriangle size={24} color="var(--danger)" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>Action Failed</h3>
+                  <div style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.5' }}>{errorMsg}</div>
+                </div>
+              </div>
+              <button onClick={() => setErrorMsg(null)} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--danger)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', marginTop: '24px', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>Dismiss</button>
+            </motion.div>
+          </div>
+        )}
+
+        {/* --- Success Bottom Sheet --- */}
+        {successData && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => { setSuccessData(null); setActiveTab('mybots'); }}>
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: '100%', background: 'var(--bg-panel)', borderTop: '1px solid var(--border)', borderRadius: '32px 32px 0 0', padding: '24px 24px 40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 24px' }} />
+              
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <CheckCircle2 size={32} color="var(--success)" />
+                </div>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>{successData.title}</h3>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{successData.message}</p>
+              </div>
+
+              <div style={{ background: 'var(--bg-dark)', padding: '16px', borderRadius: '16px', marginBottom: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', fontWeight: 700 }}>Activation Details</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {successData.details.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                      <strong style={{ color: item.color || '#fff' }}>{item.value}</strong>
+                    </div>
+                  ))}
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Contract Length</span>
+                    <strong style={{ color: '#fff' }}>{t('days365')}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Timestamp</span>
+                    <strong style={{ color: '#fff' }}>{new Date().toLocaleString()}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={() => { setSuccessData(null); setActiveTab('mybots'); }} style={{ width: '100%', padding: '16px', borderRadius: '16px', border: 'none', background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', fontSize: '1.05rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}>View Active Bots</button>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
