@@ -37,12 +37,17 @@ export const Account = () => {
   const [showBiometricModal, setShowBiometricModal] = useState(false);
   const [biometricPassword, setBiometricPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
     const checkSettings = async () => {
       try {
-        const bioRes = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
-        setBiometricEnabled(bioRes.isSaved);
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform()) {
+          setIsNative(true);
+          const bioRes = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
+          setBiometricEnabled(bioRes.isSaved);
+        }
       } catch (e) {
         console.log('Biometric check failed', e);
       }
@@ -359,20 +364,22 @@ export const Account = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-dark)', padding: '12px', borderRadius: '8px' }}>
           <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>{t('deviceSettings')}</h4>
           
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Fingerprint size={14} color="var(--primary)" />
+          {isNative && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(212, 175, 55, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Fingerprint size={14} color="var(--primary)" />
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{t('biometricLogin')}</span>
               </div>
-              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{t('biometricLogin')}</span>
+              <div 
+                onClick={handleBiometricToggle}
+                style={{ width: '40px', height: '22px', background: biometricEnabled ? 'var(--primary)' : 'var(--border)', borderRadius: '11px', position: 'relative', cursor: 'pointer', transition: 'var(--transition)' }}
+              >
+                <div style={{ position: 'absolute', top: '2px', left: biometricEnabled ? '20px' : '2px', width: '18px', height: '18px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+              </div>
             </div>
-            <div 
-              onClick={handleBiometricToggle}
-              style={{ width: '40px', height: '22px', background: biometricEnabled ? 'var(--primary)' : 'var(--border)', borderRadius: '11px', position: 'relative', cursor: 'pointer', transition: 'var(--transition)' }}
-            >
-              <div style={{ position: 'absolute', top: '2px', left: biometricEnabled ? '20px' : '2px', width: '18px', height: '18px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
-            </div>
-          </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

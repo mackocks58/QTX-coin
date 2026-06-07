@@ -185,11 +185,14 @@ export const Login = () => {
   useEffect(() => {
     const checkBiometric = async () => {
       try {
-        const available = await NativeBiometric.isAvailable();
-        if (available.isAvailable) {
-          const res = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
-          if (res.isSaved) setHasBiometric(true);
-        }
+        import('@capacitor/core').then(async ({ Capacitor }) => {
+          if (!Capacitor.isNativePlatform()) return;
+          const available = await NativeBiometric.isAvailable();
+          if (available.isAvailable) {
+            const res = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
+            if (res.isSaved) setHasBiometric(true);
+          }
+        });
       } catch (e) {
         console.log('Biometric check failed', e);
       }
@@ -267,16 +270,19 @@ export const Login = () => {
         await login(email, password);
         
         try {
-          const available = await NativeBiometric.isAvailable();
-          if (available.isAvailable) {
-            const saved = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
-            if (!saved.isSaved) {
-              await NativeBiometric.setCredentials({
-                username: email,
-                password: password,
-                server: 'qtx coin_auth',
-              });
-              toast.success(t('successBiometricEnabled'));
+          const { Capacitor } = await import('@capacitor/core');
+          if (Capacitor.isNativePlatform()) {
+            const available = await NativeBiometric.isAvailable();
+            if (available.isAvailable) {
+              const saved = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
+              if (!saved.isSaved) {
+                await NativeBiometric.setCredentials({
+                  username: email,
+                  password: password,
+                  server: 'qtx coin_auth',
+                });
+                toast.success(t('successBiometricEnabled'));
+              }
             }
           }
         } catch (e) {
