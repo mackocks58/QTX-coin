@@ -751,12 +751,30 @@ export const Admin = () => {
                             </button>
                           </div>
                         </div>
-                        <div style={{ fontSize: '13px', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div>
-                            <span style={{ color: 'var(--text-muted)' }}>TXID: </span>
-                            <span style={{ fontFamily: 'monospace' }}>{d.txid}</span>
+                        <div style={{ fontSize: '13px', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <span style={{ color: 'var(--text-muted)' }}>TXID: </span>
+                              <span style={{ fontFamily: 'monospace' }}>{d.txid}</span>
+                            </div>
+                            <Copy size={14} style={{cursor: 'pointer', color: 'var(--primary)'}} onClick={() => handleCopy(d.txid)} />
                           </div>
-                          <Copy size={14} style={{cursor: 'pointer', color: 'var(--primary)'}} onClick={() => handleCopy(d.txid)} />
+                          {(d.phone || d.senderName) && (
+                            <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
+                              {d.phone && (
+                                <div>
+                                  <span style={{ color: 'var(--text-muted)' }}>Phone: </span>
+                                  <span style={{ fontWeight: 600 }}>{d.phone}</span>
+                                </div>
+                              )}
+                              {d.senderName && (
+                                <div>
+                                  <span style={{ color: 'var(--text-muted)' }}>Name: </span>
+                                  <span style={{ fontWeight: 600 }}>{d.senderName}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {d.adminNote && (
                           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '8px', background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--primary)', marginBottom: '12px' }}>
