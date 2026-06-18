@@ -10,6 +10,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { ChevronLeft, Send, Image, Check, CheckCheck, Clock, Paperclip, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { FAQ_DATA } from '../data/faqContent';
 
 export const Support = () => {
   const { currentUser, userData } = useAuth();
@@ -18,6 +19,7 @@ export const Support = () => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [botTyping, setBotTyping] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -26,6 +28,7 @@ export const Support = () => {
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
   const chatId = currentUser?.uid;
+  const welcomeTriggered = useRef(false);
 
   // ── Load messages in real-time ──────────────────────────────────────
   useEffect(() => {
@@ -35,7 +38,37 @@ export const Support = () => {
       orderBy('createdAt', 'asc')
     );
     const unsub = onSnapshot(q, snap => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setMessages(msgs);
+
+      if (msgs.length === 0 && !welcomeTriggered.current) {
+        welcomeTriggered.current = true;
+        setTimeout(() => {
+          setBotTyping(true);
+          setTimeout(async () => {
+            try {
+              await addDoc(collection(db, 'supportChats', chatId, 'messages'), {
+                text: "Hello! 👋 Welcome to QTX Support. I am your automated assistant. How can I help you today?",
+                imageUrl: null,
+                senderId: 'admin_bot',
+                senderName: 'QTX Support',
+                senderRole: 'admin',
+                createdAt: serverTimestamp(),
+                status: 'read'
+              });
+              await setDoc(doc(db, 'supportChats', chatId), {
+                lastMessage: 'Welcome to QTX Support.',
+                lastMessageAt: serverTimestamp(),
+                unreadAdmin: 0,
+              }, { merge: true });
+            } catch (e) {
+              console.error(e);
+            } finally {
+              setBotTyping(false);
+            }
+          }, 2000);
+        }, 500);
+      }
     });
     return () => unsub();
   }, [chatId]);
@@ -82,6 +115,33 @@ export const Support = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  function generateBotResponse(userMsg) {
+    const lowerMsg = userMsg.toLowerCase();
+    
+    if (/\b(hello|hi|hey|greetings|howdy|hola|yo)\b/.test(lowerMsg)) {
+      return "Hello! 👋 I am your automated QTX assistant. Please let me know how I can help you with your account, deposits, withdrawals, or VIP bots.";
+    }
+
+    let bestMatch = null;
+    let maxMatches = 0;
+    
+    for (const category of FAQ_DATA) {
+      for (const item of category.items) {
+        const keywords = item.question.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ').filter(w => w.length > 3);
+        let matches = keywords.filter(k => lowerMsg.includes(k)).length;
+        if (matches > maxMatches) {
+          maxMatches = matches;
+          bestMatch = item.answer;
+        }
+      }
+    }
+    
+    if (bestMatch && maxMatches > 0) {
+      return bestMatch;
+    }
+    return "I am unable to answer this question. Please contact the admin on WhatsApp for further assistance.";
+  }
+
   // ── Send message ─────────────────────────────────────────────────────
   async function sendMessage() {
     if ((!text.trim() && !imageFile) || sending) return;
@@ -126,8 +186,42 @@ export const Support = () => {
         unreadAdmin: 1,
       }, { merge: true });
 
+      const sentText = text.trim();
       setText('');
       clearImage();
+
+      // Trigger Bot Auto-Reply if there is text
+      if (sentText) {
+        setTimeout(() => {
+          setBotTyping(true);
+          
+          setTimeout(async () => {
+            try {
+              const botReply = generateBotResponse(sentText);
+              await addDoc(collection(db, 'supportChats', chatId, 'messages'), {
+                text: botReply,
+                imageUrl: null,
+                senderId: 'admin_bot',
+                senderName: 'QTX Support',
+                senderRole: 'admin',
+                createdAt: serverTimestamp(),
+                status: 'read'
+              });
+              
+              await setDoc(doc(db, 'supportChats', chatId), {
+                lastMessage: 'Support reply sent',
+                lastMessageAt: serverTimestamp(),
+                unreadAdmin: 0,
+              }, { merge: true });
+            } catch (e) {
+              console.error("Bot reply failed", e);
+            } finally {
+              setBotTyping(false);
+            }
+          }, 2500); // 2.5s typing delay
+        }, 500);
+      }
+
     } catch (err) {
       console.error(err);
       toast.error('Failed to send message');
@@ -326,6 +420,17 @@ export const Support = () => {
             })}
           </div>
         ))}
+
+        {botTyping && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '4px' }}>
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=40&q=80" alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginBottom: '2px' }} />
+            <div style={{ background: 'rgba(255,255,255,0.08)', padding: '12px 16px', borderRadius: '18px 18px 18px 4px', display: 'flex', gap: '4px', alignItems: 'center', height: '24px' }}>
+              <motion.span animate={{ y: [0, -5, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} style={{ width: '6px', height: '6px', background: 'var(--text-muted)', borderRadius: '50%' }} />
+              <motion.span animate={{ y: [0, -5, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} style={{ width: '6px', height: '6px', background: 'var(--text-muted)', borderRadius: '50%' }} />
+              <motion.span animate={{ y: [0, -5, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} style={{ width: '6px', height: '6px', background: 'var(--text-muted)', borderRadius: '50%' }} />
+            </div>
+          </motion.div>
+        )}
 
         <div ref={bottomRef} />
       </div>

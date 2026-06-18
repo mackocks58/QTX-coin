@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 const COUNTRIES = [
-  { code: 'KE', name: 'Kenya' },
+  { code: 'ZW', name: 'Zimbabwe' },
   { code: 'MZ', name: 'Mozambique' },
   { code: 'TZ', name: 'Tanzania' },
   { code: 'UG', name: 'Uganda' },
@@ -18,6 +18,7 @@ const COUNTRIES = [
   { code: 'BI', name: 'Burundi' },
   { code: 'GH', name: 'Ghana' },
   { code: 'NG', name: 'Nigeria' },
+  { code: 'KE', name: 'Kenya' },
   { code: 'UN', name: 'Global/Other' }
 ];
 
@@ -101,7 +102,7 @@ const CustomCountrySelect = ({ value, onChange, t }) => {
                     width: '100%', padding: '16px 16px 16px 48px',
                     borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)',
                     backgroundColor: 'rgba(0,0,0,0.2)', color: 'var(--text-primary)',
-                    fontSize: '1.05rem', outline: 'none', boxSizing: 'border-box',
+                    fontSize: '16px', outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.2s, box-shadow 0.2s'
                   }}
                   onFocus={e => {
@@ -112,7 +113,6 @@ const CustomCountrySelect = ({ value, onChange, t }) => {
                     e.target.style.borderColor = 'rgba(255,255,255,0.08)';
                     e.target.style.boxShadow = 'none';
                   }}
-                  autoFocus
                 />
               </div>
 

@@ -86,9 +86,9 @@ const BottomNav = () => {
         <Pickaxe size={20} />
         <span>Buy QTX</span>
       </Link>
-      <Link to="/assets" className={isActive('/assets')}>
+      <Link to="/transactions" className={isActive('/transactions')}>
         <History size={20} />
-        <span>Assets</span>
+        <span>History</span>
       </Link>
       <Link to="/account" className={isActive('/account')}>
         <User size={20} />
@@ -109,7 +109,7 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
       </div>
       <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <Link 
-          to="/transactions" 
+          to="/assets" 
           onClick={() => setSidebarOpen(false)}
           style={{ 
             display: 'flex', 
@@ -123,7 +123,7 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
           className="hover:bg-panel-hover"
         >
           <History size={20} />
-          <span>History</span>
+          <span>Assets</span>
         </Link>
         <Link 
           to="/vip" 

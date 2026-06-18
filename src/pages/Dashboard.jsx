@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
-import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check, MessageCircle } from 'lucide-react';
+import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check, MessageCircle, Gem, Film } from 'lucide-react';
 import { LiveTransactions } from '../components/LiveTransactions';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { SpinPromoPopup } from '../components/SpinPromoPopup';
@@ -289,13 +289,16 @@ export const Dashboard = () => {
           {[
             { icon: <ArrowDownToLine size={18} color="var(--primary)" />, label: t('recharge'), path: '/wallet' },
             { icon: <Send size={18} color="var(--primary)" />, label: t('withdraw'), path: '/withdraw' },
-            { icon: <Crown size={18} color="var(--warning)" />, label: 'Assets', path: '/assets' },
+            { icon: <Gem size={18} color="var(--warning)" />, label: 'Invest', path: '/wealth' },
             { icon: <img src="/images/spin_icon.png" alt="spin" style={{ width: '22px', height: '22px', animation: 'dashSpin 4s linear infinite' }} />, label: t('luckySpin'), path: '/spin' },
             { icon: <ShieldCheck size={18} color="var(--text-muted)" />, label: t('security'), path: '/security' },
             { icon: <UserPlus size={18} color="var(--success)" />, label: t('invite'), path: '/affiliate' },
             { icon: <MessageCircle size={18} color="#a855f7" />, label: 'Chat Earn', path: '/chat-earn' },
             { icon: <Building size={18} color="var(--text-muted)" />, label: t('about'), path: '/about' },
             { icon: <Globe size={18} color="var(--primary)" />, label: 'Market', path: '/market' },
+            { icon: <Film size={18} color="var(--danger)" />, label: 'Watch & Earn', path: '/movies' },
+            { icon: <Crown size={18} color="var(--warning)" />, label: 'VIP Bots', path: '/vip' },
+            { icon: <Bot size={18} color="#3b82f6" />, label: 'My Bots', path: '/my-bots' },
           ].map((item, idx) => (
             <div 
               key={idx} 
