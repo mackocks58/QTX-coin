@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
-import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -41,10 +41,13 @@ const NetworkBadge = ({ network, size = 20 }) => {
 };
 
 export const Withdraw = () => {
-  const { currentUser, balance, welcomeBonus } = useAuth();
+  const { currentUser, balance, welcomeBonus, userData } = useAuth();
   const { formatCurrency, convertAndFormatCurrency, symbol } = useCurrency();
   const { t } = useLanguage();
   const navigate = useNavigate();
+
+  const isZW = userData?.country === 'Zimbabwe' || userData?.country === 'ZW';
+  const [zwRate, setZwRate] = useState(26.75);
   
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -65,6 +68,15 @@ export const Withdraw = () => {
       transition: { duration: 0.4 }
     });
   };
+
+  // Sync ZW rate from admin settings
+  useEffect(() => {
+    if (!isZW) return;
+    const unsub = onSnapshot(doc(db, 'settings', 'zwPayment'), (snap) => {
+      if (snap.exists() && snap.data().rate) setZwRate(snap.data().rate);
+    });
+    return unsub;
+  }, [isZW]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -319,6 +331,14 @@ export const Withdraw = () => {
                   <span className="text-muted">{t('minimumAmount')}</span>
                   <span className="text-muted">{t('fee')}</span>
                 </div>
+                {isZW && selectedAccount?.type === 'mobile' && parseFloat(amount) > 0 && (
+                  <div style={{ marginTop: '8px', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>You will receive (ZiG):</span>
+                    <span style={{ color: '#10B981', fontWeight: 900, fontSize: '1.1rem' }}>
+                      ZWG {(parseFloat(amount) * zwRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <button 
@@ -501,6 +521,14 @@ export const Withdraw = () => {
                         <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Mobile Number</span>
                         <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)' }}>{selectedAccount.accountNumber}</span>
                       </div>
+                      {isZW && (
+                        <div style={{ marginTop: '12px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Amount in ZiG (ZWG)</span>
+                          <span style={{ color: '#10B981', fontWeight: 900, fontSize: '1.3rem' }}>
+                            ZWG {(parseFloat(amount || 0) * zwRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

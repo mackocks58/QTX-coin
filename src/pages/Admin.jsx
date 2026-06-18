@@ -119,7 +119,7 @@ export const Admin = () => {
   useEffect(() => {
     if (isAdmin) {
       if (activeTab === 'dashboard') fetchStats();
-      if (activeTab === 'withdrawals') fetchWithdrawals();
+      if (activeTab === 'withdrawals') { fetchWithdrawals(); fetchPaymentSettings(); }
       if (activeTab === 'deposits') fetchDeposits();
       if (activeTab === 'users') fetchUsersList();
       if (activeTab === 'payment_settings') fetchPaymentSettings();
@@ -871,6 +871,11 @@ export const Admin = () => {
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>{w.currency === 'TZS' ? 'TZS' : '$'} {w.amount?.toLocaleString(undefined, { minimumFractionDigits: w.currency === 'TZS' ? 0 : 2, maximumFractionDigits: w.currency === 'TZS' ? 0 : 2 })}</div>
+                            {w.accountDetails && ['EcoCash', 'InnBucks', 'OneMoney', 'Eco Cash', 'One Money'].includes(w.accountDetails.network) && (
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10B981', marginTop: '-2px', marginBottom: '2px' }}>
+                                ZWG {((w.amount || 0) * (paymentSettings?.rate || 26.75)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                            )}
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: w.status === 'pending' ? 'var(--warning)' : w.status === 'SUCCESS' ? 'var(--success)' : 'var(--danger)' }}>
                               {w.status}
                             </div>
@@ -906,6 +911,14 @@ export const Admin = () => {
                                     {w.accountDetails.accountNumber} ({w.accountDetails.accountName})
                                     <button onClick={() => handleCopy(w.accountDetails.accountNumber)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}><Copy size={14} /></button>
                                   </div>
+                                  {['EcoCash', 'InnBucks', 'OneMoney', 'Eco Cash', 'One Money'].includes(w.accountDetails.network) && (
+                                    <div style={{ marginTop: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '6px 10px', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ color: 'var(--text-muted)' }}>Amount in ZiG (ZWG):</span>
+                                      <span style={{ color: '#10B981', fontWeight: 800 }}>
+                                        ZWG {((w.amount || 0) * (paymentSettings?.rate || 26.75)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </>

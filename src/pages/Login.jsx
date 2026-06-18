@@ -8,18 +8,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 const COUNTRIES = [
-  { code: 'ZW', name: 'Zimbabwe' },
-  { code: 'MZ', name: 'Mozambique' },
-  { code: 'TZ', name: 'Tanzania' },
-  { code: 'UG', name: 'Uganda' },
-  { code: 'BW', name: 'Botswana' },
-  { code: 'CD', name: 'Congo (DRC)' },
-  { code: 'ZM', name: 'Zambia' },
-  { code: 'BI', name: 'Burundi' },
-  { code: 'GH', name: 'Ghana' },
-  { code: 'NG', name: 'Nigeria' },
-  { code: 'KE', name: 'Kenya' },
-  { code: 'UN', name: 'Global/Other' }
+  { code: 'ZW', name: 'Zimbabwe', dialCode: '+263' },
+  { code: 'MZ', name: 'Mozambique', dialCode: '+258' },
+  { code: 'TZ', name: 'Tanzania', dialCode: '+255' },
+  { code: 'UG', name: 'Uganda', dialCode: '+256' },
+  { code: 'BW', name: 'Botswana', dialCode: '+267' },
+  { code: 'CD', name: 'Congo (DRC)', dialCode: '+243' },
+  { code: 'ZM', name: 'Zambia', dialCode: '+260' },
+  { code: 'BI', name: 'Burundi', dialCode: '+257' },
+  { code: 'GH', name: 'Ghana', dialCode: '+233' },
+  { code: 'NG', name: 'Nigeria', dialCode: '+234' },
+  { code: 'KE', name: 'Kenya', dialCode: '+254' },
+  { code: 'UN', name: 'Global/Other', dialCode: '' }
 ];
 
 const CustomCountrySelect = ({ value, onChange, t }) => {
@@ -174,9 +174,10 @@ export const Login = () => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-  const [email, setEmail] = useState('');
+  const [loginMethod, setLoginMethod] = useState('phone');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState('Zimbabwe');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
@@ -253,21 +254,43 @@ export const Login = () => {
     setTimeout(() => setIsShaking(false), 400);
   };
 
-  const isPhone = false; // Phone auth disabled
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email || !password || (!isLogin && !country)) {
+    if (!phone || !password || (!isLogin && !country)) {
       playErrorSound();
       triggerShake();
       return toast.error(t('errFillAllFields'));
     }
+
+    if (loginMethod === 'phone') {
+      const cleaned = phone.replace(/[^\d]/g, '');
+      if (country === 'Zimbabwe') {
+        const isFormat1 = cleaned.startsWith('07') && cleaned.length === 10;
+        const isFormat2 = cleaned.startsWith('7') && cleaned.length === 9;
+        if (!isFormat1 && !isFormat2) {
+          playErrorSound();
+          triggerShake();
+          return toast.error('Invalid Zimbabwe mobile length (e.g., 0771234567 or 771234567)');
+        }
+      } else if (cleaned.length < 8) {
+        playErrorSound();
+        triggerShake();
+        return toast.error('Phone number length is too short');
+      }
+    }
     
     setLoading(true);
     try {
+      let authEmail = phone;
+      if (!phone.includes('@') && loginMethod === 'phone') {
+        const dialCode = COUNTRIES.find(c => c.name === country)?.dialCode || '';
+        const cleanPhone = phone.startsWith('0') ? phone.substring(1) : phone;
+        authEmail = `${dialCode}${cleanPhone}@qtx.com`;
+      }
+
       if (isLogin) {
-        await login(email, password);
+        await login(authEmail, password);
         
         try {
           const { Capacitor } = await import('@capacitor/core');
@@ -277,7 +300,7 @@ export const Login = () => {
               const saved = await NativeBiometric.isCredentialsSaved({ server: 'qtx coin_auth' });
               if (!saved.isSaved) {
                 await NativeBiometric.setCredentials({
-                  username: email,
+                  username: authEmail,
                   password: password,
                   server: 'qtx coin_auth',
                 });
@@ -291,7 +314,7 @@ export const Login = () => {
 
         toast.success(t('successLoggedIn'));
       } else {
-        await signup(email, password, country, refId);
+        await signup(authEmail, password, country, refId);
         toast.success(t('successAccountCreated'));
       }
       navigate('/');
@@ -417,20 +440,78 @@ export const Login = () => {
           <img src="/logo.png" alt="QTX Coin Logo" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
           <h2 style={{ color: 'var(--text-primary)', letterSpacing: '2px', margin: 0, fontSize: '28px' }}>QTX Coin</h2>
         </div>
-        <h3 className="mb-4 text-center" style={{ color: 'var(--text-secondary)' }}>{isLogin ? t('signInBtn') : t('registerLabel')}</h3>
+        {isLogin ? (
+          <h3 className="mb-4 text-center" style={{ color: 'var(--text-secondary)' }}>{t('signInBtn')}</h3>
+        ) : (
+          <motion.h3 
+            className="mb-4 text-center" 
+            style={{ color: 'var(--primary)', fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase', textShadow: '0 0 20px rgba(16,185,129,0.6)', letterSpacing: '2px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            whileInView={{ textShadow: ['0 0 10px rgba(16,185,129,0.3)', '0 0 30px rgba(16,185,129,0.8)', '0 0 10px rgba(16,185,129,0.3)'] }}
+          >
+            REGISTER
+          </motion.h3>
+        )}
         
         <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label className="input-label">{t('email')}</label>
-            <input
-              type="email"
-              className={`input-field ${isShaking && !email ? 'input-error' : ''}`}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="email@example.com"
-            />
+          <div style={{ display: 'flex', background: 'var(--border)', padding: '4px', borderRadius: 'var(--radius-md)', marginBottom: '16px' }}>
+            <button 
+              type="button"
+              onClick={() => setLoginMethod('phone')}
+              style={{ flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)', background: loginMethod === 'phone' ? 'var(--bg-panel)' : 'transparent', color: loginMethod === 'phone' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: loginMethod === 'phone' ? 600 : 400, boxShadow: loginMethod === 'phone' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Phone
+            </button>
+            <button 
+              type="button"
+              onClick={() => setLoginMethod('email')}
+              style={{ flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)', background: loginMethod === 'email' ? 'var(--bg-panel)' : 'transparent', color: loginMethod === 'email' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: loginMethod === 'email' ? 600 : 400, boxShadow: loginMethod === 'email' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Email
+            </button>
           </div>
-          {!isPhone && (
+
+          {!isLogin && (
+            <div className="input-group" style={{ marginBottom: '16px' }}>
+              <label className="input-label">{t('country')}</label>
+              <CustomCountrySelect value={country} onChange={setCountry} t={t} />
+            </div>
+          )}
+
+          {loginMethod === 'phone' ? (
+            <div className="input-group">
+              <label className="input-label">{t('phoneNumber') || 'Phone Number'}</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', padding: '14px 12px', borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '15px' }}>
+                  {COUNTRIES.find(c => c.name === country)?.dialCode || '?'}
+                </div>
+                <input
+                  type="tel"
+                  className={`input-field ${isShaking && !phone ? 'input-error' : ''}`}
+                  value={phone}
+                  onChange={e => {
+                    const cleaned = e.target.value.replace(/[^\d]/g, '');
+                    setPhone(cleaned); // Allow leading 0 for format flexibility, auto-stripped on submit
+                  }}
+                  placeholder="771234567"
+                  maxLength="15"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="input-group">
+              <label className="input-label">{t('email')}</label>
+              <input
+                type="text"
+                className={`input-field ${isShaking && !phone ? 'input-error' : ''}`}
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="email@example.com"
+              />
+            </div>
+          )}
             <div className="input-group">
               <label className="input-label">{t('password')}</label>
               <div style={{ position: 'relative' }}>
@@ -450,14 +531,7 @@ export const Login = () => {
                 </button>
               </div>
             </div>
-          )}
 
-          {!isLogin && (
-            <div className="input-group">
-              <label className="input-label">{t('country')}</label>
-              <CustomCountrySelect value={country} onChange={setCountry} t={t} />
-            </div>
-          )}
           
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
             {loading ? t('processing') : (isLogin ? t('signInBtn') : t('registerLabel'))}

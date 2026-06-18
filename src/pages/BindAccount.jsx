@@ -19,6 +19,8 @@ const NETWORK_MAP = {
   'Zambia': ['MTN Mobile Money', 'Airtel Money', 'Zamtel'],
   'Burundi': ['EcoCash', 'Lumicash'],
   'Ghana': ['MTN Mobile Money', 'Vodafone Cash', 'AirtelTigo'],
+  'Zimbabwe': ['EcoCash', 'InnBucks', 'OneMoney'],
+  'ZW': ['EcoCash', 'InnBucks', 'OneMoney'],
   'Global/Other': ['Bank Transfer', 'Crypto Wallet']
 };
 
@@ -113,9 +115,19 @@ export const BindAccount = () => {
       }
     }
     
-    if (activeTab === 'mobile' && (!network || !accountName || !accountNumber)) {
-      toast.error(t('errFillMobileDetails'));
-      isValid = false;
+    if (activeTab === 'mobile') {
+      if (!network || !accountName || !accountNumber) {
+        toast.error(t('errFillMobileDetails'));
+        isValid = false;
+      } else if (userCountry === 'Zimbabwe' || userCountry === 'ZW') {
+        const cleanNum = String(accountNumber).replace(/\D/g, '');
+        const isFormat1 = cleanNum.startsWith('07') && cleanNum.length === 10;
+        const isFormat2 = cleanNum.startsWith('2637') && cleanNum.length === 12;
+        if (!isFormat1 && !isFormat2) {
+          toast.error('Invalid Zimbabwe mobile number. Use format 07... or 2637...');
+          isValid = false;
+        }
+      }
     }
 
     if (!authPassword) {
@@ -314,7 +326,21 @@ export const BindAccount = () => {
                   </div>
                   <div className="input-group">
                     <label className="input-label">Mobile Number</label>
-                    <input type="tel" className="input-field" placeholder="e.g. 0970000000" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+                    <input 
+                      type="tel" 
+                      className="input-field" 
+                      placeholder="e.g. 0970000000" 
+                      value={accountNumber} 
+                      maxLength="15"
+                      onChange={(e) => {
+                        let validated = e.target.value.replace(/[^\d+]/g, '');
+                        // Strip + if it's not the first character
+                        if (validated.indexOf('+') > 0) {
+                          validated = validated.replace(/\+/g, '');
+                        }
+                        setAccountNumber(validated);
+                      }} 
+                    />
                   </div>
                 </motion.div>
               )}
