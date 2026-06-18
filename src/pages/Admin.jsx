@@ -6,7 +6,7 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,6 +42,10 @@ export const Admin = () => {
   const [allTxnsLoaded, setAllTxnsLoaded] = useState(false);
   const [txnSearchQuery, setTxnSearchQuery] = useState('');
   const [networkFilter, setNetworkFilter] = useState('all');
+
+  // Payment Settings state
+  const [paymentSettings, setPaymentSettings] = useState({ rate: 26.75, networks: [] });
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const TRC20_ADDRESS = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
   const BSC_ADDRESS = import.meta.env.VITE_BSC_ADDRESS || '0x66922e6229f9501319aa4425f4cd53773fc66a91';
@@ -118,9 +122,47 @@ export const Admin = () => {
       if (activeTab === 'withdrawals') fetchWithdrawals();
       if (activeTab === 'deposits') fetchDeposits();
       if (activeTab === 'users') fetchUsersList();
+      if (activeTab === 'payment_settings') fetchPaymentSettings();
       if (activeTab === 'binance_explore' && !allTxnsLoaded) fetchAllTxns();
     }
   }, [isAdmin, activeTab]);
+
+  const fetchPaymentSettings = async () => {
+    setPaymentLoading(true);
+    try {
+      const docRef = doc(db, 'settings', 'zwPayment');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setPaymentSettings(docSnap.data());
+      } else {
+        const { setDoc } = await import('firebase/firestore');
+        const defaultSettings = {
+          rate: 26.75,
+          networks: [
+            { id: 'ecocash', name: 'EcoCash', logo: 'https://ui-avatars.com/api/?name=EcoCash&background=0ea5e9&color=fff&rounded=true&bold=true', accountName: 'Admin EcoCash', accountNo: '077XXXXXXX', disabled: false, disableReason: '' },
+            { id: 'innbucks', name: 'InnBucks', logo: 'https://ui-avatars.com/api/?name=InnBucks&background=ef4444&color=fff&rounded=true&bold=true', accountName: 'Admin InnBucks', accountNo: '071XXXXXXX', disabled: false, disableReason: '' },
+            { id: 'onemoney', name: 'OneMoney', logo: 'https://ui-avatars.com/api/?name=One+Money&background=f97316&color=fff&rounded=true&bold=true', accountName: 'Admin OneMoney', accountNo: '073XXXXXXX', disabled: false, disableReason: '' }
+          ]
+        };
+        await setDoc(docRef, defaultSettings);
+        setPaymentSettings(defaultSettings);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to load payment settings');
+    }
+    setPaymentLoading(false);
+  };
+
+  const savePaymentSettings = async () => {
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'settings', 'zwPayment'), paymentSettings);
+      toast.success('Payment settings saved successfully');
+    } catch (e) {
+      toast.error('Failed to save payment settings');
+    }
+  };
 
   const fetchAllTxns = async () => {
     setBinanceLoading(true);
@@ -535,6 +577,7 @@ export const Admin = () => {
           <TabButton id="withdrawals" icon={ArrowUpFromLine} label="Withdrawals" />
           <TabButton id="binance_explore" icon={Search} label="Binance Explore" />
           <TabButton id="push" icon={Bell} label="Push Notifications" />
+          <TabButton id="payment_settings" icon={Settings} label="Payment Methods" />
           {/* Support Inbox — opens dedicated page */}
           <button
             onClick={() => navigate('/admin/support')}
@@ -1172,6 +1215,130 @@ export const Admin = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        {/* PAYMENT SETTINGS TAB */}
+        {activeTab === 'payment_settings' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '20px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Settings size={20} color="var(--primary)" /> Payment Methods Configuration
+              </h2>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={fetchPaymentSettings} className="btn" style={{ padding: '8px 16px', background: 'var(--bg-panel)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Activity size={16} /> Refresh
+                </button>
+                <button onClick={savePaymentSettings} className="btn btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Save size={16} /> Save Changes
+                </button>
+              </div>
+            </div>
+
+            {paymentLoading ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading settings...</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* ZWG Format Rate */}
+                <div className="panel" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>General Settings</h3>
+                  <div className="input-group" style={{ maxWidth: '300px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>USD to ZiG (ZWG) Rate</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      className="input-field" 
+                      value={paymentSettings.rate} 
+                      onChange={(e) => setPaymentSettings({...paymentSettings, rate: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                </div>
+
+                {/* Networks config */}
+                <div className="panel" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>Mobile Money Networks</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {paymentSettings.networks?.map((net, idx) => (
+                      <div key={net.id} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', background: 'var(--bg-dark)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <img src={net.logo} alt={net.name} style={{ width: '40px', height: '40px', borderRadius: '8px' }} />
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '16px' }}>{net.name}</h4>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ID: {net.id}</span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14px', color: net.disabled ? 'var(--danger)' : 'var(--success)', fontWeight: 600 }}>
+                              {net.disabled ? 'Disabled' : 'Enabled'}
+                            </span>
+                            <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={!net.disabled}
+                                onChange={(e) => {
+                                  const newNetworks = [...paymentSettings.networks];
+                                  newNetworks[idx] = { ...newNetworks[idx], disabled: !e.target.checked };
+                                  setPaymentSettings({ ...paymentSettings, networks: newNetworks });
+                                }}
+                                style={{ opacity: 0, width: 0, height: 0 }} 
+                              />
+                              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: !net.disabled ? '#10B981' : '#4B5563', transition: '.4s', borderRadius: '34px' }}>
+                                <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: !net.disabled ? '26px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                          <div className="input-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Account Name</label>
+                            <input 
+                              type="text" 
+                              className="input-field" 
+                              value={net.accountName} 
+                              onChange={(e) => {
+                                const newNetworks = [...paymentSettings.networks];
+                                newNetworks[idx].accountName = e.target.value;
+                                setPaymentSettings({ ...paymentSettings, networks: newNetworks });
+                              }}
+                            />
+                          </div>
+                          <div className="input-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Account Number</label>
+                            <input 
+                              type="text" 
+                              className="input-field" 
+                              value={net.accountNo} 
+                              onChange={(e) => {
+                                const newNetworks = [...paymentSettings.networks];
+                                newNetworks[idx].accountNo = e.target.value;
+                                setPaymentSettings({ ...paymentSettings, networks: newNetworks });
+                              }}
+                            />
+                          </div>
+                          {net.disabled && (
+                            <div className="input-group" style={{ marginBottom: 0, gridColumn: '1 / -1' }}>
+                              <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Disable Reason (shown to user)</label>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                placeholder="e.g. System upgrade, please use another network"
+                                value={net.disableReason || ''} 
+                                onChange={(e) => {
+                                  const newNetworks = [...paymentSettings.networks];
+                                  newNetworks[idx].disableReason = e.target.value;
+                                  setPaymentSettings({ ...paymentSettings, networks: newNetworks });
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

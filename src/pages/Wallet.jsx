@@ -37,7 +37,12 @@ export const Wallet = () => {
 
   // Zimbabwe specific state
   const isZW = userData?.country === 'Zimbabwe' || userData?.country === 'ZW';
-  const zwRate = 26.75; // Updated to current rate as of June 2026
+  const [zwRate, setZwRate] = useState(26.75);
+  const [zwNetworks, setZwNetworks] = useState([
+    { id: 'ecocash', name: 'EcoCash', logo: 'https://ui-avatars.com/api/?name=EcoCash&background=0ea5e9&color=fff&rounded=true&bold=true', accountName: 'Admin EcoCash', accountNo: '077XXXXXXX', disabled: false, disableReason: '' },
+    { id: 'innbucks', name: 'InnBucks', logo: 'https://ui-avatars.com/api/?name=InnBucks&background=ef4444&color=fff&rounded=true&bold=true', accountName: 'Admin InnBucks', accountNo: '071XXXXXXX', disabled: false, disableReason: '' },
+    { id: 'onemoney', name: 'OneMoney', logo: 'https://ui-avatars.com/api/?name=One+Money&background=f97316&color=fff&rounded=true&bold=true', accountName: 'Admin OneMoney', accountNo: '073XXXXXXX', disabled: false, disableReason: '' }
+  ]);
   const [zwDepositMethod, setZwDepositMethod] = useState(''); // 'MobileMoney' or 'Binance'
   const [zwSelectedNetwork, setZwSelectedNetwork] = useState(null);
   const [zwCryptoNetwork, setZwCryptoNetwork] = useState('TRC20'); // local crypto network state
@@ -45,12 +50,6 @@ export const Wallet = () => {
   const [zwShowSenderDetails, setZwShowSenderDetails] = useState(false);
   const [zwSenderPhone, setZwSenderPhone] = useState(userData?.phoneNumber || '');
   const [zwSenderName, setZwSenderName] = useState(userData?.displayName || '');
-
-  const zwNetworks = [
-    { id: 'ecocash', name: 'EcoCash', logo: 'https://ui-avatars.com/api/?name=EcoCash&background=0ea5e9&color=fff&rounded=true&bold=true', accountName: 'Admin EcoCash', accountNo: '077XXXXXXX' },
-    { id: 'innbucks', name: 'InnBucks', logo: 'https://ui-avatars.com/api/?name=InnBucks&background=ef4444&color=fff&rounded=true&bold=true', accountName: 'Admin InnBucks', accountNo: '071XXXXXXX' },
-    { id: 'onemoney', name: 'OneMoney', logo: 'https://ui-avatars.com/api/?name=One+Money&background=f97316&color=fff&rounded=true&bold=true', accountName: 'Admin OneMoney', accountNo: '073XXXXXXX' }
-  ];
 
   // Use environment variables for the wallet addresses
   const trc20Address = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
@@ -93,6 +92,28 @@ export const Wallet = () => {
       return () => clearInterval(t);
     }
   }, [showPaymentPopup, pollingStatus]);
+
+  // Listen for dynamic ZW settings
+  useEffect(() => {
+    if (!isZW) return;
+    const unsub = onSnapshot(doc(db, 'settings', 'zwPayment'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.rate) setZwRate(data.rate);
+        if (data.networks) {
+          setZwNetworks(data.networks);
+          // Auto-deselect network if it got disabled while selected
+          setZwSelectedNetwork(prev => {
+            if (!prev) return null;
+            const updatedNet = data.networks.find(n => n.id === prev.id);
+            if (updatedNet?.disabled) return null;
+            return updatedNet || null;
+          });
+        }
+      }
+    });
+    return unsub;
+  }, [isZW]);
 
   // Check for existing pending transactions
   useEffect(() => {
@@ -628,22 +649,40 @@ export const Wallet = () => {
                    
                    <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>1. Select your network</p>
                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                     {zwNetworks.map((net) => (
-                       <div 
-                         key={net.id} 
-                         onClick={() => setZwSelectedNetwork(net)}
-                         style={{ 
-                           flex: '1 1 calc(33.3% - 6px)', 
-                           background: zwSelectedNetwork?.id === net.id ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-dark)', 
-                           border: `1px solid ${zwSelectedNetwork?.id === net.id ? 'var(--primary)' : 'var(--border)'}`, 
-                           borderRadius: '10px', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' 
-                         }}
-                       >
-                         <img src={net.logo} alt={net.name} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                         <span style={{ fontSize: '0.7rem', fontWeight: 600, color: zwSelectedNetwork?.id === net.id ? 'var(--primary)' : 'var(--text-primary)' }}>{net.name}</span>
-                       </div>
-                     ))}
-                   </div>
+                      {zwNetworks.map((net) => {
+                        const isSelected = zwSelectedNetwork?.id === net.id;
+                        return (
+                          <div 
+                            key={net.id} 
+                            onClick={() => {
+                              if (!net.disabled) setZwSelectedNetwork(net);
+                            }}
+                            style={{ 
+                              flex: '1 1 calc(33.3% - 6px)', 
+                              background: net.disabled ? 'rgba(255,255,255,0.02)' : isSelected ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-dark)', 
+                              border: `1px solid ${isSelected && !net.disabled ? 'var(--primary)' : 'var(--border)'}`, 
+                              borderRadius: '10px', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', 
+                              cursor: net.disabled ? 'not-allowed' : 'pointer',
+                              opacity: net.disabled ? 0.4 : 1,
+                              position: 'relative'
+                            }}
+                          >
+                            {net.disabled && (
+                              <div style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--danger)', color: '#fff', fontSize: '9px', padding: '2px 4px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                Disabled
+                              </div>
+                            )}
+                            <img src={net.logo} alt={net.name} style={{ width: '28px', height: '28px', objectFit: 'contain', filter: net.disabled ? 'grayscale(100%)' : 'none' }} />
+                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected && !net.disabled ? 'var(--primary)' : 'var(--text-primary)' }}>{net.name}</span>
+                            {net.disabled && net.disableReason && (
+                              <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: '1.1', marginTop: '2px' }}>
+                                {net.disableReason}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                    
                    {zwSelectedNetwork && (
                      <>
