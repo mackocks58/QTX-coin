@@ -51,6 +51,21 @@ export const Wallet = () => {
   const [zwSenderPhone, setZwSenderPhone] = useState(userData?.phoneNumber || '');
   const [zwSenderName, setZwSenderName] = useState(userData?.displayName || '');
 
+  // Zambia specific state
+  const isZM = userData?.country === 'Zambia' || userData?.country === 'ZM';
+  const [zmRate, setZmRate] = useState(26.5);
+  const [zmNetworks, setZmNetworks] = useState([
+    { id: 'mtn', name: 'MTN Mobile Money', logo: 'https://ui-avatars.com/api/?name=MTN&background=fbbf24&color=000&rounded=true&bold=true', accountName: 'Admin MTN', accountNo: '096XXXXXXX', disabled: false, disableReason: '' },
+    { id: 'airtel', name: 'Airtel Money', logo: 'https://ui-avatars.com/api/?name=Airtel&background=dc2626&color=fff&rounded=true&bold=true', accountName: 'Admin Airtel', accountNo: '097XXXXXXX', disabled: false, disableReason: '' },
+    { id: 'zamtel', name: 'Zamtel', logo: 'https://ui-avatars.com/api/?name=Zamtel&background=16a34a&color=fff&rounded=true&bold=true', accountName: 'Admin Zamtel', accountNo: '095XXXXXXX', disabled: false, disableReason: '' }
+  ]);
+  const [zmDepositMethod, setZmDepositMethod] = useState(''); // 'MobileMoney' or 'Binance'
+  const [zmSelectedNetwork, setZmSelectedNetwork] = useState(null);
+  const [zmShowPaymentDetails, setZmShowPaymentDetails] = useState(false);
+  const [zmShowSenderDetails, setZmShowSenderDetails] = useState(false);
+  const [zmSenderPhone, setZmSenderPhone] = useState(userData?.phoneNumber || '');
+  const [zmSenderName, setZmSenderName] = useState(userData?.displayName || '');
+
   // Use environment variables for the wallet addresses
   const trc20Address = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
   const bscAddress = import.meta.env.VITE_BSC_ADDRESS || '0x66922e6229f9501319aa4425f4cd53773fc66a91';
@@ -61,14 +76,16 @@ export const Wallet = () => {
     if (activeTab === null && userData?.country) {
       if (isZW) {
         setActiveTab('ZWMobileBinance'); // Custom initial state for ZW
+      } else if (isZM) {
+        setActiveTab('ZMMobileBinance'); // Custom initial state for ZM
       } else {
         setActiveTab(isTZ ? 'MobileMoney' : 'TRC20');
       }
     }
-  }, [isTZ, isZW, activeTab, userData]);
+  }, [isTZ, isZW, isZM, activeTab, userData]);
 
   // Synchronous derived tab - safe only when country is known
-  const tab = !userData?.country ? null : (activeTab !== null ? activeTab : (isZW ? 'ZWMobileBinance' : (isTZ ? 'MobileMoney' : 'TRC20')));
+  const tab = !userData?.country ? null : (activeTab !== null ? activeTab : (isZW ? 'ZWMobileBinance' : (isZM ? 'ZMMobileBinance' : (isTZ ? 'MobileMoney' : 'TRC20'))));
 
   useEffect(() => {
     if (activeTab === 'TRC20' || activeTab === 'BSC') {
@@ -114,6 +131,27 @@ export const Wallet = () => {
     });
     return unsub;
   }, [isZW]);
+
+  // Listen for dynamic ZM settings
+  useEffect(() => {
+    if (!isZM) return;
+    const unsub = onSnapshot(doc(db, 'settings', 'zmPayment'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.rate) setZmRate(data.rate);
+        if (data.networks) {
+          setZmNetworks(data.networks);
+          setZmSelectedNetwork(prev => {
+            if (!prev) return null;
+            const updatedNet = data.networks.find(n => n.id === prev.id);
+            if (updatedNet?.disabled) return null;
+            return updatedNet || null;
+          });
+        }
+      }
+    });
+    return unsub;
+  }, [isZM]);
 
   // Check for existing pending transactions
   useEffect(() => {
@@ -374,6 +412,51 @@ export const Wallet = () => {
     setIsVerifying(false);
   };
 
+  const handleZMVerifySubmit = async () => {
+    if (hasPending) return setErrorMsg('You already have a pending transaction.');
+    if (!zmSenderPhone || zmSenderPhone.length < 5) return setErrorMsg('Please enter a valid sender phone.');
+    if (!zmSenderName || zmSenderName.length < 2) return setErrorMsg('Please enter a valid sender name.');
+    
+    setIsVerifying(true);
+    const loadingToast = toast.loading('Submitting transaction details...');
+
+    try {
+      await addDoc(collection(db, 'users', currentUser.uid, 'transactions'), {
+        type: 'deposit',
+        txid: `ZM-${Date.now()}`,
+        network: zmSelectedNetwork.name,
+        currency: 'USD',
+        status: 'pending',
+        expectedAmount: parseFloat(expectedAmount),
+        amount: 0,
+        phone: zmSenderPhone,
+        senderName: zmSenderName,
+        createdAt: serverTimestamp()
+      });
+
+      toast.dismiss(loadingToast);
+      setZmShowSenderDetails(false);
+      setZmShowPaymentDetails(false);
+      setZmDepositMethod('');
+      setExpectedAmount('');
+      
+      setSuccessData({
+        title: 'Verification Submitted ⏳',
+        message: 'Your deposit details have been sent to admin for approval.',
+        details: [
+          { label: 'Network', value: zmSelectedNetwork.name },
+          { label: 'Amount', value: `$${parseFloat(expectedAmount).toLocaleString()}`, color: 'var(--primary)' },
+          { label: 'Sender Name', value: zmSenderName },
+          { label: 'Status', value: 'Pending Approval', color: 'var(--warning)' }
+        ]
+      });
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      setErrorMsg(error.message || 'Failed to submit details');
+    }
+    setIsVerifying(false);
+  };
+
   return (
     <motion.div 
       className="page-content"
@@ -405,7 +488,7 @@ export const Wallet = () => {
       ) : (<>
       
       {/* Network Switcher — hide crypto for TZ users */}
-      {!isTZ && activeTab !== 'ZWMobileBinance' && (
+      {!isTZ && activeTab !== 'ZWMobileBinance' && activeTab !== 'ZMMobileBinance' && (
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', background: 'var(--border)', padding: '4px', borderRadius: 'var(--radius-md)', flex: 1, maxWidth: '400px' }}>
             <button
@@ -732,6 +815,139 @@ export const Wallet = () => {
              </div>
            </motion.div>
         )}
+
+        {/* ZAMBIA WALLET FLOW */}
+        {tab === 'ZMMobileBinance' && isZM && (
+           <motion.div 
+             key="ZMMobileBinance"
+             initial={{ opacity: 0, x: -10 }}
+             animate={{ opacity: 1, x: 0 }}
+             exit={{ opacity: 0, x: 10 }}
+           >
+             <div className="panel mx-auto" style={{ maxWidth: '500px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+               {!zmDepositMethod ? (
+                 <>
+                   <h3 style={{ margin: 0, fontSize: '1.2rem', textAlign: 'center' }}>Select Deposit Method</h3>
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                     <div 
+                       onClick={() => setZmDepositMethod('MobileMoney')}
+                       style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                     >
+                       <div style={{ background: 'rgba(16, 185, 129, 0.1)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <Phone size={24} color="var(--primary)" />
+                       </div>
+                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Mobile Money</span>
+                     </div>
+                     <div 
+                       onClick={() => {
+                         setZmDepositMethod('');
+                         setActiveTab('TRC20');
+                       }}
+                       style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                     >
+                       <div style={{ background: 'rgba(243, 186, 47, 0.1)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" alt="Binance" style={{ width: '24px', height: '24px' }} />
+                       </div>
+                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Binance (USDT)</span>
+                     </div>
+                   </div>
+                 </>
+               ) : (
+                 <>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                     <button onClick={() => setZmDepositMethod('')} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}>
+                       <ChevronLeft size={20} />
+                     </button>
+                     <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Mobile Money</h3>
+                   </div>
+                   
+                   <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>1. Select your network</p>
+                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      {zmNetworks.map((net) => {
+                        const isSelected = zmSelectedNetwork?.id === net.id;
+                        return (
+                          <div 
+                            key={net.id} 
+                            onClick={() => {
+                              if (!net.disabled) setZmSelectedNetwork(net);
+                            }}
+                            style={{ 
+                              flex: '1 1 calc(33.3% - 6px)', 
+                              background: net.disabled ? 'rgba(255,255,255,0.02)' : isSelected ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-dark)', 
+                              border: `1px solid ${isSelected && !net.disabled ? 'var(--primary)' : 'var(--border)'}`, 
+                              borderRadius: '10px', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', 
+                              cursor: net.disabled ? 'not-allowed' : 'pointer',
+                              opacity: net.disabled ? 0.4 : 1,
+                              position: 'relative'
+                            }}
+                          >
+                            {net.disabled && (
+                              <div style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--danger)', color: '#fff', fontSize: '9px', padding: '2px 4px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                Disabled
+                              </div>
+                            )}
+                            <img src={net.logo} alt={net.name} style={{ width: '28px', height: '28px', objectFit: 'contain', filter: net.disabled ? 'grayscale(100%)' : 'none' }} />
+                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected && !net.disabled ? 'var(--primary)' : 'var(--text-primary)' }}>{net.name}</span>
+                            {net.disabled && net.disableReason && (
+                              <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: '1.1', marginTop: '2px' }}>
+                                {net.disableReason}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                   
+                   {zmSelectedNetwork && (
+                     <>
+                       <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>2. Enter Deposit Amount (USD)</p>
+                       <div className="input-group" style={{ marginBottom: '4px' }}>
+                         <input 
+                           type="number" 
+                           className="input-field" 
+                           style={{ padding: '10px', fontSize: '1rem', fontWeight: 600 }}
+                           value={expectedAmount} 
+                           onChange={(e) => setExpectedAmount(e.target.value)} 
+                           placeholder="Enter Amount in USD"
+                         />
+                       </div>
+                       <div style={{ marginBottom: '12px', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>Amount to send (ZMW):</span>
+                         <span style={{ color: '#10B981', fontWeight: 900, fontSize: '1.2rem', letterSpacing: '0.5px' }}>
+                           {(parseFloat(expectedAmount || 0) * zmRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                         </span>
+                       </div>
+                       
+                       {hasPending && (
+                         <div style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-md)', color: 'var(--warning)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 2s infinite', flexShrink: 0 }}></div>
+                           {t('pendingVerification')}
+                         </div>
+                       )}
+
+                       <button 
+                         className="btn btn-primary" 
+                         style={{ width: '100%', padding: '10px', fontSize: '1rem', opacity: hasPending ? 0.5 : 1, cursor: hasPending ? 'not-allowed' : 'pointer' }} 
+                         onClick={() => {
+                           if (hasPending) return setErrorMsg('You already have a pending transaction.');
+                           if (!expectedAmount || isNaN(expectedAmount) || parseFloat(expectedAmount) <= 0) {
+                             return setErrorMsg('Please enter a valid amount');
+                           }
+                           setZmShowPaymentDetails(true);
+                         }}
+                         disabled={hasPending}
+                       >
+                         {hasPending ? 'Pending Transaction' : 'Next'}
+                       </button>
+
+
+                     </>
+                   )}
+                 </>
+               )}
+             </div>
+           </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Instructions Modal */}
@@ -992,6 +1208,139 @@ export const Wallet = () => {
                 </button>
                 <button 
                   onClick={handleZWVerifySubmit} 
+                  disabled={isVerifying || hasPending}
+                  style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: (isVerifying || hasPending) ? 0.6 : 1, fontSize: '0.9rem' }}
+                >
+                  {isVerifying ? 'Submitting...' : 'Submit Details'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {/* ZM Payment Details Bottom Sheet */}
+        {zmShowPaymentDetails && zmSelectedNetwork && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)' }}>
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{ width: '100%', background: 'var(--bg-panel)', borderTop: '1px solid var(--border)', borderRadius: '32px 32px 0 0', padding: '24px 24px 40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column' }}
+            >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 12px' }} />
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <img src={zmSelectedNetwork.logo} alt={zmSelectedNetwork.name} style={{ width: '32px', height: '32px' }} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>Send Payment</h3>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-dark)', padding: '12px', borderRadius: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Network</span>
+                  <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{zmSelectedNetwork.name}</span>
+                </div>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Account No.</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{zmSelectedNetwork.accountNo}</span>
+                    <button onClick={() => { navigator.clipboard.writeText(zmSelectedNetwork.accountNo); toast.success('Account copied!'); }} style={{ background: 'rgba(16,185,129,0.1)', border: 'none', padding: '4px 6px', borderRadius: '6px', color: 'var(--primary)', cursor: 'pointer' }}><Copy size={12} /></button>
+                  </div>
+                </div>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Account Name</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{zmSelectedNetwork.accountName}</span>
+                    <button onClick={() => { navigator.clipboard.writeText(zmSelectedNetwork.accountName); toast.success('Name copied!'); }} style={{ background: 'rgba(16,185,129,0.1)', border: 'none', padding: '4px 6px', borderRadius: '6px', color: 'var(--primary)', cursor: 'pointer' }}><Copy size={12} /></button>
+                  </div>
+                </div>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Amount</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+                    <span style={{ fontWeight: 900, color: '#10B981', fontSize: '1.2rem' }}>{(parseFloat(expectedAmount || 0) * zmRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ZMW</span>
+                    <button onClick={() => { navigator.clipboard.writeText(String(parseFloat(expectedAmount || 0) * zmRate)); toast.success('Amount copied!'); }} style={{ background: 'transparent', border: 'none', padding: '4px', color: 'var(--primary)', cursor: 'pointer' }}><Copy size={14} /></button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '8px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Info size={16} color="#38BDF8" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.75rem', color: '#E0F2FE', lineHeight: '1.3' }}>
+                  Send exactly <strong>{(parseFloat(expectedAmount || 0) * zmRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ZMW</strong> to the account above.
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => setZmShowPaymentDetails(false)} 
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    setZmShowSenderDetails(true);
+                  }} 
+                  style={{ flex: 2, padding: '10px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Verify Deposit
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {/* ZM Sender Details Bottom Sheet */}
+        {zmShowSenderDetails && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3100, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)' }}>
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              style={{ width: '100%', background: 'var(--bg-panel)', borderTop: '1px solid var(--border)', borderRadius: '32px 32px 0 0', padding: '24px 24px 40px', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column' }}
+            >
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 16px' }} />
+              
+              <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: '#fff' }}>Sender Info</h3>
+              <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Enter the phone number and name you used.</p>
+
+              <div className="input-group" style={{ marginBottom: '12px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Sender Phone</span>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  style={{ padding: '10px' }}
+                  value={zmSenderPhone} 
+                  onChange={(e) => setZmSenderPhone(e.target.value)} 
+                  placeholder={`e.g. 07XXXXXXXX`} 
+                />
+              </div>
+
+              <div className="input-group" style={{ marginBottom: '16px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Sender Name</span>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  style={{ padding: '10px' }}
+                  value={zmSenderName} 
+                  onChange={(e) => setZmSenderName(e.target.value)} 
+                  placeholder={`e.g. John Doe`} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => setZmShowSenderDetails(false)} 
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'transparent', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+                >
+                  Back
+                </button>
+                <button 
+                  onClick={handleZMVerifySubmit} 
                   disabled={isVerifying || hasPending}
                   style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: (isVerifying || hasPending) ? 0.6 : 1, fontSize: '0.9rem' }}
                 >

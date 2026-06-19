@@ -47,7 +47,9 @@ export const Withdraw = () => {
   const navigate = useNavigate();
 
   const isZW = userData?.country === 'Zimbabwe' || userData?.country === 'ZW';
+  const isZM = userData?.country === 'Zambia';
   const [zwRate, setZwRate] = useState(26.75);
+  const [zmRate, setZmRate] = useState(27.5);
   
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -77,6 +79,15 @@ export const Withdraw = () => {
     });
     return unsub;
   }, [isZW]);
+
+  // Sync ZM rate from admin settings
+  useEffect(() => {
+    if (!isZM) return;
+    const unsub = onSnapshot(doc(db, 'settings', 'zmPayment'), (snap) => {
+      if (snap.exists() && snap.data().rate) setZmRate(snap.data().rate);
+    });
+    return unsub;
+  }, [isZM]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -339,6 +350,14 @@ export const Withdraw = () => {
                     </span>
                   </div>
                 )}
+                {isZM && selectedAccount?.type === 'mobile' && parseFloat(amount) > 0 && (
+                  <div style={{ marginTop: '8px', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>You will receive (ZMW):</span>
+                    <span style={{ color: '#10B981', fontWeight: 900, fontSize: '1.1rem' }}>
+                      ZMW {(parseFloat(amount) * zmRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <button 
@@ -526,6 +545,14 @@ export const Withdraw = () => {
                           <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Amount in ZiG (ZWG)</span>
                           <span style={{ color: '#10B981', fontWeight: 900, fontSize: '1.3rem' }}>
                             ZWG {(parseFloat(amount || 0) * zwRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      )}
+                      {isZM && (
+                        <div style={{ marginTop: '12px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Amount in Kwacha (ZMW)</span>
+                          <span style={{ color: '#10B981', fontWeight: 900, fontSize: '1.3rem' }}>
+                            ZMW {(parseFloat(amount || 0) * zmRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       )}

@@ -45,6 +45,7 @@ export const Admin = () => {
 
   // Payment Settings state
   const [paymentSettings, setPaymentSettings] = useState({ rate: 26.75, networks: [] });
+  const [zmPaymentSettings, setZmPaymentSettings] = useState({ rate: 26.5, networks: [] });
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   const TRC20_ADDRESS = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
@@ -147,6 +148,24 @@ export const Admin = () => {
         await setDoc(docRef, defaultSettings);
         setPaymentSettings(defaultSettings);
       }
+
+      const zmDocRef = doc(db, 'settings', 'zmPayment');
+      const zmDocSnap = await getDoc(zmDocRef);
+      if (zmDocSnap.exists()) {
+        setZmPaymentSettings(zmDocSnap.data());
+      } else {
+        const { setDoc } = await import('firebase/firestore');
+        const defaultZmSettings = {
+          rate: 26.5,
+          networks: [
+            { id: 'mtn', name: 'MTN Mobile Money', logo: 'https://ui-avatars.com/api/?name=MTN&background=fbbf24&color=000&rounded=true&bold=true', accountName: 'Admin MTN', accountNo: '096XXXXXXX', disabled: false, disableReason: '' },
+            { id: 'airtel', name: 'Airtel Money', logo: 'https://ui-avatars.com/api/?name=Airtel&background=dc2626&color=fff&rounded=true&bold=true', accountName: 'Admin Airtel', accountNo: '097XXXXXXX', disabled: false, disableReason: '' },
+            { id: 'zamtel', name: 'Zamtel', logo: 'https://ui-avatars.com/api/?name=Zamtel&background=16a34a&color=fff&rounded=true&bold=true', accountName: 'Admin Zamtel', accountNo: '095XXXXXXX', disabled: false, disableReason: '' }
+          ]
+        };
+        await setDoc(zmDocRef, defaultZmSettings);
+        setZmPaymentSettings(defaultZmSettings);
+      }
     } catch (e) {
       console.error(e);
       toast.error('Failed to load payment settings');
@@ -158,6 +177,7 @@ export const Admin = () => {
     try {
       const { setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'settings', 'zwPayment'), paymentSettings);
+      await setDoc(doc(db, 'settings', 'zmPayment'), zmPaymentSettings);
       toast.success('Payment settings saved successfully');
     } catch (e) {
       toast.error('Failed to save payment settings');
@@ -876,6 +896,11 @@ export const Admin = () => {
                                 ZWG {((w.amount || 0) * (paymentSettings?.rate || 26.75)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </div>
                             )}
+                            {w.accountDetails && ['MTN Mobile Money', 'Airtel Money', 'Zamtel'].includes(w.accountDetails.network) && (
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#10B981', marginTop: '-2px', marginBottom: '2px' }}>
+                                ZMW {((w.amount || 0) * (zmPaymentSettings?.rate || 26.5)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                            )}
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: w.status === 'pending' ? 'var(--warning)' : w.status === 'SUCCESS' ? 'var(--success)' : 'var(--danger)' }}>
                               {w.status}
                             </div>
@@ -916,6 +941,14 @@ export const Admin = () => {
                                       <span style={{ color: 'var(--text-muted)' }}>Amount in ZiG (ZWG):</span>
                                       <span style={{ color: '#10B981', fontWeight: 800 }}>
                                         ZWG {((w.amount || 0) * (paymentSettings?.rate || 26.75)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {['MTN Mobile Money', 'Airtel Money', 'Zamtel'].includes(w.accountDetails.network) && (
+                                    <div style={{ marginTop: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '6px 10px', borderRadius: '6px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ color: 'var(--text-muted)' }}>Amount in Kwacha (ZMW):</span>
+                                      <span style={{ color: '#10B981', fontWeight: 800 }}>
+                                        ZMW {((w.amount || 0) * (zmPaymentSettings?.rate || 26.5)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
                                   )}
@@ -1249,7 +1282,10 @@ export const Admin = () => {
               <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading settings...</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* ZWG Format Rate */}
+                {/* ZIMBABWE BLOCK */}
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>
+                  <h3 style={{ margin: 0, color: 'var(--primary)' }}>🇿🇼 Zimbabwe Settings</h3>
+                </div>
                 <div className="panel" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>General Settings</h3>
                   <div className="input-group" style={{ maxWidth: '300px' }}>
@@ -1264,7 +1300,6 @@ export const Admin = () => {
                   </div>
                 </div>
 
-                {/* Networks config */}
                 <div className="panel" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>Mobile Money Networks</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1339,6 +1374,108 @@ export const Admin = () => {
                                   const newNetworks = [...paymentSettings.networks];
                                   newNetworks[idx].disableReason = e.target.value;
                                   setPaymentSettings({ ...paymentSettings, networks: newNetworks });
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ZAMBIA BLOCK */}
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid var(--border)', marginTop: '20px' }}>
+                  <h3 style={{ margin: 0, color: 'var(--primary)' }}>🇿🇲 Zambia Settings</h3>
+                </div>
+                <div className="panel" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>General Settings</h3>
+                  <div className="input-group" style={{ maxWidth: '300px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>USD to Kwacha (ZMW) Rate</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      className="input-field" 
+                      value={zmPaymentSettings.rate} 
+                      onChange={(e) => setZmPaymentSettings({...zmPaymentSettings, rate: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                </div>
+
+                <div className="panel" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>Mobile Money Networks</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {zmPaymentSettings.networks?.map((net, idx) => (
+                      <div key={net.id} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', background: 'var(--bg-dark)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <img src={net.logo} alt={net.name} style={{ width: '40px', height: '40px', borderRadius: '8px' }} />
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '16px' }}>{net.name}</h4>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ID: {net.id}</span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14px', color: net.disabled ? 'var(--danger)' : 'var(--success)', fontWeight: 600 }}>
+                              {net.disabled ? 'Disabled' : 'Enabled'}
+                            </span>
+                            <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={!net.disabled}
+                                onChange={(e) => {
+                                  const newNetworks = [...zmPaymentSettings.networks];
+                                  newNetworks[idx] = { ...newNetworks[idx], disabled: !e.target.checked };
+                                  setZmPaymentSettings({ ...zmPaymentSettings, networks: newNetworks });
+                                }}
+                                style={{ opacity: 0, width: 0, height: 0 }} 
+                              />
+                              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: !net.disabled ? '#10B981' : '#4B5563', transition: '.4s', borderRadius: '34px' }}>
+                                <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: !net.disabled ? '26px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                          <div className="input-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Account Name</label>
+                            <input 
+                              type="text" 
+                              className="input-field" 
+                              value={net.accountName} 
+                              onChange={(e) => {
+                                const newNetworks = [...zmPaymentSettings.networks];
+                                newNetworks[idx].accountName = e.target.value;
+                                setZmPaymentSettings({ ...zmPaymentSettings, networks: newNetworks });
+                              }}
+                            />
+                          </div>
+                          <div className="input-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Account Number</label>
+                            <input 
+                              type="text" 
+                              className="input-field" 
+                              value={net.accountNo} 
+                              onChange={(e) => {
+                                const newNetworks = [...zmPaymentSettings.networks];
+                                newNetworks[idx].accountNo = e.target.value;
+                                setZmPaymentSettings({ ...zmPaymentSettings, networks: newNetworks });
+                              }}
+                            />
+                          </div>
+                          {net.disabled && (
+                            <div className="input-group" style={{ marginBottom: 0, gridColumn: '1 / -1' }}>
+                              <label style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Disable Reason (shown to user)</label>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                placeholder="e.g. System upgrade, please use another network"
+                                value={net.disableReason || ''} 
+                                onChange={(e) => {
+                                  const newNetworks = [...zmPaymentSettings.networks];
+                                  newNetworks[idx].disableReason = e.target.value;
+                                  setZmPaymentSettings({ ...zmPaymentSettings, networks: newNetworks });
                                 }}
                               />
                             </div>

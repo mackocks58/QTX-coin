@@ -127,6 +127,14 @@ export const BindAccount = () => {
           toast.error('Invalid Zimbabwe mobile number. Use format 07... or 2637...');
           isValid = false;
         }
+      } else if (userCountry === 'Zambia') {
+        const cleanNum = String(accountNumber).replace(/\D/g, '');
+        const isFormat1 = cleanNum.startsWith('09') && cleanNum.length === 10;
+        const isFormat2 = cleanNum.startsWith('260') && cleanNum.length === 12;
+        if (!isFormat1 && !isFormat2) {
+          toast.error('Invalid Zambia mobile number. Use format 09... or 260...');
+          isValid = false;
+        }
       }
     }
 
