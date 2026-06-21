@@ -19,6 +19,7 @@ export const Admin = () => {
   const [withdrawals, setWithdrawals] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [usersList, setUsersList] = useState([]);
+  const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search state
@@ -46,6 +47,8 @@ export const Admin = () => {
   // Payment Settings state
   const [paymentSettings, setPaymentSettings] = useState({ rate: 26.75, networks: [] });
   const [zmPaymentSettings, setZmPaymentSettings] = useState({ rate: 26.5, networks: [] });
+  const [transferSettings, setTransferSettings] = useState({ autoApprove: false });
+  const [p2pConfirmModal, setP2pConfirmModal] = useState({ isOpen: false, transfer: null, action: null, loading: false });
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   const TRC20_ADDRESS = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
@@ -123,6 +126,7 @@ export const Admin = () => {
       if (activeTab === 'withdrawals') { fetchWithdrawals(); fetchPaymentSettings(); }
       if (activeTab === 'deposits') fetchDeposits();
       if (activeTab === 'users') fetchUsersList();
+      if (activeTab === 'p2p_transfers') { fetchTransfers(); fetchTransferSettings(); }
       if (activeTab === 'payment_settings') fetchPaymentSettings();
       if (activeTab === 'binance_explore' && !allTxnsLoaded) fetchAllTxns();
     }
@@ -239,6 +243,53 @@ export const Admin = () => {
       toast.error('Failed to load users');
     }
     setLoading(false);
+  };
+
+  const fetchTransfers = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collectionGroup(db, 'transactions'),
+        where('type', '==', 'transfer_out'),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => {
+        const userRef = doc.ref.parent.parent;
+        return {
+          id: doc.id,
+          userId: userRef ? userRef.id : 'unknown',
+          ref: doc.ref,
+          ...doc.data()
+        };
+      });
+      setTransfers(data);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load transfers');
+    }
+    setLoading(false);
+  };
+
+  const fetchTransferSettings = async () => {
+    try {
+      const docRef = doc(db, 'settings', 'transfers');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) setTransferSettings(snap.data());
+      else {
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(docRef, { autoApprove: false });
+        setTransferSettings({ autoApprove: false });
+      }
+    } catch(e) {}
+  };
+
+  const saveTransferSettings = async () => {
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'settings', 'transfers'), transferSettings);
+      toast.success('P2P Settings saved');
+    } catch(e) { toast.error('Failed to save settings'); }
   };
 
   const fetchDeposits = async () => {
@@ -520,6 +571,36 @@ export const Admin = () => {
   };
 
 
+  const handleApproveP2P = (transfer) => {
+    setP2pConfirmModal({ isOpen: true, transfer, action: 'approve', loading: false });
+  };
+
+  const handleRejectP2P = (transfer) => {
+    setP2pConfirmModal({ isOpen: true, transfer, action: 'reject', loading: false });
+  };
+
+  const executeP2PAction = async () => {
+    const { transfer, action } = p2pConfirmModal;
+    setP2pConfirmModal(prev => ({ ...prev, loading: true }));
+    try {
+      const approveFn = httpsCallable(functions, 'adminApproveTransfer');
+      const res = await approveFn({ transferId: transfer.id, senderUid: transfer.userId, action });
+      if (res.data.success) {
+        toast.success(action === 'approve' ? 'Transfer Approved' : 'Transfer Rejected');
+        setTransfers(prev => prev.map(t => t.id === transfer.id ? { ...t, status: action === 'approve' ? 'SUCCESS' : 'rejected' } : t));
+        setP2pConfirmModal({ isOpen: false, transfer: null, action: null, loading: false });
+      } else {
+        toast.error(res.data.message || 'Error');
+        setP2pConfirmModal(prev => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      toast.error('Failed to process transfer');
+      setP2pConfirmModal(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  if (!currentUser) return <div className="p-4 text-center">Please login</div>;
+  
   if (!currentUser) return <div className="p-4 text-center">Please login</div>;
   
   if (!isAdmin) {
@@ -583,6 +664,100 @@ export const Admin = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 60px)', background: 'var(--bg-dark)' }}>
+
+      {/* P2P Confirmation Modal */}
+      <AnimatePresence>
+        {p2pConfirmModal.isOpen && p2pConfirmModal.transfer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }}
+            onClick={() => !p2pConfirmModal.loading && setP2pConfirmModal({ isOpen: false, transfer: null, action: null, loading: false })}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              onClick={e => e.stopPropagation()}
+              style={{ backgroundColor: 'var(--bg-panel)', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', padding: '12px 24px 36px', boxShadow: '0 -15px 40px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', margin: '0 auto 20px' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                {p2pConfirmModal.action === 'approve'
+                  ? <CheckCircle2 size={22} color="var(--success)" />
+                  : <XCircle size={22} color="var(--danger)" />}
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
+                  {p2pConfirmModal.action === 'approve' ? 'Approve Transfer' : 'Reject Transfer'}
+                </h3>
+              </div>
+
+              {/* Transfer Details */}
+              <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '14px', padding: '16px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Transaction ID</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '11px', color: 'var(--primary)' }}>{p2pConfirmModal.transfer.id?.substring(0,16)}...</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Sender UID</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '11px' }}>{p2pConfirmModal.transfer.userId?.substring(0,12)}...</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Receiver Email</span>
+                  <span style={{ fontWeight: 600 }}>{p2pConfirmModal.transfer.receiverEmail || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Receiver UID</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '11px' }}>{p2pConfirmModal.transfer.receiverUid?.substring(0,12)}...</span>
+                </div>
+                <div style={{ height: '1px', background: 'var(--border)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Amount to Receive</span>
+                  <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--success)' }}>${(p2pConfirmModal.transfer.amount || 0).toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>5% Transfer Fee</span>
+                  <span style={{ fontWeight: 600, color: 'var(--warning)' }}>${(p2pConfirmModal.transfer.fee || (p2pConfirmModal.transfer.amount * 0.05) || 0).toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Total from Sender</span>
+                  <span style={{ fontWeight: 700, color: 'var(--danger)' }}>${(p2pConfirmModal.transfer.totalDeduction || (p2pConfirmModal.transfer.amount * 1.05) || 0).toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Date</span>
+                  <span style={{ fontWeight: 500, fontSize: '11px' }}>{p2pConfirmModal.transfer.createdAt?.toDate ? new Date(p2pConfirmModal.transfer.createdAt.toDate()).toLocaleString() : 'N/A'}</span>
+                </div>
+              </div>
+
+              <div style={{ background: p2pConfirmModal.action === 'approve' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${p2pConfirmModal.action === 'approve' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '10px', padding: '12px', marginBottom: '20px', fontSize: '12px', color: p2pConfirmModal.action === 'approve' ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+                {p2pConfirmModal.action === 'approve'
+                  ? '✅ This will move funds from sender to receiver. This cannot be undone.'
+                  : '⚠️ This will reject the transfer. No funds will be moved. Sender will be notified.'}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setP2pConfirmModal({ isOpen: false, transfer: null, action: null, loading: false })}
+                  disabled={p2pConfirmModal.loading}
+                  style={{ flex: 1, padding: '14px', borderRadius: '14px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeP2PAction}
+                  disabled={p2pConfirmModal.loading}
+                  style={{ flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: p2pConfirmModal.action === 'approve' ? '#10B981' : '#EF4444', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: p2pConfirmModal.loading ? 0.7 : 1 }}
+                >
+                  {p2pConfirmModal.loading ? 'Processing...' : p2pConfirmModal.action === 'approve' ? 'Approve Transfer' : 'Reject Transfer'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Admin Sidebar */}
       <div style={{ width: '250px', background: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '20px 0' }}>
         <div style={{ padding: '0 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -595,6 +770,7 @@ export const Admin = () => {
           <TabButton id="users" icon={Users} label="Users Management" />
           <TabButton id="deposits" icon={ArrowDownToLine} label="Deposits" />
           <TabButton id="withdrawals" icon={ArrowUpFromLine} label="Withdrawals" />
+          <TabButton id="p2p_transfers" icon={Send} label="P2P Transfers" />
           <TabButton id="binance_explore" icon={Search} label="Binance Explore" />
           <TabButton id="push" icon={Bell} label="Push Notifications" />
           <TabButton id="payment_settings" icon={Settings} label="Payment Methods" />
@@ -990,6 +1166,103 @@ export const Admin = () => {
                           </button>
                         </div>
 
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* P2P TRANSFERS TAB */}
+            {activeTab === 'p2p_transfers' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                  <h2 style={{ fontSize: '20px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Send size={20} color="var(--primary)" /> P2P Transfers
+                  </h2>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={fetchTransfers} className="btn" style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Activity size={14} /> Refresh
+                    </button>
+                  </div>
+                </div>
+
+                <div className="panel" style={{ padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>Auto-Approve P2P Transfers</h3>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>If enabled, pending transfers are automatically processed after 5 minutes.</p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={transferSettings.autoApprove}
+                        onChange={(e) => setTransferSettings({ ...transferSettings, autoApprove: e.target.checked })}
+                        style={{ opacity: 0, width: 0, height: 0 }} 
+                      />
+                      <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: transferSettings.autoApprove ? '#10B981' : '#4B5563', transition: '.4s', borderRadius: '34px' }}>
+                        <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: transferSettings.autoApprove ? '26px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                      </span>
+                    </label>
+                    <button onClick={saveTransferSettings} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px' }}>Save Settings</button>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transfers...</div>
+                ) : transfers.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No P2P transfers found.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {transfers.map(t => (
+                      <div key={t.id} style={{ background: 'var(--bg-dark)', borderRadius: '8px', border: `1px solid ${t.status === 'pending' ? 'var(--warning)' : 'var(--border)'}`, overflow: 'hidden' }}>
+                        <div style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                          <div>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Sender UID:</span>
+                            <div style={{ fontSize: '13px', fontFamily: 'monospace', color: '#fff' }}>
+                              {t.userId.substring(0,8)}...
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>${t.amount?.toFixed(2)}</div>
+                            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: t.status === 'pending' ? 'var(--warning)' : t.status === 'SUCCESS' ? 'var(--success)' : 'var(--danger)' }}>
+                              {t.status}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ padding: '12px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: '13px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Receiver Email:</span>
+                              <div style={{ fontWeight: 600 }}>{t.receiverEmail}</div>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Receiver UID:</span>
+                              <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{t.receiverUid}</div>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                            Date: {t.createdAt?.toDate ? new Date(t.createdAt.toDate()).toLocaleString() : 'N/A'}
+                          </div>
+                        </div>
+
+                        {t.status === 'pending' && (
+                          <div style={{ padding: '8px', display: 'flex', gap: '8px' }}>
+                            <button 
+                              onClick={() => handleApproveP2P(t)}
+                              style={{ flex: 1, background: 'rgba(46, 204, 113, 0.1)', color: 'var(--success)', border: '1px solid rgba(46, 204, 113, 0.2)', padding: '8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600 }}
+                            >
+                              <CheckCircle2 size={16} /> Approve
+                            </button>
+                            <button 
+                              onClick={() => handleRejectP2P(t)}
+                              style={{ flex: 1, background: 'rgba(231, 76, 60, 0.1)', color: 'var(--danger)', border: '1px solid rgba(231, 76, 60, 0.2)', padding: '8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600 }}
+                            >
+                              <XCircle size={16} /> Reject
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

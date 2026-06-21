@@ -122,13 +122,15 @@ export const Transactions = () => {
               {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? <CheckCircle2 size={28} color="white" /> : selectedTx.status === 'pending' ? <Clock size={28} color="white" /> : <XCircle size={28} color="white" />}
             </div>
             <p style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-              {selectedTx.type === 'deposit' 
+              {selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in'
                 ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('depositPending') : t('depositFailed'))
-                : (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('withdrawalPending') : t('withdrawalFailed'))
+                : selectedTx.type === 'transfer_out'
+                  ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? 'Transfer Sent' : selectedTx.status === 'pending' ? 'Transfer Pending' : 'Transfer Failed')
+                  : (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('withdrawalPending') : t('withdrawalFailed'))
               }
             </p>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0', color: selectedTx.type === 'deposit' ? 'var(--success)' : 'var(--danger)' }}>
-              {selectedTx.type === 'deposit' ? '+' : '-'}{formatCurrency(selectedTx.amount || selectedTx.expectedAmount || 0)}
+            <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0', color: (selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in') ? 'var(--success)' : 'var(--danger)' }}>
+              {(selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in') ? '+' : '-'}{formatCurrency(selectedTx.amount || selectedTx.expectedAmount || 0)}
             </div>
           </div>
 
@@ -137,13 +139,14 @@ export const Transactions = () => {
             <div style={{ marginBottom: '8px' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('from')}</div>
               <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'withdrawal' ? 'QTX Coin System Wallet' : (selectedTx.from || 'Wallet Address (External)')}
+                {selectedTx.type === 'withdrawal' ? 'QTX Coin System Wallet' : selectedTx.type === 'transfer_in' ? `User ${selectedTx.senderEmail || selectedTx.senderUid || ''}` : selectedTx.type === 'transfer_out' ? 'QTX P2P Account' : (selectedTx.from || 'Wallet Address (External)')}
               </div>
             </div>
             <div style={{ marginBottom: '8px' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('to')}</div>
               <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'withdrawal' 
+                {selectedTx.type === 'transfer_out' ? `User ${selectedTx.receiverEmail || selectedTx.receiverUid || ''}` :
+                 selectedTx.type === 'withdrawal' 
                   ? (selectedTx.accountDetails?.type === 'binance_id' 
                       ? `Binance Pay: ${selectedTx.accountDetails.binanceId}` 
                       : selectedTx.accountDetails?.type === 'crypto_address'
@@ -157,7 +160,9 @@ export const Transactions = () => {
             <div>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('networkFee')}</div>
               <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'withdrawal' ? '0.00 USDT (Covered by platform)' : (selectedTx.fee || '0.00000000 BNB')}
+                {selectedTx.type === 'transfer_out' ? `${formatCurrency(selectedTx.fee || (selectedTx.amount * 0.05))} (5% Fee)` : 
+                 (selectedTx.type === 'withdrawal' || selectedTx.type === 'transfer_in') ? '0.00 (Covered by platform)' : 
+                 (selectedTx.fee || '0.00000000 BNB')}
               </div>
             </div>
           </div>
@@ -170,7 +175,7 @@ export const Transactions = () => {
                   {selectedTx.type === 'withdrawal' ? t('trackingId') : t('txHash')}
                 </div>
                 <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: '11px' }}>
-                  {selectedTx.txid || selectedTx.id}
+                  {selectedTx.txid || (selectedTx.type.includes('transfer') ? `QTX-${selectedTx.id?.substring(0,8).toUpperCase()}` : selectedTx.id)}
                 </div>
               </div>
               <div style={{ marginBottom: '8px' }}>
@@ -196,7 +201,7 @@ export const Transactions = () => {
             {(selectedTx.txid || selectedTx.type === 'withdrawal') && (
               <div style={{ width: '70px', height: '70px', flexShrink: 0, background: '#fff', padding: '3px', borderRadius: '6px', border: '1px solid var(--border)' }}>
                 <QRCodeSVG 
-                  value={selectedTx.txid ? `https://tronscan.org/#/transaction/${selectedTx.txid}` : `QTX Coin-WD-${selectedTx.id}`} 
+                  value={selectedTx.txid?.startsWith('QTX') ? `QTX-P2P-${selectedTx.txid}` : selectedTx.txid ? `https://tronscan.org/#/transaction/${selectedTx.txid}` : `QTX Coin-WD-${selectedTx.id}`} 
                   size={62} 
                 />
               </div>
@@ -254,25 +259,37 @@ export const Transactions = () => {
                       className="hover:shadow-sm"
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {tx.type === 'deposit' ? <ArrowDownLeft color={tx.status === 'failed' ? 'var(--danger)' : 'var(--success)'} /> : <ArrowUpRight color="var(--danger)" />}
+                        {(tx.type === 'deposit' || tx.type === 'transfer_in') ? <ArrowDownLeft color={tx.status === 'failed' ? 'var(--danger)' : 'var(--success)'} /> : <ArrowUpRight color="var(--danger)" />}
                         <div>
                           <div style={{ fontWeight: 500, textTransform: 'capitalize' }}>
-                            {tx.type} {tx.currency || 'USDT'}
+                            {tx.type === 'transfer_out' ? 'P2P Transfer Sent' : tx.type === 'transfer_in' ? 'P2P Transfer Received' : `${tx.type} ${tx.currency || 'USDT'}`}
                           </div>
-                          <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-                            {tx.createdAt?.toDate ? new Date(tx.createdAt.toDate()).toLocaleString() : 'Just now'}
+                          <div className="text-muted" style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span>{tx.createdAt?.toDate ? new Date(tx.createdAt.toDate()).toLocaleString() : 'Just now'}</span>
+                            {(tx.txid || tx.id) && (
+                              <span style={{ fontSize: '10px', fontFamily: 'monospace', opacity: 0.8 }}>
+                                ID: {tx.txid || `QTX-${tx.id.substring(0,8).toUpperCase()}`}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
                       
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 600, color: tx.status === 'failed' ? 'var(--text-muted)' : tx.type === 'deposit' ? 'var(--success)' : 'var(--text-primary)' }}>
-                          {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount || tx.expectedAmount || 0)}
+                        <div style={{ fontWeight: 600, color: tx.status === 'failed' ? 'var(--text-muted)' : (tx.type === 'deposit' || tx.type === 'transfer_in') ? 'var(--success)' : 'var(--text-primary)' }}>
+                          {(tx.type === 'deposit' || tx.type === 'transfer_in') ? '+' : '-'}{formatCurrency(tx.type === 'transfer_out' ? (tx.totalDeduction || tx.amount * 1.05) : (tx.amount || tx.expectedAmount || 0))}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                        
+                        {tx.type === 'transfer_out' && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--warning)', fontWeight: 500 }}>
+                            Fee: {formatCurrency(tx.fee || (tx.amount * 0.05))}
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginTop: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
                             {tx.status === 'verified' || tx.status === 'SUCCESS' ? (
-                              <><CheckCircle2 size={14} color="var(--success)" /><span className="text-success">{t('verified')}</span></>
+                              <><CheckCircle2 size={14} color="var(--success)" /><span className="text-success">{t('confirmed')}</span></>
                             ) : tx.status === 'pending' ? (
                               <><Clock size={14} color="var(--warning)" /><span style={{ color: 'var(--warning)' }}>{t('pending')}</span></>
                             ) : (

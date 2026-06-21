@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
-import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check, MessageCircle, Gem, Film } from 'lucide-react';
+import { Bell, ArrowRight, ArrowDownToLine, Send, Crown, Gift, HelpCircle, UserPlus, Building, Smartphone, Globe, Bot, ShieldCheck, Check, MessageCircle, Gem, Film, Clock } from 'lucide-react';
 import { LiveTransactions } from '../components/LiveTransactions';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { SpinPromoPopup } from '../components/SpinPromoPopup';
@@ -46,6 +47,53 @@ export const Dashboard = () => {
 
   const currentLang = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
 
+  // Outstanding P2P notifications logic
+  const unreadP2PNotifications = (userData?.notifications || []).filter(
+    n => !n.read && (n.type === 'p2p_pending' || n.type === 'p2p_success')
+  );
+  
+  const getNotifTime = (n) => {
+    if (!n.createdAt) return 0;
+    if (typeof n.createdAt.toMillis === 'function') return n.createdAt.toMillis(); // Firestore Timestamp
+    if (n.createdAt.seconds) return n.createdAt.seconds * 1000; // Firestore Timestamp plain obj
+    return new Date(n.createdAt).getTime(); // ISO string
+  };
+
+  const topP2PNotification = [...unreadP2PNotifications].sort((a,b) => getNotifTime(b) - getNotifTime(a))[0];
+
+  // Show react-hot-toast whenever a new unread P2P notification arrives
+  useEffect(() => {
+    if (!topP2PNotification) return;
+    const isPending = topP2PNotification.type === 'p2p_pending';
+    const icon = isPending ? '⏳' : '✅';
+    toast(`${icon} ${topP2PNotification.title}: ${topP2PNotification.message}`, {
+      duration: 8000,
+      style: {
+        background: isPending ? '#1c1a12' : '#0f1f18',
+        color: '#fff',
+        border: `1px solid ${isPending ? '#f59e0b' : '#10b981'}`,
+        borderRadius: '16px',
+        maxWidth: '340px'
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topP2PNotification?.id]);
+
+  const handleP2PNotificationClick = async () => {
+    if (!topP2PNotification) return;
+    navigate('/transactions');
+    try {
+      const { db: fdb } = await import('../firebase');
+      const { doc, updateDoc } = await import('firebase/firestore');
+      const newNotifications = (userData.notifications || []).map(n =>
+        n.id === topP2PNotification.id ? { ...n, read: true } : n
+      );
+      await updateDoc(doc(fdb, 'users', currentUser.uid), { notifications: newNotifications });
+    } catch (e) {
+      console.error('Failed to mark notification read', e);
+    }
+  };
+
   return (
     <motion.div 
       className="page-content"
@@ -57,6 +105,56 @@ export const Dashboard = () => {
     >
       {/* Home-page promo popup — fires on every load */}
       <SpinPromoPopup />
+
+      {/* Realtime P2P Incoming Notification Popup */}
+      <AnimatePresence>
+        {topP2PNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+            onClick={handleP2PNotificationClick}
+            style={{
+              position: 'fixed',
+              top: '16px',
+              left: '16px',
+              right: '16px',
+              zIndex: 9999,
+              background: topP2PNotification.type === 'p2p_pending' ? 'var(--bg-panel)' : 'var(--bg-panel)',
+              border: `1px solid ${topP2PNotification.type === 'p2p_pending' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+              borderRadius: '20px',
+              padding: '16px',
+              boxShadow: topP2PNotification.type === 'p2p_pending' ? '0 10px 40px rgba(245, 158, 11, 0.2)' : '0 10px 40px rgba(16, 185, 129, 0.2)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px'
+            }}
+          >
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '50%', flexShrink: 0,
+              background: topP2PNotification.type === 'p2p_pending' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {topP2PNotification.type === 'p2p_pending' ? <Clock size={24} color="var(--warning)" /> : <ShieldCheck size={24} color="var(--success)" />}
+            </div>
+            
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {topP2PNotification.title}
+              </h4>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                {topP2PNotification.message}
+              </p>
+              <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>ID: {topP2PNotification.txid}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => navigate('/account')} className="cursor-pointer">
@@ -295,7 +393,7 @@ export const Dashboard = () => {
             { icon: <UserPlus size={18} color="var(--success)" />, label: t('invite'), path: '/affiliate' },
             { icon: <MessageCircle size={18} color="#a855f7" />, label: 'Chat Earn', path: '/chat-earn' },
             { icon: <Building size={18} color="var(--text-muted)" />, label: t('about'), path: '/about' },
-            { icon: <Globe size={18} color="var(--primary)" />, label: 'Market', path: '/market' },
+            { icon: <Send size={18} color="#10B981" />, label: 'P2P Transfer', path: '/transfer' },
             { icon: <Film size={18} color="var(--danger)" />, label: 'Watch & Earn', path: '/movies' },
             { icon: <Crown size={18} color="var(--warning)" />, label: 'VIP Bots', path: '/vip' },
             { icon: <Bot size={18} color="#3b82f6" />, label: 'My Bots', path: '/my-bots' },

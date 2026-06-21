@@ -3,7 +3,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert, Check, Menu, Crown, Film, LineChart } from 'lucide-react';
+import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert, Check, Menu, Crown, Film, LineChart, Send } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
 import { Wallet } from './pages/Wallet';
 import { Account } from './pages/Account';
@@ -19,6 +19,7 @@ import { MyBots } from './pages/MyBots';
 import { About } from './pages/About';
 import { Event } from './pages/Event';
 import { Withdraw } from './pages/Withdraw';
+import { Transfer } from './pages/Transfer';
 import { Admin } from './pages/Admin';
 import { FAQ } from './pages/FAQ';
 import { Spin } from './pages/Spin';
@@ -78,9 +79,9 @@ const BottomNav = () => {
         <Home size={20} />
         <span>{t('home')}</span>
       </Link>
-      <Link to="/market" className={isActive('/market')}>
-        <Globe size={20} />
-        <span>Market</span>
+      <Link to="/transfer" className={isActive('/transfer')}>
+        <Send size={20} />
+        <span>P2P</span>
       </Link>
       <Link to="/trading" className={isActive('/trading')}>
         <Pickaxe size={20} />
@@ -373,6 +374,7 @@ function AppContent() {
             <Route path="/about" element={<PrivateRoute><About /></PrivateRoute>} />
             <Route path="/event" element={<PrivateRoute><Event /></PrivateRoute>} />
             <Route path="/withdraw" element={<PrivateRoute><Withdraw /></PrivateRoute>} />
+            <Route path="/transfer" element={<PrivateRoute><Transfer /></PrivateRoute>} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
             <Route path="/faq" element={<PrivateRoute><FAQ /></PrivateRoute>} />
             <Route path="/spin" element={<PrivateRoute><Spin /></PrivateRoute>} />

@@ -307,7 +307,19 @@ exports.onTransactionUpdated = functions.region('europe-west1').firestore
           const body = `Your deposit of ${amount} ${currency} was rejected.\nReason: ${newData.failureReason || 'Admin action'}${networkStr}${txidStr}`;
           await sendPushNotification(userId, "Deposit Failed", body);
         }
+      } else if (newData.type === 'transfer_out') {
+        const receiverEmail = newData.receiverEmail || 'another user';
+        if (isSuccess) {
+           await sendPushNotification(userId, "Transfer Successful ✅", `Your transfer of ${amount} ${currency} to ${receiverEmail} has been completed.`);
+        } else if (isFailed) {
+           await sendPushNotification(userId, "Transfer Failed ❌", `Your transfer of ${amount} ${currency} to ${receiverEmail} was rejected.\nReason: ${newData.failureReason}`);
+        }
       }
+    } else if (!oldData && newData && newData.status === 'SUCCESS' && newData.type === 'transfer_in') {
+      const senderEmail = newData.senderEmail || 'Another user';
+      const amount = newData.amount || 0;
+      const currency = newData.currency || 'USD';
+      await sendPushNotification(userId, "Funds Received 💰", `You received ${amount} ${currency} from ${senderEmail}.\nTransaction Hash: ${newData.txid}`);
     }
 });
 
@@ -408,3 +420,284 @@ exports.claimVideoReward = functions.region('europe-west1').https.onCall(async (
     throw new functions.https.HttpsError('internal', err.message);
   }
 });
+
+exports.adminApproveTransfer = functions.region('europe-west1').https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  if (context.auth.token.email !== 'mackocks588@gmail.com') {
+    throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+  }
+
+  const { transferId, senderUid, action } = data;
+  if (!transferId || !action || !senderUid) throw new functions.https.HttpsError('invalid-argument', 'Missing parameters');
+
+  try {
+    // Use direct document path - avoids unsupported collectionGroup in transactions
+    const transferRef = db.collection('users').doc(senderUid).collection('transactions').doc(transferId);
+
+    return await db.runTransaction(async (transaction) => {
+      const transferDoc = await transaction.get(transferRef);
+      if (!transferDoc.exists) throw new functions.https.HttpsError('not-found', 'Transfer not found');
+      
+      const transferData = transferDoc.data();
+      const senderRef = db.collection('users').doc(senderUid);
+      const senderId = senderUid;
+
+      if (transferData.type !== 'transfer_out' || transferData.status !== 'pending') {
+         throw new functions.https.HttpsError('failed-precondition', 'Transfer is not pending or invalid type');
+      }
+
+      if (action === 'reject') {
+        transaction.update(transferRef, { status: 'rejected', failureReason: 'Rejected by admin' });
+        return { success: true, message: 'Transfer rejected' };
+      }
+
+      const receiverUid = transferData.receiverUid;
+      const amount = parseFloat(transferData.amount);
+      const fee = parseFloat(transferData.fee || (amount * 0.05));
+      const totalDeduction = parseFloat(transferData.totalDeduction || (amount + fee));
+
+      if (isNaN(amount) || amount <= 0) throw new functions.https.HttpsError('invalid-argument', 'Invalid amount');
+
+      const senderSnap = await transaction.get(senderRef);
+      const senderData = senderSnap.data() || {};
+      const senderBalance = parseFloat(senderData.balance || 0);
+
+      if (senderBalance < totalDeduction) {
+         transaction.update(transferRef, { status: 'rejected', failureReason: 'Insufficient funds for amount + fee' });
+         return { success: false, message: 'Insufficient funds for amount + fee' };
+      }
+
+      const receiverRef = db.collection('users').doc(receiverUid);
+      const receiverSnap = await transaction.get(receiverRef);
+      if (!receiverSnap.exists) {
+         transaction.update(transferRef, { status: 'rejected', failureReason: 'Receiver not found' });
+         return { success: false, message: 'Receiver not found' };
+      }
+
+      const receiverData = receiverSnap.data() || {};
+      const receiverBalance = parseFloat(receiverData.balance || 0);
+
+      transaction.update(senderRef, { balance: senderBalance - totalDeduction });
+      transaction.update(receiverRef, { balance: receiverBalance + amount });
+
+      const txHash = 'QTX' + crypto.randomBytes(8).toString('hex').toUpperCase();
+      transaction.update(transferRef, { status: 'SUCCESS', txid: txHash });
+
+      const receiverTxRef = receiverRef.collection('transactions').doc();
+      transaction.set(receiverTxRef, {
+        type: 'transfer_in',
+        status: 'SUCCESS',
+        amount: amount,
+        currency: transferData.currency || 'USD',
+        senderUid: senderId,
+        senderEmail: senderData.email || 'Unknown',
+        receiverUid: receiverUid,
+        receiverEmail: receiverData.email || transferData.receiverEmail,
+        txid: txHash,
+        fee: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { success: true, message: 'Transfer approved', txid: txHash };
+    });
+  } catch (err) {
+    console.error("Error in adminApproveTransfer:", err);
+    throw new functions.https.HttpsError('internal', err.message);
+  }
+});
+
+
+
+exports.processPendingTransfers = functions.region('europe-west1').pubsub.schedule('every 5 minutes').onRun(async (context) => {
+  try {
+    const settingsDoc = await db.collection('settings').doc('transfers').get();
+    if (!settingsDoc.exists || !settingsDoc.data().autoApprove) return null;
+
+    const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
+    
+    const pendingTransfers = await db.collectionGroup('transactions')
+      .where('type', '==', 'transfer_out')
+      .where('status', '==', 'pending')
+      .get();
+      
+    if (pendingTransfers.empty) return null;
+
+    for (const doc of pendingTransfers.docs) {
+      const data = doc.data();
+      const createdAt = data.createdAt ? data.createdAt.toMillis() : Date.now();
+      
+      if (createdAt <= fiveMinsAgo) {
+        const senderRef = doc.ref.parent.parent;
+        const senderId = senderRef.id;
+        const receiverUid = data.receiverUid;
+        const amount = parseFloat(data.amount);
+        const fee = parseFloat(data.fee || (amount * 0.05));
+        const totalDeduction = parseFloat(data.totalDeduction || (amount + fee));
+
+        if (isNaN(amount) || amount <= 0) {
+           await doc.ref.update({ status: 'rejected', failureReason: 'Invalid amount' });
+           continue;
+        }
+
+        try {
+          await db.runTransaction(async (transaction) => {
+            const transferDoc = await transaction.get(doc.ref);
+            if (transferDoc.data().status !== 'pending') return;
+
+            const senderSnap = await transaction.get(senderRef);
+            const senderBalance = parseFloat(senderSnap.data()?.balance || 0);
+
+            if (senderBalance < totalDeduction) {
+              transaction.update(doc.ref, { status: 'rejected', failureReason: 'Insufficient funds for amount + fee' });
+              return;
+            }
+
+            const receiverRef = db.collection('users').doc(receiverUid);
+            const receiverSnap = await transaction.get(receiverRef);
+            if (!receiverSnap.exists) {
+              transaction.update(doc.ref, { status: 'rejected', failureReason: 'Receiver not found' });
+              return;
+            }
+            const receiverBalance = parseFloat(receiverSnap.data()?.balance || 0);
+
+            transaction.update(senderRef, { balance: senderBalance - totalDeduction });
+            transaction.update(receiverRef, { balance: receiverBalance + amount });
+            
+            const txHash = 'QTX' + crypto.randomBytes(8).toString('hex').toUpperCase();
+            transaction.update(doc.ref, { status: 'SUCCESS', txid: txHash });
+
+            const receiverTxRef = receiverRef.collection('transactions').doc();
+            transaction.set(receiverTxRef, {
+              type: 'transfer_in',
+              status: 'SUCCESS',
+              amount: amount,
+              currency: data.currency || 'USD',
+              senderUid: senderId,
+              senderEmail: senderSnap.data()?.email || 'Unknown',
+              receiverUid: receiverUid,
+              receiverEmail: receiverSnap.data()?.email || data.receiverEmail,
+              txid: txHash,
+              createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+          });
+        } catch (e) {
+          console.error("Auto-approve failed for", doc.id, e);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error in processPendingTransfers:", error);
+  }
+  return null;
+});
+
+// Realtime notification generator for Receiver
+exports.onP2PTransferChange = functions.region('europe-west1').firestore
+  .document('users/{userId}/transactions/{txId}')
+  .onWrite(async (change, context) => {
+    // If deleted, ignore
+    if (!change.after.exists) return null;
+
+    const data = change.after.data();
+    const beforeData = change.before.exists ? change.before.data() : null;
+    const senderId = context.params.userId;
+
+    // We only care about transfer_out events to dispatch notifications to the receiver
+    if (data.type !== 'transfer_out' || !data.receiverUid) return null;
+
+    const receiverRef = db.collection('users').doc(data.receiverUid);
+    const receiverSnap = await receiverRef.get();
+    if (!receiverSnap.exists) return null;
+
+    const senderSnap = await db.collection('users').doc(senderId).get();
+    const senderEmail = senderSnap.exists ? senderSnap.data().email : 'A user';
+
+    const updates = {};
+    const notifyPayload = {
+      id: context.params.txId,
+      txid: data.txid || context.params.txId,
+      senderUid: senderId,
+      amount: data.amount,
+      createdAt: new Date().toISOString()
+    };
+
+    // Scenario 1: Newly Created and Pending
+    if (!beforeData && data.status === 'pending') {
+      notifyPayload.type = 'p2p_pending';
+      notifyPayload.title = 'Incoming Transfer Pending';
+      notifyPayload.message = `${senderEmail} is sending you $${parseFloat(data.amount).toFixed(2)}. Security clearance in progress (5-15 mins).`;
+      notifyPayload.read = false;
+      
+      updates.notifications = admin.firestore.FieldValue.arrayUnion(notifyPayload);
+
+      if (receiverSnap.data().fcmToken) {
+        try {
+          await admin.messaging().send({
+            token: receiverSnap.data().fcmToken,
+            notification: {
+              title: notifyPayload.title,
+              body: notifyPayload.message,
+            },
+            data: { txid: String(notifyPayload.txid), type: notifyPayload.type }
+          });
+        } catch(e) { console.error('Push notification failed:', e); }
+      }
+    }
+    // Scenario 2: Updated from Pending to SUCCESS
+    else if (beforeData && beforeData.status === 'pending' && data.status === 'SUCCESS') {
+      // Remove the old pending notification
+      const oldNotifications = receiverSnap.data().notifications || [];
+      const filtered = oldNotifications.filter(n => n.id !== context.params.txId);
+      
+      // Add the new success notification
+      notifyPayload.type = 'p2p_success';
+      notifyPayload.title = 'Transfer Approved!';
+      notifyPayload.message = `You have successfully received $${parseFloat(data.amount).toFixed(2)} from ${senderEmail}!`;
+      notifyPayload.read = false;
+      
+      filtered.push(notifyPayload);
+      updates.notifications = filtered;
+
+      // Receiver Push Notification
+      if (receiverSnap.data().fcmToken) {
+        try {
+          await admin.messaging().send({
+            token: receiverSnap.data().fcmToken,
+            notification: {
+              title: notifyPayload.title,
+              body: notifyPayload.message,
+            },
+            data: { txid: String(notifyPayload.txid), type: notifyPayload.type }
+          });
+        } catch(e) { console.error('Receiver push failed', e); }
+      }
+
+      // Sender Push Notification
+      const senderToken = senderSnap.data()?.fcmToken;
+      if (senderToken) {
+        try {
+          await admin.messaging().send({
+            token: senderToken,
+            notification: {
+              title: 'Transfer Delivered!',
+              body: `Your P2P transfer of $${parseFloat(data.amount).toFixed(2)} to ${receiverSnap.data().email} has been approved and delivered!`,
+            },
+            data: { txid: String(notifyPayload.txid), type: 'p2p_success_sender' }
+          });
+        } catch(e) { console.error('Sender push failed', e); }
+      }
+    }
+    // Scenario 3: Updated from Pending to Rejected
+    else if (beforeData && beforeData.status === 'pending' && data.status === 'rejected') {
+      // Just clear the pending notification, no need to alert receiver if it was rejected
+      const oldNotifications = receiverSnap.data().notifications || [];
+      const filtered = oldNotifications.filter(n => n.id !== context.params.txId);
+      updates.notifications = filtered;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      return receiverRef.update(updates);
+    }
+
+    return null;
+  });
