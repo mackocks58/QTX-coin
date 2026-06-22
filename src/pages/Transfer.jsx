@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
-import { doc, getDoc, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from 'firebase/firestore';
-import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X, Search, ShieldCheck } from 'lucide-react';
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X, Search, ShieldCheck, Delete } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -139,6 +139,11 @@ export const Transfer = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [pendingTransfer, setPendingTransfer] = useState(null);
 
+  const [pinMode, setPinMode] = useState(null);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [hasPin, setHasPin] = useState(false);
+
   const controls = useAnimation();
 
   useEffect(() => {
@@ -162,6 +167,17 @@ export const Transfer = () => {
     return () => unsub();
   }, [currentUser]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    const checkPin = async () => {
+      const uDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if(uDoc.exists() && uDoc.data().transactionPin) {
+        setHasPin(true);
+      }
+    };
+    checkPin();
+  }, [currentUser]);
+
   const triggerShake = () => {
     controls.start({
       x: [0, -10, 10, -10, 10, 0],
@@ -178,7 +194,10 @@ export const Transfer = () => {
     if (receiverInput === currentUser.email || receiverInput === currentUser.uid) {
         return setErrorMsg('You cannot send funds to yourself.');
     }
-    if (!amount || isNaN(numAmount) || numAmount <= 0) return setErrorMsg('Please enter a valid amount.');
+    if (!amount || isNaN(numAmount) || numAmount < 5) {
+        triggerShake();
+        return setErrorMsg('Minimum transfer amount is ' + formatCurrency(5));
+    }
     if (totalDeduction > balance) {
         triggerShake();
         return setErrorMsg(
@@ -249,6 +268,42 @@ export const Transfer = () => {
       setErrorMsg('Failed to process transfer. Please try again later.');
     }
     setLoading(false);
+  };
+
+  const verifyOrSetupPin = async (val) => {
+     setPinError('');
+     if (pinMode === 'setup') {
+        try {
+           await updateDoc(doc(db, 'users', currentUser.uid), { transactionPin: val });
+           setHasPin(true);
+           setPinMode('verify');
+           setPinInput('');
+           toast.success('PIN created! Please enter it again to confirm transfer.');
+        } catch(e) {
+           setPinError('Failed to save PIN.');
+           setPinInput('');
+        }
+     } else if (pinMode === 'verify') {
+        const uDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (uDoc.data().transactionPin === val) {
+           setPinMode(null);
+           setPinInput('');
+           executeTransfer();
+        } else {
+           setPinError('Incorrect PIN. Please try again.');
+           setPinInput('');
+        }
+     }
+  };
+
+  const handlePinType = async (char) => {
+     if (pinInput.length < 4) {
+        const newVal = pinInput + char;
+        setPinInput(newVal);
+        if (newVal.length === 4) {
+           await verifyOrSetupPin(newVal);
+        }
+     }
   };
 
   return (
@@ -472,7 +527,10 @@ export const Transfer = () => {
                   </button>
                   <button 
                     style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
-                    onClick={executeTransfer}
+                    onClick={() => {
+                       if (!hasPin) setPinMode('setup');
+                       else setPinMode('verify');
+                    }}
                     disabled={loading}
                   >
                     {loading ? 'Processing...' : 'Confirm'}
@@ -592,6 +650,79 @@ export const Transfer = () => {
               >
                 View History
               </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* PIN Verification Modal */}
+        {pinMode && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', 
+              zIndex: 99999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center',
+              backdropFilter: 'blur(4px)'
+            }}
+          >
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+              style={{
+                backgroundColor: 'var(--bg-panel)',
+                borderTopLeftRadius: '32px',
+                borderTopRightRadius: '32px',
+                padding: '24px',
+                width: '100%',
+                maxWidth: '600px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                boxShadow: '0 -15px 40px rgba(0,0,0,0.5)'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '24px' }} />
+              
+              <ShieldCheck size={48} color="var(--primary)" style={{ marginBottom: '16px' }} />
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {pinMode === 'setup' ? 'Set Transaction PIN' : 'Enter Transaction PIN'}
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '24px' }}>
+                {pinMode === 'setup' ? 'Create a 4-digit PIN to secure your transfers.' : 'Securely verify your identity to proceed.'}
+              </p>
+              
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+                 {[0,1,2,3].map(i => (
+                    <div key={i} style={{ width: '50px', height: '60px', borderRadius: '12px', border: '2px solid ' + (pinInput.length === i ? 'var(--primary)' : 'rgba(255,255,255,0.1)'), background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 800 }}>
+                       {pinInput.length > i ? '•' : ''}
+                    </div>
+                 ))}
+              </div>
+
+              {pinError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '16px', fontWeight: 600 }}>{pinError}</div>}
+
+              {/* Dialpad */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '300px', marginBottom: '24px' }}>
+                 {[1,2,3,4,5,6,7,8,9].map(num => (
+                    <button key={num} onClick={() => handlePinType(num.toString())} style={{ height: '60px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600, cursor: 'pointer' }}>{num}</button>
+                 ))}
+                 <button style={{ background: 'transparent', border: 'none' }} />
+                 <button onClick={() => handlePinType('0')} style={{ height: '60px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600, cursor: 'pointer' }}>0</button>
+                 <button onClick={() => setPinInput(prev => prev.slice(0, -1))} style={{ height: '60px', borderRadius: '16px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronLeft size={32} />
+                  <Delete size={28} />
+                 </button>
+              </div>
+
+              <button 
+                 onClick={() => { setPinMode(null); setPinInput(''); setPinError(''); }}
+                 style={{ width: '100%', maxWidth: '300px', padding: '14px', borderRadius: '14px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
             </motion.div>
           </motion.div>
         )}

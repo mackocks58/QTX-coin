@@ -61,6 +61,21 @@ export const Withdraw = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [withdrawSource, setWithdrawSource] = useState('main'); // 'main' or 'bonus'
   const [bonusEligibility, setBonusEligibility] = useState(null); // null = not checked, { approved: bool, referrals: number }
+  const [lockedBalance, setLockedBalance] = useState(0);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsub = onSnapshot(query(
+      collection(db, 'users', currentUser.uid, 'transactions'),
+      where('type', '==', 'transfer_out'),
+      where('status', '==', 'pending')
+    ), (snap) => {
+      let sum = 0;
+      snap.forEach(d => { sum += (d.data().totalDeduction || d.data().amount || 0); });
+      setLockedBalance(sum);
+    });
+    return () => unsub();
+  }, [currentUser]);
 
   const controls = useAnimation();
 
@@ -144,7 +159,7 @@ export const Withdraw = () => {
 
   const handlePreWithdraw = async () => {
     const numAmount = Number(amount);
-    const activeBalance = withdrawSource === 'main' ? balance : welcomeBonus;
+    const activeBalance = withdrawSource === 'main' ? (balance - lockedBalance) : welcomeBonus;
     
     if (!amount || isNaN(numAmount) || numAmount < 10 || numAmount > activeBalance || !selectedAccount) {
       triggerShake();
@@ -266,8 +281,15 @@ export const Withdraw = () => {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <span className="text-muted">{withdrawSource === 'main' ? t('availableBalance') : 'Available Bonus'}</span>
-            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(withdrawSource === 'main' ? balance : welcomeBonus)}</span>
+            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(withdrawSource === 'main' ? (balance - lockedBalance) : welcomeBonus)}</span>
           </div>
+
+          {lockedBalance > 0 && withdrawSource === 'main' && (
+             <div style={{ padding: '10px 12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '10px', color: 'var(--warning)', fontSize: '0.85rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={18} />
+                <span>{formatCurrency(lockedBalance)} is currently locked in pending P2P transfers.</span>
+             </div>
+          )}
 
           {accounts.length === 0 ? (
             <div style={{ padding: '20px', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(244, 63, 94, 0.2)', textAlign: 'center' }}>
@@ -332,7 +354,7 @@ export const Withdraw = () => {
                     style={{ paddingLeft: '32px', width: '100%', boxSizing: 'border-box' }}
                   />
                   <button 
-                    onClick={() => setAmount(withdrawSource === 'main' ? balance.toString() : welcomeBonus.toString())}
+                    onClick={() => setAmount(withdrawSource === 'main' ? (balance - lockedBalance > 0 ? (balance - lockedBalance).toString() : '0') : welcomeBonus.toString())}
                     style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                   >
                     MAX

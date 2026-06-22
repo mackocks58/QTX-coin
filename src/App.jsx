@@ -36,6 +36,7 @@ import { App as CapApp } from '@capacitor/app';
 import { setupPushNotifications } from './services/pushNotifications';
 import { NetworkOverlay } from './components/NetworkOverlay';
 import { FloatingSupport } from './components/FloatingSupport';
+import { GlobalNotification } from './components/GlobalNotification';
 import './index.css'; 
 
 const PrivateRoute = ({ children }) => {
@@ -401,6 +402,7 @@ function App() {
         <LanguageProvider>
           <NetworkOverlay />
           <FloatingSupport />
+          <GlobalNotification />
           <AppContent />
         </LanguageProvider>
       </AuthProvider>

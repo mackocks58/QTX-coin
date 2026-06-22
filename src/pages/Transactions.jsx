@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { CheckCircle2, Clock, XCircle, ArrowDownLeft, ArrowUpRight, ChevronLeft } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, ArrowDownLeft, ArrowUpRight, ChevronLeft, Copy, MessageSquare, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -21,6 +21,14 @@ export const Transactions = () => {
   const [now, setNow] = useState(Date.now());
   const receiptRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const copyText = (text, id) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1000);
+  };
 
   const handleDownloadPDF = async () => {
     if (!receiptRef.current) return;
@@ -106,118 +114,209 @@ export const Transactions = () => {
           transition={{ duration: 0.2 }}
           style={{ backgroundColor: 'var(--bg-panel)', color: 'var(--text-primary)', borderRadius: 'var(--radius-lg)', minHeight: '80vh', padding: '20px' }}
         >
-          <button 
-            onClick={() => setSelectedTx(null)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}
-          >
-            {t('back')}
-          </button>
-
-          <div ref={receiptRef} style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px' }}>
-            <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              width: '48px', height: '48px', borderRadius: '50%', margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
-              background: selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? '#2ecc71' : selectedTx.status === 'pending' ? '#f39c12' : '#e74c3c'
-            }}>
-              {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? <CheckCircle2 size={28} color="white" /> : selectedTx.status === 'pending' ? <Clock size={28} color="white" /> : <XCircle size={28} color="white" />}
-            </div>
-            <p style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-              {selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in'
-                ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('depositPending') : t('depositFailed'))
-                : selectedTx.type === 'transfer_out'
-                  ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? 'Transfer Sent' : selectedTx.status === 'pending' ? 'Transfer Pending' : 'Transfer Failed')
-                  : (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('withdrawalPending') : t('withdrawalFailed'))
-              }
-            </p>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0', color: (selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in') ? 'var(--success)' : 'var(--danger)' }}>
-              {(selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in') ? '+' : '-'}{formatCurrency(selectedTx.amount || selectedTx.expectedAmount || 0)}
-            </div>
-          </div>
-
-          {/* First Card */}
-          <div style={{ background: 'var(--bg-panel-hover)', padding: '10px 12px', borderRadius: '10px', marginTop: '12px', fontSize: '13px' }}>
-            <div style={{ marginBottom: '8px' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('from')}</div>
-              <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'withdrawal' ? 'QTX Coin System Wallet' : selectedTx.type === 'transfer_in' ? `User ${selectedTx.senderEmail || selectedTx.senderUid || ''}` : selectedTx.type === 'transfer_out' ? 'QTX P2P Account' : (selectedTx.from || 'Wallet Address (External)')}
+          {(selectedTx.type === 'transfer_out' || selectedTx.type === 'transfer_in') && selectedTx.status === 'pending' ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <button 
+                  onClick={() => setSelectedTx(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '13px', borderRadius: '8px', color: '#000', fontWeight: 600 }}>
+                  <MessageSquare size={16} /> Chat
+                </button>
               </div>
-            </div>
-            <div style={{ marginBottom: '8px' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('to')}</div>
-              <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'transfer_out' ? `User ${selectedTx.receiverEmail || selectedTx.receiverUid || ''}` :
-                 selectedTx.type === 'withdrawal' 
-                  ? (selectedTx.accountDetails?.type === 'binance_id' 
-                      ? `Binance Pay: ${selectedTx.accountDetails.binanceId}` 
-                      : selectedTx.accountDetails?.type === 'crypto_address'
-                        ? `${selectedTx.accountDetails.network}: ${selectedTx.accountDetails.address}`
-                        : selectedTx.accountDetails?.type === 'mobile'
-                          ? `${selectedTx.accountDetails.network}: ${selectedTx.accountDetails.accountNumber}`
-                          : selectedTx.to || currentUser?.email)
-                  : (selectedTx.to || currentUser?.email)}
-              </div>
-            </div>
-            <div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('networkFee')}</div>
-              <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                {selectedTx.type === 'transfer_out' ? `${formatCurrency(selectedTx.fee || (selectedTx.amount * 0.05))} (5% Fee)` : 
-                 (selectedTx.type === 'withdrawal' || selectedTx.type === 'transfer_in') ? '0.00 (Covered by platform)' : 
-                 (selectedTx.fee || '0.00000000 BNB')}
-              </div>
-            </div>
-          </div>
 
-          {/* Second Card with QR */}
-          <div style={{ background: 'var(--bg-panel-hover)', padding: '10px 12px', borderRadius: '10px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ marginBottom: '8px' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>
-                  {selectedTx.type === 'withdrawal' ? t('trackingId') : t('txHash')}
+              <h2 className="mb-4" style={{ fontSize: '24px', fontWeight: 700 }}>Verify Payment</h2>
+
+              <div ref={receiptRef} className="verify-timeline">
+                <div className="verify-step">
+                    <div className="verify-step-number"><span>1</span></div>
+                    <div className="verify-step-title">
+                        Open {selectedTx.accountDetails?.network || selectedTx.network || 'Mobile Money App'}
+                    </div>
                 </div>
-                <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: '11px' }}>
-                  {selectedTx.txid || (selectedTx.type.includes('transfer') ? `QTX-${selectedTx.id?.substring(0,8).toUpperCase()}` : selectedTx.id)}
-                </div>
-              </div>
-              <div style={{ marginBottom: '8px' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('status')}</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 500, textTransform: 'capitalize' }}>
-                  {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('confirmed') : selectedTx.status}
-                </div>
-              </div>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('time')}</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                  {selectedTx.createdAt?.toDate ? new Date(selectedTx.createdAt.toDate()).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : 'Just now'}
-                </div>
-              </div>
-            </div>
-            
-            {(selectedTx.note && selectedTx.status === 'cancelled') && (
-              <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: '8px', color: 'var(--danger)', fontSize: '12px', fontWeight: 600 }}>
-                {t('cancelReason') || 'Cancellation Reason'}: {selectedTx.note}
-              </div>
-            )}
-            
-            {(selectedTx.txid || selectedTx.type === 'withdrawal') && (
-              <div style={{ width: '70px', height: '70px', flexShrink: 0, background: '#fff', padding: '3px', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                <QRCodeSVG 
-                  value={selectedTx.txid?.startsWith('QTX') ? `QTX-P2P-${selectedTx.txid}` : selectedTx.txid ? `https://tronscan.org/#/transaction/${selectedTx.txid}` : `QTX Coin-WD-${selectedTx.id}`} 
-                  size={62} 
-                />
-              </div>
-            )}
-          </div>
-          </div>
 
-          <button 
-            onClick={handleDownloadPDF}
-            disabled={downloading}
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '20px', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-          >
-            {downloading ? t('generatingPdf') : t('downloadPdf')}
-          </button>
+                <div className="verify-step">
+                    <div className="verify-step-number"><span>2</span></div>
+                    <div className="verify-step-title">
+                        Confirm Receipt of Payment
+                    </div>
 
+                    <div className="verify-card">
+                        <div className="verify-provider">
+                            <div className="verify-red-bar"></div>
+                            {selectedTx.accountDetails?.network || selectedTx.network || 'Mobile Money'}
+                        </div>
+
+                        <div className="verify-amount">
+                            <label>You Receive</label>
+                            <div className="verify-amount-value">
+                                {symbol}{formatCurrency(selectedTx.amount || selectedTx.expectedAmount || 0)}
+                            </div>
+                        </div>
+
+                        {(selectedTx.accountDetails?.name || selectedTx.accountName || selectedTx.receiverName || selectedTx.senderName) && (
+                          <div className="verify-info-row">
+                              <label>Full Name</label>
+                              <span>{selectedTx.accountDetails?.name || selectedTx.accountName || selectedTx.receiverName || selectedTx.senderName}</span>
+                              <button className="verify-copy-btn" onClick={() => copyText(selectedTx.accountDetails?.name || selectedTx.accountName || selectedTx.receiverName || selectedTx.senderName, 'fullname')}>
+                                 {copiedId === 'fullname' ? <Check size={16} color="var(--success)"/> : <Copy size={16}/>}
+                              </button>
+                          </div>
+                        )}
+
+                        {(selectedTx.accountDetails?.accountNumber || selectedTx.accountNumber || selectedTx.receiverPhone || selectedTx.senderPhone) && (
+                          <div className="verify-info-row">
+                              <label>Phone Number</label>
+                              <span>{selectedTx.accountDetails?.accountNumber || selectedTx.accountNumber || selectedTx.receiverPhone || selectedTx.senderPhone}</span>
+                              <button className="verify-copy-btn" onClick={() => copyText(selectedTx.accountDetails?.accountNumber || selectedTx.accountNumber || selectedTx.receiverPhone || selectedTx.senderPhone, 'phone')}>
+                                 {copiedId === 'phone' ? <Check size={16} color="var(--success)"/> : <Copy size={16}/>}
+                              </button>
+                          </div>
+                        )}
+
+                        {(selectedTx.senderName || selectedTx.buyerName) && (
+                          <div className="verify-info-row">
+                              <label>Buyer's Name</label>
+                              <span>{selectedTx.senderName || selectedTx.buyerName}</span>
+                              <button className="verify-copy-btn" onClick={() => copyText(selectedTx.senderName || selectedTx.buyerName, 'buyer')}>
+                                 {copiedId === 'buyer' ? <Check size={16} color="var(--success)"/> : <Copy size={16}/>}
+                              </button>
+                          </div>
+                        )}
+
+                        <div className="verify-order-details">
+                            <span>Order details</span>
+                            <span style={{ fontSize: '10px' }}>▼</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="verify-step">
+                    <div className="verify-step-number"><span>3</span></div>
+                    <div className="verify-release-text">
+                        Awaiting verification and release
+                    </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => setSelectedTx(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}
+              >
+                <ChevronLeft size={20} /> {t('back')}
+              </button>
+
+              <div ref={receiptRef} style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '16px' }}>
+                <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  width: '48px', height: '48px', borderRadius: '50%', margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
+                  background: selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? '#2ecc71' : selectedTx.status === 'pending' ? '#f39c12' : '#e74c3c'
+                }}>
+                  {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? <CheckCircle2 size={28} color="white" /> : selectedTx.status === 'pending' ? <Clock size={28} color="white" /> : <XCircle size={28} color="white" />}
+                </div>
+                <p style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in'
+                    ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('depositPending') : t('depositFailed'))
+                    : selectedTx.type === 'transfer_out'
+                      ? (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? 'Transfer Sent' : selectedTx.status === 'pending' ? 'Transfer Pending' : 'Transfer Failed')
+                      : (selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('receivedSuccessfully') : selectedTx.status === 'pending' ? t('withdrawalPending') : t('withdrawalFailed'))
+                  }
+                </p>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', margin: '4px 0', color: (selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in') ? 'var(--success)' : 'var(--danger)' }}>
+                  {(selectedTx.type === 'deposit' || selectedTx.type === 'transfer_in') ? '+' : '-'}{formatCurrency(selectedTx.amount || selectedTx.expectedAmount || 0)}
+                </div>
+              </div>
+
+              {/* First Card */}
+              <div style={{ background: 'var(--bg-panel-hover)', padding: '10px 12px', borderRadius: '10px', marginTop: '12px', fontSize: '13px' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('from')}</div>
+                  <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {selectedTx.type === 'withdrawal' ? 'QTX Coin System Wallet' : selectedTx.type === 'transfer_in' ? `User ${selectedTx.senderEmail || selectedTx.senderUid || ''}` : selectedTx.type === 'transfer_out' ? 'QTX P2P Account' : (selectedTx.from || 'Wallet Address (External)')}
+                  </div>
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('to')}</div>
+                  <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {selectedTx.type === 'transfer_out' ? `User ${selectedTx.receiverEmail || selectedTx.receiverUid || ''}` :
+                     selectedTx.type === 'withdrawal' 
+                      ? (selectedTx.accountDetails?.type === 'binance_id' 
+                          ? `Binance Pay: ${selectedTx.accountDetails.binanceId}` 
+                          : selectedTx.accountDetails?.type === 'crypto_address'
+                            ? `${selectedTx.accountDetails.network}: ${selectedTx.accountDetails.address}`
+                            : selectedTx.accountDetails?.type === 'mobile'
+                              ? `${selectedTx.accountDetails.network}: ${selectedTx.accountDetails.accountNumber}`
+                              : selectedTx.to || currentUser?.email)
+                      : (selectedTx.to || currentUser?.email)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('networkFee')}</div>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {selectedTx.type === 'transfer_out' ? `${formatCurrency(selectedTx.fee || (selectedTx.amount * 0.05))} (5% Fee)` : 
+                     (selectedTx.type === 'withdrawal' || selectedTx.type === 'transfer_in') ? '0.00 (Covered by platform)' : 
+                     (selectedTx.fee || '0.00000000 BNB')}
+                  </div>
+                </div>
+              </div>
+
+              {/* Second Card with QR */}
+              <div style={{ background: 'var(--bg-panel-hover)', padding: '10px 12px', borderRadius: '10px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>
+                      {selectedTx.type === 'withdrawal' ? t('trackingId') : t('txHash')}
+                    </div>
+                    <div style={{ wordBreak: 'break-all', color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: '11px' }}>
+                      {selectedTx.txid || (selectedTx.type.includes('transfer') ? `QTX-${selectedTx.id?.substring(0,8).toUpperCase()}` : selectedTx.id)}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('status')}</div>
+                    <div style={{ color: 'var(--text-primary)', fontWeight: 500, textTransform: 'capitalize' }}>
+                      {selectedTx.status === 'verified' || selectedTx.status === 'SUCCESS' ? t('confirmed') : selectedTx.status}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginBottom: '2px' }}>{t('time')}</div>
+                    <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                      {selectedTx.createdAt?.toDate ? new Date(selectedTx.createdAt.toDate()).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : 'Just now'}
+                    </div>
+                  </div>
+                </div>
+                
+                {(selectedTx.note && selectedTx.status === 'cancelled') && (
+                  <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: '8px', color: 'var(--danger)', fontSize: '12px', fontWeight: 600 }}>
+                    {t('cancelReason') || 'Cancellation Reason'}: {selectedTx.note}
+                  </div>
+                )}
+                
+                {(selectedTx.txid || selectedTx.type === 'withdrawal') && (
+                  <div style={{ width: '70px', height: '70px', flexShrink: 0, background: '#fff', padding: '3px', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                    <QRCodeSVG 
+                      value={selectedTx.txid?.startsWith('QTX') ? `QTX-P2P-${selectedTx.txid}` : selectedTx.txid ? `https://tronscan.org/#/transaction/${selectedTx.txid}` : `QTX Coin-WD-${selectedTx.id}`} 
+                      size={62} 
+                    />
+                  </div>
+                )}
+              </div>
+              </div>
+
+              <button 
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: '20px', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              >
+                {downloading ? t('generatingPdf') : t('downloadPdf')}
+              </button>
+            </>
+          )}
           <div style={{ textAlign: 'center', fontSize: '11px', padding: '16px 0 0 0', color: '#888' }}>
             © {new Date().getFullYear()} QTX Coin. All rights reserved.
           </div>
