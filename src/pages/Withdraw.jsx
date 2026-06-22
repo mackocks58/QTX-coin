@@ -41,7 +41,7 @@ const NetworkBadge = ({ network, size = 20 }) => {
 };
 
 export const Withdraw = () => {
-  const { currentUser, balance, welcomeBonus, userData } = useAuth();
+  const { currentUser, balance, lockedBalance, welcomeBonus, userData } = useAuth();
   const { formatCurrency, convertAndFormatCurrency, symbol } = useCurrency();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -61,21 +61,6 @@ export const Withdraw = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [withdrawSource, setWithdrawSource] = useState('main'); // 'main' or 'bonus'
   const [bonusEligibility, setBonusEligibility] = useState(null); // null = not checked, { approved: bool, referrals: number }
-  const [lockedBalance, setLockedBalance] = useState(0);
-
-  useEffect(() => {
-    if (!currentUser) return;
-    const unsub = onSnapshot(query(
-      collection(db, 'users', currentUser.uid, 'transactions'),
-      where('type', '==', 'transfer_out'),
-      where('status', '==', 'pending')
-    ), (snap) => {
-      let sum = 0;
-      snap.forEach(d => { sum += (d.data().totalDeduction || d.data().amount || 0); });
-      setLockedBalance(sum);
-    });
-    return () => unsub();
-  }, [currentUser]);
 
   const controls = useAnimation();
 

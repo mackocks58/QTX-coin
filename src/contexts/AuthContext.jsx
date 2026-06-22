@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, updateDoc, collection, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -13,6 +13,7 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [balance, setBalance] = useState(0);
+  const [lockedBalance, setLockedBalance] = useState(0);
   const [qtxBalance, setQtxBalance] = useState(0);
   const [miningBalance, setMiningBalance] = useState(0);
   const [investmentBalance, setInvestmentBalance] = useState(0);
@@ -58,9 +59,26 @@ export function AuthProvider({ children }) {
           }
         });
         setLoading(false);
-        return unsubDoc;
+
+        // Listen to pending transfers for locked balance
+        const qPending = query(
+          collection(db, 'users', user.uid, 'transactions'),
+          where('type', '==', 'transfer_out'),
+          where('status', '==', 'pending')
+        );
+        const unsubPending = onSnapshot(qPending, (snap) => {
+          let sum = 0;
+          snap.forEach(d => { sum += (d.data().totalDeduction || d.data().amount || 0); });
+          setLockedBalance(sum);
+        });
+
+        return () => {
+           unsubDoc();
+           unsubPending();
+        };
       } else {
         setBalance(0);
+        setLockedBalance(0);
         setQtxBalance(0);
         setMiningBalance(0);
         setInvestmentBalance(0);
@@ -298,6 +316,8 @@ export function AuthProvider({ children }) {
     currentUser,
     isAdmin,
     balance,
+    lockedBalance,
+    availableBalance: balance - lockedBalance,
     qtxBalance,
     miningBalance,
     investmentBalance,

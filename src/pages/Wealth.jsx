@@ -23,7 +23,7 @@ export const CRYPTO_PLANS = [
 ];
 
 export const Wealth = () => {
-  const { currentUser, userData, balance } = useAuth();
+  const { currentUser, userData, balance, availableBalance, lockedBalance } = useAuth();
   const { t } = useLanguage();
   const { formatCurrency, convertAndFormatCurrency, rate } = useCurrency();
   const navigate = useNavigate();
@@ -46,8 +46,8 @@ export const Wealth = () => {
     const differenceUSD = isUpgrade ? (plan.price - activePriceUSD) : plan.price;
     const localCost = differenceUSD * rate;
 
-    const userBalance = parseFloat(balance || 0);
-    if (userBalance < localCost) {
+    const userAvail = parseFloat(availableBalance || 0);
+    if (userAvail < localCost) {
       toast.error(t('insufficientFunds') || 'Insufficient funds');
       navigate('/wallet');
       return;
@@ -69,9 +69,10 @@ export const Wealth = () => {
 
       const freshData = userSnap.data();
       const currentBalance = parseFloat(freshData.balance || 0);
+      const userAvail = currentBalance - (lockedBalance || 0);
       const localCost = differenceUSD * rate;
 
-      if (currentBalance < localCost) {
+      if (userAvail < localCost) {
         toast.dismiss(loadingToast);
         throw new Error(t('insufficientFunds') || 'Insufficient funds');
       }

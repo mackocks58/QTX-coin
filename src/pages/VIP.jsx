@@ -272,7 +272,7 @@ const BotCard = ({ bot, onSelect }) => {
 };
 
 /* ─── Confirmation modal ─── */
-const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
+const ConfirmModal = ({ bot, availableBalance, balance, onClose, onConfirm, loading }) => {
   const { t } = useLanguage();
   const { formatCurrency, convertAndFormatCurrency, symbol, rate } = useCurrency();
   const [amount, setAmount] = useState('');
@@ -287,9 +287,9 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
       return onConfirm(bot, parsed, t('errInvalidAmount').replace('${min}', convertAndFormatCurrency(bot.minAmount)).replace('${max}', convertAndFormatCurrency(bot.maxAmount)));
     }
     
-    const userBalance = parseFloat(balance || 0);
-    if (parsed > userBalance) {
-      return onConfirm(bot, parsed, t('errInsufficientBalance').replace('${bal}', formatCurrency(userBalance)));
+    const userAvail = parseFloat(availableBalance || 0);
+    if (parsed > userAvail) {
+      return onConfirm(bot, parsed, t('errInsufficientBalance').replace('${bal}', formatCurrency(userAvail)));
     }
     
     onConfirm(bot, parsed, null);
@@ -348,7 +348,7 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
               />
             </div>
             <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '5px 0 0 0' }}>
-              Range: {convertAndFormatCurrency(bot.minAmount)} – {convertAndFormatCurrency(bot.maxAmount)} • Your balance: <strong style={{ color: 'var(--primary)' }}>{formatCurrency(balance)}</strong>
+              Range: {convertAndFormatCurrency(bot.minAmount)} – {convertAndFormatCurrency(bot.maxAmount)} • Your balance: <strong style={{ color: 'var(--primary)' }}>{formatCurrency(availableBalance)}</strong>
             </p>
           </div>
 
@@ -386,12 +386,12 @@ const ConfirmModal = ({ bot, balance, onClose, onConfirm, loading }) => {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={loading || !isValid || parsed > balance}
+              disabled={loading || !isValid || parsed > availableBalance}
               style={{
                 flex: 1, padding: '12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer',
                 background: 'linear-gradient(135deg, #d4af37, #f5d98b)',
                 color: '#000', border: 'none', fontSize: '13px',
-                opacity: (loading || !isValid || parsed > balance) ? 0.55 : 1,
+                opacity: (loading || !isValid || parsed > availableBalance) ? 0.55 : 1,
                 boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
               }}
             >
@@ -476,7 +476,7 @@ const InfoModal = ({ onClose }) => {
 
 /* ═══════════════ Main Page ═══════════════ */
 export const VIP = () => {
-  const { currentUser, balance, userData } = useAuth();
+  const { currentUser, balance, availableBalance, lockedBalance, userData } = useAuth();
   const { t } = useLanguage();
   const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
@@ -499,8 +499,10 @@ export const VIP = () => {
       const snap = await getDoc(userRef);
       if (!snap.exists()) throw new Error('User document not found');
 
+      // Note: We use the backend `balance`, but verify against `availableBalance` limits
       const liveBalance = parseFloat(snap.data().balance || 0);
-      if (liveBalance < userAmount) throw new Error('Insufficient balance (live check).');
+      const userAvail = liveBalance - (lockedBalance || 0);
+      if (userAvail < userAmount) throw new Error('Insufficient available balance (live check).');
 
       const currentBots = snap.data().activatedBots || [];
       const record = {
@@ -636,6 +638,7 @@ export const VIP = () => {
           <ConfirmModal
             bot={selectedBot}
             balance={balance || 0}
+            availableBalance={availableBalance || 0}
             loading={activating}
             onClose={() => setSelectedBot(null)}
             onConfirm={handleConfirm}

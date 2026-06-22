@@ -126,7 +126,7 @@ const PendingProgressBlocker = ({ tx }) => {
 };
 
 export const Transfer = () => {
-  const { currentUser, balance } = useAuth();
+  const { currentUser, balance, availableBalance } = useAuth();
   const { formatCurrency, convertAndFormatCurrency, symbol } = useCurrency();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -198,12 +198,12 @@ export const Transfer = () => {
         triggerShake();
         return setErrorMsg('Minimum transfer amount is ' + formatCurrency(5));
     }
-    if (totalDeduction > balance) {
+    if (totalDeduction > availableBalance) {
         triggerShake();
         return setErrorMsg(
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ color: 'var(--danger)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>INSUFFICIENT BALANCE</div>
-              <div>Your Main Balance is <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(balance)}</span>.</div>
+              <div style={{ color: 'var(--danger)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>INSUFFICIENT AVAILABLE BALANCE</div>
+              <div>Your Available Balance is <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(availableBalance)}</span>.</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Amount + 5% Fee ({formatCurrency(fee)}) = {formatCurrency(totalDeduction)}</div>
             </div>
         );
@@ -368,7 +368,7 @@ export const Transfer = () => {
                       style={{ paddingLeft: '32px', width: '100%', boxSizing: 'border-box' }}
                     />
                     <button 
-                      onClick={() => setAmount((balance / 1.05).toFixed(2).toString())}
+                      onClick={() => setAmount((availableBalance / 1.05).toFixed(2).toString())}
                       style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                     >
                       MAX
