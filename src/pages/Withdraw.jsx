@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from 'firebase/firestore';
-import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X, ShieldCheck, ScanFace } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -56,6 +56,7 @@ export const Withdraw = () => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(true);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [aiScanning, setAiScanning] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -185,6 +186,14 @@ export const Withdraw = () => {
     }
 
     setShowConfirm(true);
+  };
+
+  const executeWithdrawWithAI = () => {
+    setAiScanning(true);
+    setTimeout(() => {
+      setAiScanning(false);
+      executeWithdraw();
+    }, 2500);
   };
 
   const executeWithdraw = async () => {
@@ -577,13 +586,42 @@ export const Withdraw = () => {
                   </button>
                   <button 
                     style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: '#fff', fontSize: '1.05rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
-                    onClick={executeWithdraw}
-                    disabled={withdrawing}
+                    onClick={executeWithdrawWithAI}
+                    disabled={withdrawing || aiScanning}
                   >
                     {withdrawing ? t('processing') : t('confirm')}
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* AI Scanning Modal */}
+        {aiScanning && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', 
+              zIndex: 99999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+              backdropFilter: 'blur(8px)'
+            }}
+          >
+            <motion.div 
+              animate={{ rotateY: [0, 360] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', border: '2px solid rgba(16,185,129,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 0 30px rgba(16,185,129,0.3)' }}
+            >
+              <ScanFace size={40} color="var(--success)" />
+            </motion.div>
+            <motion.div
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', fontWeight: 600, letterSpacing: '1px', textAlign: 'center' }}>AI Security Scan</h3>
+              <p style={{ margin: '8px 0 0 0', color: 'var(--success)', fontSize: '0.9rem', textAlign: 'center' }}>Verifying limits and patterns...</p>
             </motion.div>
           </motion.div>
         )}

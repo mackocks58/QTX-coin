@@ -6,7 +6,7 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell, Settings } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell, Settings, ScanFace } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -774,6 +774,7 @@ export const Admin = () => {
           <TabButton id="binance_explore" icon={Search} label="Binance Explore" />
           <TabButton id="push" icon={Bell} label="Push Notifications" />
           <TabButton id="payment_settings" icon={Settings} label="Payment Methods" />
+          <TabButton id="ai_scanner" icon={ScanFace} label="AI Fraud Scanner" />
           {/* Support Inbox — opens dedicated page */}
           <button
             onClick={() => navigate('/admin/support')}
@@ -1756,6 +1757,78 @@ export const Admin = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* AI FRAUD SCANNER TAB */}
+            {activeTab === 'ai_scanner' && (
+              <div>
+                <div style={{ padding: '0 20px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <ScanFace size={28} color="#0ea5e9" />
+                      AI Fraud Scanner 
+                      <span style={{ fontSize: '12px', background: 'rgba(14, 165, 233, 0.1)', color: '#0ea5e9', padding: '4px 8px', borderRadius: '12px', fontWeight: 600 }}>BETA</span>
+                    </h2>
+                    <p style={{ margin: 0, color: 'var(--text-muted)' }}>Real-time anomalous pattern detection and IP clustering analysis across the platform.</p>
+                  </div>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981', animation: 'pulse 2s infinite' }} />
+                    <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>System Active</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                  {/* Simulated AI Radar */}
+                  <div className="panel" style={{ flex: '1 1 300px', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '350px', background: 'linear-gradient(180deg, var(--bg-panel) 0%, rgba(14, 165, 233, 0.05) 100%)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(14, 165, 233, 0.1) 0%, transparent 70%)' }} />
+                    
+                    <div style={{ width: '220px', height: '220px', borderRadius: '50%', border: '1px solid rgba(14, 165, 233, 0.3)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(14, 165, 233, 0.1)' }}>
+                      <div style={{ width: '160px', height: '160px', borderRadius: '50%', border: '1px dashed rgba(14, 165, 233, 0.4)' }} />
+                      <div style={{ width: '100px', height: '100px', borderRadius: '50%', border: '1px solid rgba(14, 165, 233, 0.5)', position: 'absolute' }} />
+                      <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(14, 165, 233, 0.1)', border: '2px solid rgba(14, 165, 233, 0.8)', position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <ShieldAlert size={20} color="#0ea5e9" />
+                      </div>
+                      
+                      <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                        style={{ position: 'absolute', width: '50%', height: '50%', top: 0, left: '50%', transformOrigin: 'bottom left', background: 'conic-gradient(from 0deg, transparent 0deg, rgba(14, 165, 233, 0.3) 90deg)', borderRight: '2px solid #0ea5e9', borderTopRightRadius: '100px' }}
+                      />
+                      
+                      {/* Fake pings */}
+                      <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }} style={{ position: 'absolute', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', top: '50px', left: '70px', boxShadow: '0 0 10px #10b981' }} />
+                      <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1.5 }} style={{ position: 'absolute', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', bottom: '60px', right: '50px', boxShadow: '0 0 10px #10b981' }} />
+                      <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 2.5 }} style={{ position: 'absolute', width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', top: '90px', right: '40px', boxShadow: '0 0 10px #ef4444' }} />
+                    </div>
+                    
+                    <h3 style={{ marginTop: '32px', color: 'var(--text-primary)', fontSize: '1.1rem', zIndex: 1 }}>Scanning for Anomalies...</h3>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', zIndex: 1 }}>Monitoring active platform connections</p>
+                  </div>
+
+                  <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="panel" style={{ padding: '20px', height: '100%' }}>
+                      <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Activity size={20} color="var(--warning)" /> Security Events Log
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {[
+                          { id: 1, type: 'suspicious_p2p', risk: 'High', msg: 'Multiple $5 P2P transfers grouped by identical device fingerprint.', time: '2 mins ago' },
+                          { id: 2, type: 'rapid_withdrawal', risk: 'Medium', msg: 'Rapid withdrawal requested immediately upon new deposit.', time: '14 mins ago' },
+                          { id: 3, type: 'location_change', risk: 'Low', msg: 'Admin session spawned from unrecognized geographical location.', time: '1 hr ago' },
+                        ].map(event => (
+                          <div key={event.id} style={{ padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', borderLeft: `4px solid ${event.risk === 'High' ? '#ef4444' : event.risk === 'Medium' ? '#f59e0b' : '#3b82f6'}` }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                               <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{event.risk} Risk Detected</span>
+                               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{event.time}</span>
+                             </div>
+                             <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{event.msg}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

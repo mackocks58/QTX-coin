@@ -182,6 +182,33 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [hasBiometric, setHasBiometric] = useState(false);
+  const [lockoutRemainingMs, setLockoutRemainingMs] = useState(0);
+
+  // Lockout helpers
+  const LOCKOUT_KEY = 'qtx_login_fails';
+  const LOCKOUT_UNTIL_KEY = 'qtx_login_locked_until';
+  const MAX_FAILS = 5;
+  const LOCKOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+  const getLockoutRemaining = () => {
+    const until = parseInt(localStorage.getItem(LOCKOUT_UNTIL_KEY) || '0', 10);
+    const remaining = until - Date.now();
+    return remaining > 0 ? remaining : 0;
+  };
+
+  const formatCountdown = (ms) => {
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Live countdown timer
+  useEffect(() => {
+    const tick = () => setLockoutRemainingMs(getLockoutRemaining());
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const checkBiometric = async () => {
@@ -257,6 +284,12 @@ export const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check active lockout
+    const remaining = getLockoutRemaining();
+    if (remaining > 0) {
+      return toast.error(`Account locked. Try again in ${formatCountdown(remaining)}.`, { duration: 4000 });
+    }
+
     if (!phone || !password || (!isLogin && !country)) {
       playErrorSound();
       triggerShake();
@@ -291,6 +324,9 @@ export const Login = () => {
 
       if (isLogin) {
         await login(authEmail, password);
+        // Clear fail counter on success
+        localStorage.removeItem(LOCKOUT_KEY);
+        localStorage.removeItem(LOCKOUT_UNTIL_KEY);
         
         try {
           const { Capacitor } = await import('@capacitor/core');
@@ -337,6 +373,19 @@ export const Login = () => {
       }
 
       toast.error(friendlyMessage);
+      // Track failed login attempts (only for login, not signup)
+      if (isLogin) {
+        const fails = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0', 10) + 1;
+        localStorage.setItem(LOCKOUT_KEY, fails);
+        if (fails >= MAX_FAILS) {
+          const until = Date.now() + LOCKOUT_MS;
+          localStorage.setItem(LOCKOUT_UNTIL_KEY, until);
+          localStorage.removeItem(LOCKOUT_KEY);
+          toast.error('🔒 Account locked for 10 minutes due to too many failed attempts.', { duration: 6000 });
+        } else {
+          toast(`${MAX_FAILS - fails} attempt(s) remaining before lockout.`, { icon: '⚠️', duration: 3000 });
+        }
+      }
     }
     setLoading(false);
   };
@@ -455,7 +504,16 @@ export const Login = () => {
           </motion.h3>
         )}
         
-        <form onSubmit={handleSubmit}>
+        {/* Lockout Banner */}
+        {lockoutRemainingMs > 0 && (
+          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '13px', color: 'var(--danger)', fontWeight: 600, marginBottom: '8px' }}>🔒 Too many failed attempts</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--danger)', fontFamily: 'monospace', letterSpacing: '4px' }}>{formatCountdown(lockoutRemainingMs)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>minutes : seconds remaining</div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ opacity: lockoutRemainingMs > 0 ? 0.45 : 1, pointerEvents: lockoutRemainingMs > 0 ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
           <div style={{ display: 'flex', background: 'var(--border)', padding: '4px', borderRadius: 'var(--radius-md)', marginBottom: '16px' }}>
             <button 
               type="button"
@@ -533,8 +591,8 @@ export const Login = () => {
             </div>
 
           
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
-            {loading ? t('processing') : (isLogin ? t('signInBtn') : t('registerLabel'))}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading || lockoutRemainingMs > 0}>
+            {lockoutRemainingMs > 0 ? `Locked • ${formatCountdown(lockoutRemainingMs)}` : (loading ? t('processing') : (isLogin ? t('signInBtn') : t('registerLabel')))}
           </button>
           
           {isLogin && hasBiometric && (

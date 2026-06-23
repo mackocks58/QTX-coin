@@ -5,8 +5,8 @@ import { db } from '../firebase';
 import { X, CheckCircle } from 'lucide-react';
 import { useCurrency } from '../hooks/useCurrency';
 
-// Country codes for flags
-const FLAGS = ['ng', 'za', 'ke', 'gh', 'zw', 'tz', 'ug'];
+// Country codes for flags matching Login.jsx
+const FLAGS = ['zw', 'mz', 'tz', 'ug', 'bw', 'cd', 'zm', 'bi', 'gh', 'ng', 'ke'];
 
 // Helper to anonymize email or create a random name
 const generateName = (uid) => {

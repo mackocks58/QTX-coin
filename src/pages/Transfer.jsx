@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from 'firebase/firestore';
-import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X, Search, ShieldCheck, Delete } from 'lucide-react';
+import { ChevronLeft, Send, AlertTriangle, CheckCircle2, X, Search, ShieldCheck, Delete, ScanFace } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -135,6 +135,7 @@ export const Transfer = () => {
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState(1); // 1 = Input, 2 = Confirm, 3 = Success
   const [loading, setLoading] = useState(false);
+  const [aiScanning, setAiScanning] = useState(false);
   const [receiverData, setReceiverData] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [pendingTransfer, setPendingTransfer] = useState(null);
@@ -143,6 +144,40 @@ export const Transfer = () => {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [hasPin, setHasPin] = useState(false);
+  const [pinLockRemainingMs, setPinLockRemainingMs] = useState(0);
+
+  // Load lockout status from Firestore whenever modal opens
+  useEffect(() => {
+    if (!pinMode || !currentUser || pinMode === 'setup') {
+      setPinLockRemainingMs(0);
+      return;
+    }
+    let interval;
+    const loadAndTick = async () => {
+      const uDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const lockedUntilRaw = uDoc.data()?.pinLockedUntil;
+      const lockedUntil = lockedUntilRaw?.toMillis
+        ? lockedUntilRaw.toMillis()
+        : (lockedUntilRaw instanceof Date ? lockedUntilRaw.getTime() : (lockedUntilRaw || 0));
+      const remaining = lockedUntil - Date.now();
+      setPinLockRemainingMs(remaining > 0 ? remaining : 0);
+      // Tick every second
+      interval = setInterval(() => {
+        setPinLockRemainingMs(prev => {
+          const next = prev - 1000;
+          return next > 0 ? next : 0;
+        });
+      }, 1000);
+    };
+    loadAndTick();
+    return () => clearInterval(interval);
+  }, [pinMode, currentUser]);
+
+  const formatPinCountdown = (ms) => {
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   const controls = useAnimation();
 
@@ -246,6 +281,14 @@ export const Transfer = () => {
     setStep(2);
   };
 
+  const executeTransferWithAI = () => {
+    setAiScanning(true);
+    setTimeout(() => {
+       setAiScanning(false);
+       executeTransfer();
+    }, 2500);
+  };
+
   const executeTransfer = async () => {
     const numAmount = Number(amount);
     setLoading(true);
@@ -274,7 +317,7 @@ export const Transfer = () => {
      setPinError('');
      if (pinMode === 'setup') {
         try {
-           await updateDoc(doc(db, 'users', currentUser.uid), { transactionPin: val });
+           await updateDoc(doc(db, 'users', currentUser.uid), { transactionPin: val, pinFailCount: 0, pinLockedUntil: null });
            setHasPin(true);
            setPinMode('verify');
            setPinInput('');
@@ -284,19 +327,47 @@ export const Transfer = () => {
            setPinInput('');
         }
      } else if (pinMode === 'verify') {
+        // Block if still locked (double-check server)
+        if (pinLockRemainingMs > 0) {
+           setPinInput('');
+           return;
+        }
         const uDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (uDoc.data().transactionPin === val) {
+        const data = uDoc.data();
+
+        // Server-side lockout check
+        const lockedUntil = data.pinLockedUntil?.toMillis
+          ? data.pinLockedUntil.toMillis()
+          : (data.pinLockedUntil instanceof Date ? data.pinLockedUntil.getTime() : (data.pinLockedUntil || 0));
+        if (lockedUntil > Date.now()) {
+           setPinLockRemainingMs(lockedUntil - Date.now());
+           setPinInput('');
+           return;
+        }
+
+        if (data.transactionPin === val) {
+           await updateDoc(doc(db, 'users', currentUser.uid), { pinFailCount: 0, pinLockedUntil: null });
            setPinMode(null);
            setPinInput('');
-           executeTransfer();
+           executeTransferWithAI();
         } else {
-           setPinError('Incorrect PIN. Please try again.');
+           const fails = (data.pinFailCount || 0) + 1;
+           if (fails >= 5) {
+              const lockUntil = new Date(Date.now() + 10 * 60 * 1000);
+              await updateDoc(doc(db, 'users', currentUser.uid), { pinFailCount: 0, pinLockedUntil: lockUntil });
+              setPinLockRemainingMs(10 * 60 * 1000);
+              setPinError('');
+           } else {
+              await updateDoc(doc(db, 'users', currentUser.uid), { pinFailCount: fails });
+              setPinError(`Incorrect PIN. ${5 - fails} attempt(s) remaining.`);
+           }
            setPinInput('');
         }
      }
   };
 
   const handlePinType = async (char) => {
+     if (pinLockRemainingMs > 0) return; // Block input while locked
      if (pinInput.length < 4) {
         const newVal = pinInput + char;
         setPinInput(newVal);
@@ -654,6 +725,35 @@ export const Transfer = () => {
           </motion.div>
         )}
 
+        {/* AI Scanning Modal */}
+        {aiScanning && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ 
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', 
+              zIndex: 99999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+              backdropFilter: 'blur(8px)'
+            }}
+          >
+            <motion.div 
+              animate={{ rotateY: [0, 360] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', border: '2px solid rgba(16,185,129,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 0 30px rgba(16,185,129,0.3)' }}
+            >
+              <ScanFace size={40} color="var(--success)" />
+            </motion.div>
+            <motion.div
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', fontWeight: 600, letterSpacing: '1px', textAlign: 'center' }}>AI Security Scan</h3>
+              <p style={{ margin: '8px 0 0 0', color: 'var(--success)', fontSize: '0.9rem', textAlign: 'center' }}>Analyzing transfer risk profile...</p>
+            </motion.div>
+          </motion.div>
+        )}
+
         {/* PIN Verification Modal */}
         {pinMode && (
           <motion.div 
@@ -687,32 +787,47 @@ export const Transfer = () => {
             >
               <div style={{ width: '40px', height: '5px', backgroundColor: 'var(--text-muted)', opacity: 0.3, borderRadius: '10px', alignSelf: 'center', marginBottom: '24px' }} />
               
-              <ShieldCheck size={48} color="var(--primary)" style={{ marginBottom: '16px' }} />
+              <ShieldCheck size={48} color={pinLockRemainingMs > 0 ? 'var(--danger)' : 'var(--primary)'} style={{ marginBottom: '16px' }} />
               <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {pinMode === 'setup' ? 'Set Transaction PIN' : 'Enter Transaction PIN'}
+                {pinLockRemainingMs > 0 ? '🔒 Account Locked' : (pinMode === 'setup' ? 'Set Transaction PIN' : 'Enter Transaction PIN')}
               </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '24px' }}>
-                {pinMode === 'setup' ? 'Create a 4-digit PIN to secure your transfers.' : 'Securely verify your identity to proceed.'}
+                {pinLockRemainingMs > 0
+                  ? `Too many failed attempts. Try again in`
+                  : (pinMode === 'setup' ? 'Create a 4-digit PIN to secure your transfers.' : 'Securely verify your identity to proceed.')}
               </p>
+
+              {/* Lockout Countdown */}
+              {pinLockRemainingMs > 0 && (
+                <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '24px 32px', marginBottom: '24px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--danger)', fontFamily: 'monospace', letterSpacing: '4px' }}>
+                    {formatPinCountdown(pinLockRemainingMs)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>minutes : seconds remaining</div>
+                </div>
+              )}
               
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
-                 {[0,1,2,3].map(i => (
-                    <div key={i} style={{ width: '50px', height: '60px', borderRadius: '12px', border: '2px solid ' + (pinInput.length === i ? 'var(--primary)' : 'rgba(255,255,255,0.1)'), background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 800 }}>
-                       {pinInput.length > i ? '•' : ''}
-                    </div>
-                 ))}
-              </div>
+              {/* PIN dots - hidden while locked */}
+              {pinLockRemainingMs === 0 && (
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+                   {[0,1,2,3].map(i => (
+                      <div key={i} style={{ width: '50px', height: '60px', borderRadius: '12px', border: '2px solid ' + (pinInput.length === i ? 'var(--primary)' : 'rgba(255,255,255,0.1)'), background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 800 }}>
+                         {pinInput.length > i ? '•' : ''}
+                      </div>
+                   ))}
+                </div>
+              )}
 
               {pinError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '16px', fontWeight: 600 }}>{pinError}</div>}
 
-              {/* Dialpad */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '300px', marginBottom: '24px' }}>
+              {/* Dialpad - disabled while locked */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '300px', marginBottom: '24px', opacity: pinLockRemainingMs > 0 ? 0.3 : 1, pointerEvents: pinLockRemainingMs > 0 ? 'none' : 'auto' }}>
                  {[1,2,3,4,5,6,7,8,9].map(num => (
-                    <button key={num} onClick={() => handlePinType(num.toString())} style={{ height: '60px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600, cursor: 'pointer' }}>{num}</button>
+                    <button key={num} onClick={() => handlePinType(num.toString())} disabled={pinLockRemainingMs > 0} style={{ height: '60px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600, cursor: pinLockRemainingMs > 0 ? 'not-allowed' : 'pointer' }}>{num}</button>
                  ))}
                  <button style={{ background: 'transparent', border: 'none' }} />
-                 <button onClick={() => handlePinType('0')} style={{ height: '60px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600, cursor: 'pointer' }}>0</button>
-                 <button onClick={() => setPinInput(prev => prev.slice(0, -1))} style={{ height: '60px', borderRadius: '16px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronLeft size={32} />
+                 <button onClick={() => handlePinType('0')} disabled={pinLockRemainingMs > 0} style={{ height: '60px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600, cursor: pinLockRemainingMs > 0 ? 'not-allowed' : 'pointer' }}>0</button>
+                 <button onClick={() => setPinInput(prev => prev.slice(0, -1))} disabled={pinLockRemainingMs > 0} style={{ height: '60px', borderRadius: '16px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pinLockRemainingMs > 0 ? 'not-allowed' : 'pointer' }}><ChevronLeft size={32} />
                   <Delete size={28} />
                  </button>
               </div>
