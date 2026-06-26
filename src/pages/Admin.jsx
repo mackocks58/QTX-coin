@@ -51,6 +51,10 @@ export const Admin = () => {
   const [p2pConfirmModal, setP2pConfirmModal] = useState({ isOpen: false, transfer: null, action: null, loading: false });
   const [paymentLoading, setPaymentLoading] = useState(false);
 
+  // System Settings state (Page blocking)
+  const [systemSettings, setSystemSettings] = useState({ vipBotBlocked: false, vipBotMessage: 'This page is currently unaccessible', myBotsBlocked: false, myBotsMessage: 'This page is currently unaccessible' });
+  const [systemLoading, setSystemLoading] = useState(false);
+
   const TRC20_ADDRESS = import.meta.env.VITE_USDT_ADDRESS || 'TBteWdQZAdWJzXCaa61dogDFVNH8pSA88J';
   const BSC_ADDRESS = import.meta.env.VITE_BSC_ADDRESS || '0x66922e6229f9501319aa4425f4cd53773fc66a91';
 
@@ -128,6 +132,7 @@ export const Admin = () => {
       if (activeTab === 'users') fetchUsersList();
       if (activeTab === 'p2p_transfers') { fetchTransfers(); fetchTransferSettings(); }
       if (activeTab === 'payment_settings') fetchPaymentSettings();
+      if (activeTab === 'system_settings') fetchSystemSettings();
       if (activeTab === 'binance_explore' && !allTxnsLoaded) fetchAllTxns();
     }
   }, [isAdmin, activeTab]);
@@ -175,6 +180,33 @@ export const Admin = () => {
       toast.error('Failed to load payment settings');
     }
     setPaymentLoading(false);
+  };
+
+  const fetchSystemSettings = async () => {
+    setSystemLoading(true);
+    try {
+      const docRef = doc(db, 'settings', 'system');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        setSystemSettings(snap.data());
+      } else {
+        const defaultSettings = { vipBotBlocked: false, vipBotMessage: 'This page is currently unaccessible', myBotsBlocked: false, myBotsMessage: 'This page is currently unaccessible' };
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(docRef, defaultSettings);
+        setSystemSettings(defaultSettings);
+      }
+    } catch(e) { toast.error("Failed to load system settings. " + e.message); }
+    setSystemLoading(false);
+  };
+
+  const saveSystemSettings = async () => {
+    setSystemLoading(true);
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'settings', 'system'), systemSettings);
+      toast.success('System settings saved');
+    } catch(e) { toast.error('Failed to save system settings'); }
+    setSystemLoading(false);
   };
 
   const savePaymentSettings = async () => {
@@ -774,6 +806,7 @@ export const Admin = () => {
           <TabButton id="binance_explore" icon={Search} label="Binance Explore" />
           <TabButton id="push" icon={Bell} label="Push Notifications" />
           <TabButton id="payment_settings" icon={Settings} label="Payment Methods" />
+          <TabButton id="system_settings" icon={ShieldAlert} label="Page Access Controls" />
           <TabButton id="ai_scanner" icon={ScanFace} label="AI Fraud Scanner" />
           {/* Support Inbox — opens dedicated page */}
           <button
@@ -1761,6 +1794,8 @@ export const Admin = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
 
             {/* AI FRAUD SCANNER TAB */}
             {activeTab === 'ai_scanner' && (
@@ -1833,8 +1868,101 @@ export const Admin = () => {
                 </div>
               </div>
             )}
-          </div>
-        )}
+
+            {/* SYSTEM SETTINGS TAB */}
+            {activeTab === 'system_settings' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', color: 'var(--text-primary)' }}>
+                  <h2 style={{ fontSize: '20px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                    <ShieldAlert size={20} color="var(--primary)" /> Page Access Controls
+                  </h2>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={fetchSystemSettings} className="btn" style={{ padding: '8px 16px', background: 'var(--bg-panel)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Activity size={16} /> Refresh
+                    </button>
+                    <button onClick={saveSystemSettings} className="btn btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }} disabled={systemLoading}>
+                      <Save size={16} /> {systemLoading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="panel" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '16px', marginBottom: '16px', color: 'var(--text-primary)' }}>VIP Bots Page Control</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Block VIP Bots Page</p>
+                          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>If enabled, users will see the message below instead of the VIP Bots page content.</p>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={systemSettings?.vipBotBlocked || false}
+                            onChange={(e) => setSystemSettings({...systemSettings, vipBotBlocked: e.target.checked})}
+                            style={{ opacity: 0, width: 0, height: 0 }} 
+                          />
+                          <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: systemSettings?.vipBotBlocked ? '#EF4444' : '#4B5563', transition: '.4s', borderRadius: '34px' }}>
+                            <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: systemSettings?.vipBotBlocked ? '26px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                          </span>
+                        </label>
+                      </div>
+                      
+                      {systemSettings?.vipBotBlocked && (
+                        <div className="input-group" style={{ marginBottom: 0 }}>
+                          <label style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Block Message</label>
+                          <textarea 
+                            className="input-field" 
+                            rows="2"
+                            value={systemSettings?.vipBotMessage || ''} 
+                            onChange={(e) => setSystemSettings({...systemSettings, vipBotMessage: e.target.value})}
+                            placeholder="e.g. This page is currently unaccessible."
+                            style={{ resize: 'vertical' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '16px', marginBottom: '16px', color: 'var(--text-primary)' }}>My Bots Page Control</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Block My Bots Page</p>
+                          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>If enabled, users will see the message below instead of the My Bots page content.</p>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={systemSettings?.myBotsBlocked || false}
+                            onChange={(e) => setSystemSettings({...systemSettings, myBotsBlocked: e.target.checked})}
+                            style={{ opacity: 0, width: 0, height: 0 }} 
+                          />
+                          <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: systemSettings?.myBotsBlocked ? '#EF4444' : '#4B5563', transition: '.4s', borderRadius: '34px' }}>
+                            <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: systemSettings?.myBotsBlocked ? '26px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                          </span>
+                        </label>
+                      </div>
+                      
+                      {systemSettings?.myBotsBlocked && (
+                        <div className="input-group" style={{ marginBottom: 0 }}>
+                          <label style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Block Message</label>
+                          <textarea 
+                            className="input-field" 
+                            rows="2"
+                            value={systemSettings?.myBotsMessage || ''} 
+                            onChange={(e) => setSystemSettings({...systemSettings, myBotsMessage: e.target.value})}
+                            placeholder="e.g. This page is currently unaccessible."
+                            style={{ resize: 'vertical' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
       </div>
     </div>

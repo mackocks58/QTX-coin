@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -486,7 +486,26 @@ export const VIP = () => {
   const [activating, setActivating] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [successData, setSuccessData] = useState(null);
+  const [pageConfig, setPageConfig] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
   const activatedBots = userData?.activatedBots || [];
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'system'));
+        if (snap.exists() && snap.data().vipBotBlocked) {
+          setPageConfig({ blocked: true, message: snap.data().vipBotMessage || 'This page is currently unaccessible' });
+        } else {
+          setPageConfig({ blocked: false });
+        }
+      } catch (e) {
+        setPageConfig({ blocked: false });
+      }
+      setPageLoading(false);
+    };
+    checkAccess();
+  }, []);
 
   const handleConfirm = async (bot, userAmount, errorMessage) => {
     if (errorMessage) {
@@ -584,7 +603,19 @@ export const VIP = () => {
         </div>
       </div>
 
-      {/* ── Golden tab switcher ── */}
+      {pageLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+          <Activity size={32} color="var(--primary)" className="animate-spin" />
+        </div>
+      ) : pageConfig?.blocked ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center', background: 'var(--bg-panel)', borderRadius: '16px', border: '1px dashed var(--danger)' }}>
+          <AlertTriangle size={48} color="var(--danger)" style={{ marginBottom: '16px' }} />
+          <h3 style={{ fontSize: '18px', color: '#fff', marginBottom: '8px' }}>Access Restricted</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>{pageConfig.message}</p>
+        </div>
+      ) : (
+        <>
+          {/* ── Golden tab switcher ── */}
       <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '4px', borderRadius: '14px', marginBottom: '20px', border: '1px solid rgba(212,175,55,0.25)', gap: '4px' }}>
         <button style={tabStyle('bots')}   onClick={() => setActiveTab('bots')}>
           {t('botMarketplace')}
@@ -716,6 +747,8 @@ export const VIP = () => {
           </div>
         )}
       </AnimatePresence>
+      </>
+      )}
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }

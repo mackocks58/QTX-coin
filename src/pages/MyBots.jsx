@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Bot, Crown, Clock, TrendingUp, AlertTriangle, Activity, CheckCircle2, BadgeCheck, ChevronLeft, Zap, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { scheduleBotNotifications } from '../services/botNotifications';
 import { useCurrency } from '../hooks/useCurrency';
 
@@ -203,6 +203,25 @@ export const MyBots = () => {
   const activatedBots = userData?.activatedBots || [];
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pageConfig, setPageConfig] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'system'));
+        if (snap.exists() && snap.data().myBotsBlocked) {
+          setPageConfig({ blocked: true, message: snap.data().myBotsMessage || 'This page is currently unaccessible' });
+        } else {
+          setPageConfig({ blocked: false });
+        }
+      } catch (e) {
+        setPageConfig({ blocked: false });
+      }
+      setPageLoading(false);
+    };
+    checkAccess();
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -260,6 +279,18 @@ export const MyBots = () => {
         </div>
       </div>
 
+      {pageLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+          <Activity size={32} color="var(--primary)" className="animate-spin" />
+        </div>
+      ) : pageConfig?.blocked ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center', background: 'var(--bg-panel)', borderRadius: '16px', border: '1px dashed var(--danger)' }}>
+          <AlertTriangle size={48} color="var(--danger)" style={{ marginBottom: '16px' }} />
+          <h3 style={{ fontSize: '18px', color: '#fff', marginBottom: '8px' }}>Access Restricted</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>{pageConfig.message}</p>
+        </div>
+      ) : (
+        <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {activatedBots.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: 'var(--text-muted)' }}>
@@ -310,6 +341,8 @@ export const MyBots = () => {
           </div>
         )}
       </div>
+      </>
+      )}
 
       <style>{`
         @keyframes pulse {
