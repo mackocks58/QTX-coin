@@ -126,7 +126,7 @@ const PendingProgressBlocker = ({ tx }) => {
 };
 
 export const Transfer = () => {
-  const { currentUser, balance, availableBalance } = useAuth();
+  const { currentUser, balance, availableBalance, userData } = useAuth();
   const { formatCurrency, convertAndFormatCurrency, symbol } = useCurrency();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -376,6 +376,33 @@ export const Transfer = () => {
         }
      }
   };
+
+  if (userData?.country === 'Tanzania') {
+    return (
+      <motion.div 
+        className="page-content"
+        initial={{ opacity: 0, y: 10 }}
+        animate={controls}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3 }}
+        style={{ padding: '16px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <div style={{ position: 'absolute', top: 16, left: 16 }}>
+          <button 
+            onClick={() => navigate(-1)}
+            style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <ChevronLeft size={20} />
+          </button>
+        </div>
+        <AlertTriangle size={64} color="var(--danger)" style={{ marginBottom: '16px', marginTop: '64px' }} />
+        <h2 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '24px' }}>Access Denied</h2>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', maxWidth: '300px' }}>
+          P2P transfer is not allowed in your region.
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <>
