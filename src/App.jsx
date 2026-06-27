@@ -32,6 +32,7 @@ import { Support } from './pages/Support';
 import { AdminSupport } from './pages/AdminSupport';
 import { Careers } from './pages/Careers';
 import { TopReferrers } from './pages/TopReferrers';
+import { AdminUsers } from './pages/AdminUsers';
 import { useCurrency } from './hooks/useCurrency';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { App as CapApp } from '@capacitor/app';
@@ -424,6 +425,7 @@ function AppContent() {
             <Route path="/admin/support" element={<PrivateRoute><AdminSupport /></PrivateRoute>} />
             <Route path="/careers" element={<PrivateRoute><Careers /></PrivateRoute>} />
             <Route path="/top-referrers" element={<PrivateRoute><TopReferrers /></PrivateRoute>} />
+            <Route path="/admin/users-details" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
           </Routes>
         </AnimatePresence>
       </main>

@@ -840,6 +840,9 @@ export const Admin = () => {
               <tab.icon size={16} />{tab.label}
             </button>
           ))}
+          <button onClick={() => navigate('/admin/users-details')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '6px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--primary)', fontSize: '9px', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <Activity size={16} />All Data
+          </button>
           <button onClick={() => navigate('/admin/support')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '6px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'transparent', color: '#10b981', fontSize: '9px', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>
             <MessageSquare size={16} />Support
           </button>
@@ -862,6 +865,9 @@ export const Admin = () => {
           <TabButton id="payment_settings" icon={Settings} label="Payment Methods" />
           <TabButton id="system_settings" icon={ShieldAlert} label="Page Access Controls" />
           <TabButton id="ai_scanner" icon={ScanFace} label="AI Fraud Scanner" />
+          <button onClick={() => navigate('/admin/users-details')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(37,99,235,0.1))', border: '1px solid rgba(59,130,246,0.3)', color: '#3b82f6', fontWeight: 600, fontSize: '14px', margin: '8px 12px 0', width: 'calc(100% - 24px)', textAlign: 'left' }}>
+            <Activity size={16} />Detailed Users
+          </button>
           <button onClick={() => navigate('/admin/support')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1))', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', fontWeight: 600, fontSize: '14px', margin: '8px 12px 0', width: 'calc(100% - 24px)', textAlign: 'left' }}>
             <MessageSquare size={16} />Support Inbox
           </button>
