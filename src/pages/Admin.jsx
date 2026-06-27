@@ -6,7 +6,7 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell, Settings, ScanFace } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, XCircle, Trash2, Copy, Send, Activity, Users, ArrowDownToLine, ArrowUpFromLine, LayoutDashboard, ChevronRight, Edit2, Save, X, Search, MessageSquare, Eye, Bell, Settings, ScanFace, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,15 @@ export const Admin = () => {
   const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [referralStats, setReferralStats] = useState([]);
+  const [referralStatsLoading, setReferralStatsLoading] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   
   const [stats, setStats] = useState({ totalUsers: 0, totalDeposits: 0, totalWithdrawals: 0 });
   const [withdrawals, setWithdrawals] = useState([]);
@@ -131,13 +140,35 @@ export const Admin = () => {
       if (activeTab === 'deposits') fetchDeposits();
       if (activeTab === 'users') fetchUsersList();
       if (activeTab === 'p2p_transfers') { fetchTransfers(); fetchTransferSettings(); }
+      if (activeTab === 'referrals') fetchReferralStats();
       if (activeTab === 'payment_settings') fetchPaymentSettings();
       if (activeTab === 'system_settings') fetchSystemSettings();
       if (activeTab === 'binance_explore' && !allTxnsLoaded) fetchAllTxns();
     }
   }, [isAdmin, activeTab]);
 
-  const fetchPaymentSettings = async () => {
+  const fetchReferralStats = async () => {
+    setReferralStatsLoading(true);
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const referrers = allUsers.filter(u => u.referralCode);
+      const result = await Promise.all(referrers.map(async (referrer) => {
+        const referred = allUsers.filter(u => u.referredByCode === referrer.referralCode);
+        const activeChecks = await Promise.all(referred.map(async (ref) => {
+          const depQ = query(collection(db, 'users', ref.id, 'transactions'), where('type', '==', 'deposit'), where('status', '==', 'SUCCESS'));
+          const depSnap = await getDocs(depQ);
+          return !depSnap.empty;
+        }));
+        const active = activeChecks.filter(Boolean).length;
+        return { id: referrer.id, name: referrer.fullName || referrer.email?.split('@')[0] || 'Unknown', email: referrer.email || '', referralCode: referrer.referralCode, total: referred.length, active, inactive: referred.length - active };
+      }));
+      setReferralStats(result.filter(u => u.total > 0).sort((a, b) => b.total - a.total));
+    } catch (e) { console.error(e); toast.error('Failed to load referral stats'); }
+    setReferralStatsLoading(false);
+  };
+
+    const fetchPaymentSettings = async () => {
     setPaymentLoading(true);
     try {
       const docRef = doc(db, 'settings', 'zwPayment');
@@ -695,7 +726,7 @@ export const Admin = () => {
   });
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 60px)', background: 'var(--bg-dark)' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: 'calc(100vh - 60px)', background: 'var(--bg-dark)' }}>
 
       {/* P2P Confirmation Modal */}
       <AnimatePresence>
@@ -790,16 +821,39 @@ export const Admin = () => {
         )}
       </AnimatePresence>
 
-      {/* Admin Sidebar */}
-      <div style={{ width: '250px', background: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '20px 0' }}>
+      {/* Admin Nav */}
+      {isMobile ? (
+        <div style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)', overflowX: 'auto', display: 'flex', padding: '6px 8px', gap: '4px', flexShrink: 0, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+          {[
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+            { id: 'users', icon: Users, label: 'Users' },
+            { id: 'referrals', icon: UserCheck, label: 'Referrals' },
+            { id: 'deposits', icon: ArrowDownToLine, label: 'Deposits' },
+            { id: 'withdrawals', icon: ArrowUpFromLine, label: 'Withdrawals' },
+            { id: 'p2p_transfers', icon: Send, label: 'P2P' },
+            { id: 'push', icon: Bell, label: 'Push' },
+            { id: 'payment_settings', icon: Settings, label: 'Payments' },
+            { id: 'system_settings', icon: ShieldAlert, label: 'Access' },
+            { id: 'ai_scanner', icon: ScanFace, label: 'AI Scan' },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '6px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: activeTab === tab.id ? 'rgba(59,130,246,0.15)' : 'transparent', color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)', fontSize: '9px', fontWeight: activeTab === tab.id ? 700 : 500, whiteSpace: 'nowrap', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent', flexShrink: 0 }}>
+              <tab.icon size={16} />{tab.label}
+            </button>
+          ))}
+          <button onClick={() => navigate('/admin/support')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '6px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'transparent', color: '#10b981', fontSize: '9px', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <MessageSquare size={16} />Support
+          </button>
+        </div>
+      ) : (
+      <div style={{ width: '220px', background: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0, overflowY: 'auto' }}>
         <div style={{ padding: '0 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShieldAlert size={20} color="var(--danger)" />
           <h2 style={{ fontSize: '16px', margin: 0, color: 'var(--danger)', fontWeight: 600 }}>Admin Portal</h2>
         </div>
-        
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <TabButton id="dashboard" icon={LayoutDashboard} label="Overview" />
           <TabButton id="users" icon={Users} label="Users Management" />
+          <TabButton id="referrals" icon={UserCheck} label="Referrals" />
           <TabButton id="deposits" icon={ArrowDownToLine} label="Deposits" />
           <TabButton id="withdrawals" icon={ArrowUpFromLine} label="Withdrawals" />
           <TabButton id="p2p_transfers" icon={Send} label="P2P Transfers" />
@@ -808,19 +862,15 @@ export const Admin = () => {
           <TabButton id="payment_settings" icon={Settings} label="Payment Methods" />
           <TabButton id="system_settings" icon={ShieldAlert} label="Page Access Controls" />
           <TabButton id="ai_scanner" icon={ScanFace} label="AI Fraud Scanner" />
-          {/* Support Inbox — opens dedicated page */}
-          <button
-            onClick={() => navigate('/admin/support')}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1))', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', fontWeight: 600, fontSize: '14px', margin: '8px 12px 0', width: 'calc(100% - 24px)', textAlign: 'left' }}
-          >
-            <MessageSquare size={16} />
-            Support Inbox
+          <button onClick={() => navigate('/admin/support')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1))', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', fontWeight: 600, fontSize: '14px', margin: '8px 12px 0', width: 'calc(100% - 24px)', textAlign: 'left' }}>
+            <MessageSquare size={16} />Support Inbox
           </button>
         </div>
       </div>
+      )}
 
       {/* Admin Content Area */}
-      <div style={{ flex: 1, padding: '24px', overflowY: 'auto', position: 'relative' }}>
+      <div style={{ flex: 1, padding: isMobile ? '12px' : '24px', overflowY: 'auto', position: 'relative', minWidth: 0 }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -1798,7 +1848,67 @@ export const Admin = () => {
         )}
 
             {/* AI FRAUD SCANNER TAB */}
-            {activeTab === 'ai_scanner' && (
+                        {activeTab === 'referrals' && (
+              <div>
+                <h2 style={{ fontSize: isMobile ? '18px' : '20px', fontWeight: 700, marginBottom: '8px' }}>Referrals Overview</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '20px' }}>All users with their total, active (made a deposit), and inactive referrals.</p>
+                {referralStatsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading referral data...</div>
+                ) : referralStats.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-panel)', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                    <UserCheck size={40} color="var(--text-muted)" style={{ marginBottom: '12px', display: 'block', margin: '0 auto 12px' }} />
+                    <p style={{ color: 'var(--text-muted)', margin: 0 }}>No referral data yet.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                      <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '14px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                        <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'var(--text-muted)' }}>Referrers</p>
+                        <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{referralStats.length}</p>
+                      </div>
+                      <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '14px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                        <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'var(--text-muted)' }}>Total Referred</p>
+                        <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: 'var(--warning)' }}>{referralStats.reduce((s, r) => s + r.total, 0)}</p>
+                      </div>
+                      <div style={{ background: 'var(--bg-panel)', borderRadius: '14px', padding: '14px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                        <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'var(--text-muted)' }}>Active</p>
+                        <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: 'var(--success)' }}>{referralStats.reduce((s, r) => s + r.active, 0)}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {referralStats.map((u, idx) => (
+                        <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
+                          style={{ background: 'var(--bg-panel)', borderRadius: '12px', padding: '12px 14px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', flexShrink: 0 }}>{idx + 1}</div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email} · Code: <span style={{ fontFamily: 'monospace', color: 'var(--primary)' }}>{u.referralCode}</span></div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '5px 10px' }}>
+                              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Total</div>
+                              <div style={{ fontSize: '15px', fontWeight: 800 }}>{u.total}</div>
+                            </div>
+                            <div style={{ textAlign: 'center', background: 'rgba(16,185,129,0.1)', borderRadius: '10px', padding: '5px 10px' }}>
+                              <div style={{ fontSize: '9px', color: 'var(--success)' }}>Active</div>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--success)' }}>{u.active}</div>
+                            </div>
+                            <div style={{ textAlign: 'center', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', padding: '5px 10px' }}>
+                              <div style={{ fontSize: '9px', color: 'var(--danger)' }}>Inactive</div>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--danger)' }}>{u.inactive}</div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+{activeTab === 'ai_scanner' && (
               <div>
                 <div style={{ padding: '0 20px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                   <div>
