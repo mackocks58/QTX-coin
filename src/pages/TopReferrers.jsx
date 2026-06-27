@@ -9,7 +9,7 @@ export const TopReferrers = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [topReferrers, setTopReferrers] = useState([]);
-    const REWARDS = [100, 50, 25];
+    const REWARDS = [15, 5, 3];
 
     useEffect(() => {
         calculateWeeklyReferrers();
