@@ -535,7 +535,10 @@ export const Admin = () => {
     try {
       await updateDoc(withdrawal.ref, { status: 'failed', failureReason: 'Rejected by Admin' });
       const userRef = doc(db, 'users', withdrawal.userId);
-      await updateDoc(userRef, { balance: increment(withdrawal.amount) });
+      const updateData = withdrawal.source === 'bonus' 
+        ? { welcomeBonus: increment(withdrawal.amount) }
+        : { balance: increment(withdrawal.amount) };
+      await updateDoc(userRef, updateData);
       toast.success('Rejected and refunded successfully');
       setWithdrawals(prev => prev.map(w => w.id === withdrawal.id ? { ...w, status: 'failed' } : w));
     } catch (error) {
