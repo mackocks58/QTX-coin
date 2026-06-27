@@ -97,7 +97,7 @@ export const AdminUsers = () => {
   }, [searchQuery, users]);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', padding: '20px' }}>
+    <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-dark)', padding: '20px', paddingBottom: '80px' }}>
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
         <button
