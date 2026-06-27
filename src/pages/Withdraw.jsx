@@ -125,7 +125,7 @@ export const Withdraw = () => {
     const depositsSnap = await getDocs(depositsQ);
     const hasApprovedDeposit = !depositsSnap.empty;
 
-    // Count users referred by this user
+    // Count ACTIVE referrals — only users who have at least one SUCCESS deposit
     const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
     const myReferralCode = userSnap.data()?.referralCode;
     let referralCount = 0;
@@ -135,7 +135,19 @@ export const Withdraw = () => {
         where('referredByCode', '==', myReferralCode)
       );
       const referralsSnap = await getDocs(referralsQ);
-      referralCount = referralsSnap.size;
+      // For each referred user, check they have at least 1 approved deposit
+      const activeChecks = await Promise.all(
+        referralsSnap.docs.map(async (refDoc) => {
+          const depQ = query(
+            collection(db, 'users', refDoc.id, 'transactions'),
+            where('type', '==', 'deposit'),
+            where('status', '==', 'SUCCESS')
+          );
+          const depSnap = await getDocs(depQ);
+          return !depSnap.empty;
+        })
+      );
+      referralCount = activeChecks.filter(Boolean).length;
     }
 
     const result = { approved: hasApprovedDeposit, referrals: referralCount };
