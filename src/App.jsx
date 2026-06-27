@@ -3,7 +3,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert, Check, Menu, Crown, Film, LineChart, Send } from 'lucide-react';
+import { Home, Pickaxe, History, Users, User, Globe, Bot, ShieldAlert, Check, Menu, Crown, Film, LineChart, Send, Briefcase, Star } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard';
 import { Wallet } from './pages/Wallet';
 import { Account } from './pages/Account';
@@ -30,6 +30,8 @@ import { Wealth } from './pages/Wealth';
 import { ChatEarn } from './pages/ChatEarn';
 import { Support } from './pages/Support';
 import { AdminSupport } from './pages/AdminSupport';
+import { Careers } from './pages/Careers';
+import { TopReferrers } from './pages/TopReferrers';
 import { useCurrency } from './hooks/useCurrency';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { App as CapApp } from '@capacitor/app';
@@ -84,9 +86,9 @@ const BottomNav = () => {
         <Send size={20} />
         <span>P2P</span>
       </Link>
-      <Link to="/trading" className={isActive('/trading')}>
-        <Pickaxe size={20} />
-        <span>Buy QTX</span>
+      <Link to="/careers" className={isActive('/careers')}>
+        <Briefcase size={20} />
+        <span>Careers</span>
       </Link>
       <Link to="/transactions" className={isActive('/transactions')}>
         <History size={20} />
@@ -194,6 +196,40 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
         >
           <Film size={20} />
           <span>Watch & Earn</span>
+        </Link>
+        <Link 
+          to="/careers" 
+          onClick={() => setSidebarOpen(false)}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px', 
+            padding: '12px 24px', 
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+            fontSize: '1rem'
+          }}
+          className="hover:bg-panel-hover"
+        >
+          <Briefcase size={20} />
+          <span>Careers</span>
+        </Link>
+        <Link 
+          to="/top-referrers" 
+          onClick={() => setSidebarOpen(false)}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px', 
+            padding: '12px 24px', 
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+            fontSize: '1rem'
+          }}
+          className="hover:bg-panel-hover"
+        >
+          <Star size={20} color="#FFD700" />
+          <span>Top Referrers</span>
         </Link>
       </div>
     </aside>
@@ -386,6 +422,8 @@ function AppContent() {
             <Route path="/wealth" element={<PrivateRoute><Wealth /></PrivateRoute>} />
             <Route path="/support" element={<PrivateRoute><Support /></PrivateRoute>} />
             <Route path="/admin/support" element={<PrivateRoute><AdminSupport /></PrivateRoute>} />
+            <Route path="/careers" element={<PrivateRoute><Careers /></PrivateRoute>} />
+            <Route path="/top-referrers" element={<PrivateRoute><TopReferrers /></PrivateRoute>} />
           </Routes>
         </AnimatePresence>
       </main>
