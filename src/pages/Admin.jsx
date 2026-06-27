@@ -432,7 +432,7 @@ export const Admin = () => {
   // User Handlers
   const handleEditClick = (user) => {
     setEditingUser(user);
-    setEditForm({ balance: user.balance || 0, miningBalance: user.miningBalance || 0 });
+    setEditForm({ balance: user.balance || 0, miningBalance: user.miningBalance || 0, welcomeBonus: user.welcomeBonus || 0 });
   };
 
   const handleSaveUser = async () => {
@@ -441,7 +441,8 @@ export const Admin = () => {
       const userRef = doc(db, 'users', editingUser.id);
       await updateDoc(userRef, {
         balance: parseFloat(editForm.balance) || 0,
-        miningBalance: parseFloat(editForm.miningBalance) || 0
+        miningBalance: parseFloat(editForm.miningBalance) || 0,
+        welcomeBonus: parseFloat(editForm.welcomeBonus) || 0
       });
       setUsersList(prev => prev.map(u => 
         u.id === editingUser.id 
