@@ -34,6 +34,7 @@ export const Admin = () => {
   // Search state
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [depositSearchQuery, setDepositSearchQuery] = useState('');
+  const [referralSearchQuery, setReferralSearchQuery] = useState('');
 
   // Edit user state
   const [editingUser, setEditingUser] = useState(null);
