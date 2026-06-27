@@ -959,6 +959,7 @@ export const Admin = () => {
                             <th style={{ padding: '12px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500 }}>Ref Code</th>
                             <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 500 }}>Main Bal.</th>
                             <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 500 }}>Mining Bal.</th>
+                            <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 500 }}>Welcome Bonus</th>
                             <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>Country</th>
                             <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500 }}>Actions</th>
                           </tr>
@@ -992,6 +993,14 @@ export const Admin = () => {
                                       style={{ width: '80px', padding: '4px 8px', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', textAlign: 'right' }}
                                     />
                                   </td>
+                                  <td style={{ padding: '12px', textAlign: 'right' }}>
+                                    <input 
+                                      type="number" 
+                                      value={editForm.welcomeBonus} 
+                                      onChange={(e) => setEditForm({...editForm, welcomeBonus: e.target.value})}
+                                      style={{ width: '80px', padding: '4px 8px', background: 'var(--bg-dark)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', textAlign: 'right' }}
+                                    />
+                                  </td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>{u.country || 'N/A'}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -1008,6 +1017,7 @@ export const Admin = () => {
                                 <>
                                   <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>{u.country === 'Tanzania' ? 'TZS' : '$'} {(u.balance || 0).toLocaleString(undefined, { minimumFractionDigits: u.country === 'Tanzania' ? 0 : 2, maximumFractionDigits: u.country === 'Tanzania' ? 0 : 2 })}</td>
                                   <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#d4af37' }}>{u.country === 'Tanzania' ? 'TZS' : '$'} {(u.miningBalance || 0).toLocaleString(undefined, { minimumFractionDigits: u.country === 'Tanzania' ? 0 : 2, maximumFractionDigits: u.country === 'Tanzania' ? 0 : 2 })}</td>
+                                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--primary)' }}>{u.country === 'Tanzania' ? 'TZS' : '$'} {(u.welcomeBonus || 0).toLocaleString(undefined, { minimumFractionDigits: u.country === 'Tanzania' ? 0 : 2, maximumFractionDigits: u.country === 'Tanzania' ? 0 : 2 })}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>{u.country || 'N/A'}</td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
                                     <button onClick={() => handleEditClick(u)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}>
