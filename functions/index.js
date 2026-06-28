@@ -99,7 +99,7 @@ exports.verifyPendingDeposits = functions.region('europe-west1').pubsub.schedule
 
               // 1. Verify and Credit User
               transaction.update(pendingTx.ref, {
-                status: "verified",
+                status: "SUCCESS",
                 amount: amount,
                 coin: matchedDeposit.coin,
                 network: matchedDeposit.network
