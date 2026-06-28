@@ -61,9 +61,16 @@ export const Careers = () => {
                         refsData.push(docSnap.id);
                     });
 
+                    const checkPromises = refsData.map(async (uid) => {
+                        const txSnap = await getDocs(query(collection(db, 'users', uid, 'transactions'), where('status', '==', 'SUCCESS')));
+                        return !txSnap.empty;
+                    });
+                    const activeChecks = await Promise.all(checkPromises);
+                    const activeCount = activeChecks.filter(Boolean).length;
+
                     setReferrals({
                         total: refsData.length,
-                        active: refsData.length,
+                        active: activeCount,
                         refs: refsData
                     });
                 }
